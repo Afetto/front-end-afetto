@@ -12,6 +12,7 @@ import "react-native-reanimated";
 import "../global.css";
 
 import { useColorScheme } from "@/components/useColorScheme";
+import { SessionProvider } from "@/context/SessionContext";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -54,11 +55,15 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-      </Stack>
-    </ThemeProvider>
+    <SessionProvider>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ title: "" }} />
+          <Stack.Screen name="register" options={{ title: "" }} />
+          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+        </Stack>
+      </ThemeProvider>
+    </SessionProvider>
   );
 }
