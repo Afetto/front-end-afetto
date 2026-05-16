@@ -13,6 +13,8 @@ module.exports = {
         golden: "#D4921E",
         "golden-light": "#E8B96A",
         "golden-pale": "#F2D9A0",
+        amber: "#E8A838",
+        "green-medium": "#A8C5A0",
       },
     },
   },
