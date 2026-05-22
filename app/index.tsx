@@ -1,9 +1,6 @@
+import ConcentricCircles from "@/components/ConcentricCircles";
 import { router } from "expo-router";
-import {
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 export default function OnboardingScreen() {
   return (
@@ -45,30 +42,7 @@ export default function OnboardingScreen() {
         </View>
       </View>
 
-      {/* Decoração inferior — círculos concêntricos */}
-      {/* TODO: substituir por Image quando assets forem enviados */}
-      <View style={{ height: 200, alignItems: "center", overflow: "hidden" }}>
-        <View style={{
-          position: "absolute", bottom: -300,
-          width: 500, height: 500, borderRadius: 250,
-          backgroundColor: "rgba(210, 200, 140, 0.25)",
-        }} />
-        <View style={{
-          position: "absolute", bottom: -240,
-          width: 400, height: 400, borderRadius: 200,
-          backgroundColor: "rgba(220, 195, 100, 0.35)",
-        }} />
-        <View style={{
-          position: "absolute", bottom: -185,
-          width: 300, height: 300, borderRadius: 150,
-          backgroundColor: "rgba(225, 180, 70, 0.55)",
-        }} />
-        <View style={{
-          position: "absolute", bottom: -135,
-          width: 210, height: 210, borderRadius: 105,
-          backgroundColor: "#D4921E",
-        }} />
-      </View>
+      <ConcentricCircles />
     </View>
   );
 }

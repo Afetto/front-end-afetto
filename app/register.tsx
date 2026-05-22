@@ -1,24 +1,59 @@
 import { Ionicons } from "@expo/vector-icons";
 import MyInput from "@/components/MyInput";
 import { RegisterInput, RegisterSchema } from "@/schemas/register.schema";
+import { register as registerUser } from "@/services/auth.service";
 import { maskCPF, maskDate, maskPhone } from "@/utils/masks";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
 export default function RegisterScreen() {
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const scale = useSharedValue(0.7);
+  const opacity = useSharedValue(0);
+
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  useEffect(() => {
+    if (!showSuccess) return;
+
+    scale.value = withSpring(1, { damping: 14, mass: 0.8 });
+    opacity.value = withTiming(1, { duration: 250 });
+
+    const timer = setTimeout(() => {
+      setShowSuccess(false);
+      router.replace("/login");
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [showSuccess]);
+
   const {
     control,
     handleSubmit,
+    setError,
     formState: { isSubmitting },
   } = useForm<RegisterInput>({
     defaultValues: {
@@ -35,9 +70,20 @@ export default function RegisterScreen() {
   });
 
   async function doRegister(data: RegisterInput) {
-    // TODO: substituir pela chamada real à API
-    console.log(data);
-    router.replace("/(tabs)");
+    const result = await registerUser(data);
+
+    if (!result.ok) {
+      if (result.error === "email_taken") {
+        setError("email", { message: "Este e-mail já está cadastrado" });
+      } else {
+        setError("root", { message: "Erro ao criar conta. Tente novamente." });
+      }
+      return;
+    }
+
+    scale.value = 0.7;
+    opacity.value = 0;
+    setShowSuccess(true);
   }
 
   return (
@@ -136,6 +182,13 @@ export default function RegisterScreen() {
             />
           </View>
 
+          {/* Erro geral */}
+          {control._formState.errors.root && (
+            <Text className="text-red-500 text-sm text-center -mt-4">
+              {control._formState.errors.root.message}
+            </Text>
+          )}
+
           <View className="flex-1" />
 
           {/* Botão criar conta */}
@@ -157,6 +210,51 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Modal de sucesso */}
+      <Modal
+        transparent
+        visible={showSuccess}
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={styles.overlay}>
+          <Animated.View style={[styles.card, cardStyle]}>
+            <View className="w-20 h-20 rounded-full bg-green-medium items-center justify-center">
+              <Ionicons name="checkmark" size={44} color="#fff" />
+            </View>
+
+            <View className="items-center gap-2">
+              <Text className="text-2xl font-bold text-primary text-center">
+                Conta criada!
+              </Text>
+              <Text className="text-sm text-muted text-center leading-relaxed">
+                Conta criada com sucesso!{"\n"}
+                Agora faça login para entrar no Afe
+                <Text className="text-amber font-semibold">tto</Text>.
+              </Text>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 32,
+    alignItems: "center",
+    gap: 20,
+    width: "100%",
+  },
+});
