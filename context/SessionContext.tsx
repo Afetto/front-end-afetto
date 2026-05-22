@@ -22,6 +22,7 @@ type SessionContextData = {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   completeStep: (step: keyof SetupProgress) => Promise<void>;
+  updateProfile: (updates: { name?: string; email?: string }) => Promise<void>;
 };
 
 const DEFAULT_SETUP: SetupProgress = {
@@ -64,6 +65,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
   }
 
+  async function updateProfile(updates: { name?: string; email?: string }) {
+    if (!session) return;
+    const updated: Session = { ...session, ...updates };
+    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+    setSession(updated);
+  }
+
   async function completeStep(step: keyof SetupProgress) {
     if (!session) return;
     const updated: Session = {
@@ -75,7 +83,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SessionContext.Provider value={{ session, isLoading, login, logout, completeStep }}>
+    <SessionContext.Provider value={{ session, isLoading, login, logout, completeStep, updateProfile }}>
       {children}
     </SessionContext.Provider>
   );

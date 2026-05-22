@@ -62,6 +62,7 @@ function RootLayoutNav() {
           <Stack.Screen name="login" options={{ title: "" }} />
           <Stack.Screen name="register" options={{ title: "" }} />
           <Stack.Screen name="complete-profile" options={{ title: "" }} />
+          <Stack.Screen name="profile" options={{ headerShown: false }} />
           <Stack.Screen
             name="register-success"
             options={{ headerShown: false, presentation: "transparentModal", animation: "fade" }}

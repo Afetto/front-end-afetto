@@ -77,9 +77,13 @@ export default function HomeScreen() {
           </View>
 
           {/* Avatar */}
-          <View className="w-12 h-12 rounded-full bg-white/20 items-center justify-center">
+          <TouchableOpacity
+            onPress={() => router.push("/profile")}
+            activeOpacity={0.7}
+            className="w-12 h-12 rounded-full bg-white/20 items-center justify-center"
+          >
             <Ionicons name="person" size={22} color="#fff" />
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Subtítulo */}
