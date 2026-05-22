@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authenticate } from "@/services/auth.service";
 import { createContext, useContext, useEffect, useState } from "react";
 
 const SESSION_KEY = "@afetto:session";
@@ -18,7 +19,7 @@ type Session = {
 type SessionContextData = {
   session: Session | null;
   isLoading: boolean;
-  login: (email: string, password: string, name?: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   completeStep: (step: keyof SetupProgress) => Promise<void>;
 };
@@ -43,13 +44,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  async function login(email: string, password: string, name?: string): Promise<boolean> {
-    // TODO: substituir pela chamada real à API
-    const isValid = email.length > 0 && password.length >= 6;
-    if (!isValid) return false;
+  async function login(email: string, password: string): Promise<boolean> {
+    // TODO: quando API existir, authenticate() já retornará o token — salvar token em vez da senha
+    const result = await authenticate(email, password);
+    if (!result.ok) return false;
 
-    const derivedName = name ?? email.split("@")[0];
-    const newSession: Session = { email, name: derivedName, setup: DEFAULT_SETUP };
+    const newSession: Session = {
+      email: result.user.email,
+      name: result.user.name,
+      setup: DEFAULT_SETUP,
+    };
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
     setSession(newSession);
     return true;

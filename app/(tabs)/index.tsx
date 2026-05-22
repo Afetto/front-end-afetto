@@ -52,10 +52,11 @@ export default function HomeScreen() {
   const currentStep = Math.min(completedCount + 1, totalCount);
   const progress = currentStep / totalCount;
   const nextIncomplete = checklist.find((i) => !i.completed);
-  const stepLabel =
-    completedCount >= totalCount
-      ? "Configuração concluída!"
-      : `Etapa ${currentStep} de ${totalCount} — ${nextIncomplete?.title}`;
+  const stepLabel = `Etapa ${currentStep} de ${totalCount} — ${nextIncomplete?.title}`;
+
+  const allMandatoryDone = checklist
+    .filter((i) => !i.optional)
+    .every((i) => i.completed);
 
   return (
     <ScrollView
@@ -83,19 +84,23 @@ export default function HomeScreen() {
 
         {/* Subtítulo */}
         <Text className="text-base text-amber underline mt-2">
-          Vamos começar o perfil do seu pet!
+          {allMandatoryDone
+            ? "Tudo certo! Seu pet está protegido."
+            : "Vamos começar o perfil do seu pet!"}
         </Text>
 
         {/* Barra de progresso */}
-        <View className="mt-5">
-          <Text className="text-xs text-white/70 mb-2">{stepLabel}</Text>
-          <View className="h-2 bg-white/20 rounded-full overflow-hidden">
-            <View
-              className="h-2 bg-amber rounded-full"
-              style={{ width: `${progress * 100}%` }}
-            />
+        {!allMandatoryDone && (
+          <View className="mt-5">
+            <Text className="text-xs text-white/70 mb-2">{stepLabel}</Text>
+            <View className="h-2 bg-white/20 rounded-full overflow-hidden">
+              <View
+                className="h-2 bg-amber rounded-full"
+                style={{ width: `${progress * 100}%` }}
+              />
+            </View>
           </View>
-        </View>
+        )}
       </View>
 
       {/* Body */}
@@ -118,7 +123,8 @@ export default function HomeScreen() {
           />
         </TouchableOpacity>
 
-        {/* Checklist */}
+        {/* Checklist — some apenas enquanto os passos obrigatórios não estiverem completos */}
+        {!allMandatoryDone && (
         <View className="gap-3">
           <Text className="text-base font-semibold text-gray-800">
             Sua configuração
@@ -177,6 +183,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        )}
       </View>
     </ScrollView>
   );

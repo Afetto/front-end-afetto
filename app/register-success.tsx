@@ -18,7 +18,7 @@ export default function RegisterSuccessScreen() {
     opacity.value = withTiming(1, { duration: 250 });
 
     const timer = setTimeout(() => {
-      router.replace("/(tabs)");
+      router.replace("/login");
     }, 2500);
 
     return () => clearTimeout(timer);
@@ -44,9 +44,9 @@ export default function RegisterSuccessScreen() {
             Conta criada!
           </Text>
           <Text className="text-sm text-muted text-center leading-relaxed">
-            Bem-vindo ao Afe
-            <Text className="text-amber font-semibold">tto</Text>.{"\n"}
-            Vamos configurar o perfil do seu pet!
+            Conta criada com sucesso!{"\n"}
+            Agora faça login para entrar no Afe
+            <Text className="text-amber font-semibold">tto</Text>.
           </Text>
         </View>
       </Animated.View>
