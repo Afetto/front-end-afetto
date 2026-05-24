@@ -4,6 +4,32 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 
+type Pet = {
+  id: number;
+  nome: string;
+  especie: string;
+  raca: string;
+  idade: string;
+  peso: string;
+  sexo: "M" | "F";
+  saudavel: boolean;
+};
+ 
+const ESPECIES_ICON: Record<string, string> = {
+  Cachorro: "🐶",
+  Gato: "🐱",
+  Coelho: "🐰",
+  Pássaro: "🐦",
+  Réptil: "🦎",
+  Outro: "🐾",
+};
+ 
+const PETS_MOCK: Pet[] = [
+  { id: 1, nome: "Bolinha", especie: "Cachorro", raca: "Golden Retriever", idade: "3 anos", peso: "28kg", sexo: "M", saudavel: true },
+  { id: 2, nome: "Mimi", especie: "Gato", raca: "Siamês", idade: "1 ano", peso: "4kg", sexo: "F", saudavel: false },
+  { id: 3, nome: "Fofão", especie: "Coelho", raca: "Mini Rex", idade: "2 anos", peso: "2kg", sexo: "M", saudavel: true },
+];
+
 export default function PetsScreen() {
   const { completeStep } = useSession();
   const [loading, setLoading] = useState(false);
