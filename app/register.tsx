@@ -1,9 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
 import MyInput from "@/components/MyInput";
 import { RegisterInput, RegisterSchema } from "@/schemas/register.schema";
-import { register as registerUser } from "@/services/auth.service";
+import { authService } from "@/services/auth.service";
 import { maskCPF, maskDate, maskPhone } from "@/utils/masks";
+import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -54,7 +55,7 @@ export default function RegisterScreen() {
     control,
     handleSubmit,
     setError,
-    formState: { isSubmitting },
+    formState: { errors },
   } = useForm<RegisterInput>({
     defaultValues: {
       name: "",
@@ -69,21 +70,31 @@ export default function RegisterScreen() {
     mode: "onTouched",
   });
 
-  async function doRegister(data: RegisterInput) {
-    const result = await registerUser(data);
-
-    if (!result.ok) {
-      if (result.error === "email_taken") {
-        setError("email", { message: "Este e-mail já está cadastrado" });
-      } else {
-        setError("root", { message: "Erro ao criar conta. Tente novamente." });
+  // ─── useMutation — substitui o registerUser direto ───────────────────────
+  const { mutate: register, isPending } = useMutation({
+    mutationFn: (data: RegisterInput) => authService.register(data),
+    onSuccess: (result) => {
+      if (!result.ok) {
+        if (result.error === "email_taken") {
+          setError("email", { message: "Este e-mail já está cadastrado" });
+        } else {
+          setError("root", { message: "Erro ao criar conta. Tente novamente." });
+        }
+        return;
       }
-      return;
-    }
 
-    scale.value = 0.7;
-    opacity.value = 0;
-    setShowSuccess(true);
+      // Dispara animação de sucesso — igual ao original
+      scale.value = 0.7;
+      opacity.value = 0;
+      setShowSuccess(true);
+    },
+    onError: () => {
+      setError("root", { message: "Erro de conexão. Tente novamente." });
+    },
+  });
+
+  function doRegister(data: RegisterInput) {
+    register(data);
   }
 
   return (
@@ -183,24 +194,23 @@ export default function RegisterScreen() {
           </View>
 
           {/* Erro geral */}
-          {control._formState.errors.root && (
+          {errors.root && (
             <Text className="text-red-500 text-sm text-center -mt-4">
-              {control._formState.errors.root.message}
+              {errors.root.message}
             </Text>
           )}
 
           <View className="flex-1" />
 
-          {/* Botão criar conta */}
+          {/* Botão criar conta — isPending substitui isSubmitting */}
           <TouchableOpacity
             onPress={handleSubmit(doRegister)}
-            disabled={isSubmitting}
+            disabled={isPending}
             activeOpacity={0.85}
-            className={`items-center justify-center py-4 rounded-2xl ${
-              isSubmitting ? "bg-primary/70" : "bg-primary"
-            }`}
+            className={`items-center justify-center py-4 rounded-2xl ${isPending ? "bg-primary/70" : "bg-primary"
+              }`}
           >
-            {isSubmitting ? (
+            {isPending ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text className="text-white text-lg font-semibold">
@@ -211,7 +221,7 @@ export default function RegisterScreen() {
         </View>
       </ScrollView>
 
-      {/* Modal de sucesso */}
+      {/* Modal de sucesso — inalterado */}
       <Modal
         transparent
         visible={showSuccess}

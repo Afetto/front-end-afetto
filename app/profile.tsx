@@ -1,10 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/context/SessionContext";
 import {
   getUserByEmail,
-  updateUser,
   updatePassword,
+  updateUser,
 } from "@/services/auth.service";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {

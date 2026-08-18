@@ -1,133 +1,126 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { api } from "@/lib/api";
+import { AuthResult, PasswordChangeResult, RegisterPayload, RegisterResult, StoredUser, UpdateUserPayload, UpdateUserResult } from "@/types/auth.types";
 
-// TODO: quando integrar a API, substituir todas as funções deste arquivo
-// por chamadas HTTP (fetch/axios) aos endpoints reais.
-// Os contratos de entrada/saída devem permanecer os mesmos.
-
-const USERS_KEY = "@afetto:users";
-
-export type StoredUser = {
-  name: string;
-  email: string;
-  cpf: string;
-  phoneCode: string;
-  phone: string;
-  birthDate: string;
-  // TODO: remover quando API existir — hashing será feito no backend
-  password: string;
-};
-
-export type RegisterPayload = {
-  name: string;
-  email: string;
-  cpf: string;
-  phoneCode: string;
-  phone: string;
-  birthDate: string;
-  password: string;
-};
-
-export type RegisterResult =
-  | { ok: true }
-  | { ok: false; error: "email_taken" | "unknown" };
-
-export type AuthResult =
-  | { ok: true; user: StoredUser }
-  | { ok: false };
-
-async function getUsers(): Promise<StoredUser[]> {
-  const raw = await AsyncStorage.getItem(USERS_KEY);
-  return raw ? (JSON.parse(raw) as StoredUser[]) : [];
-}
 
 /**
  * Cadastra um novo usuário.
- * TODO: substituir por POST /api/auth/register
+ * POST /usuarios
  */
 export async function register(payload: RegisterPayload): Promise<RegisterResult> {
   try {
-    const users = await getUsers();
-    const emailNormalized = payload.email.trim().toLowerCase();
-
-    const alreadyExists = users.some((u) => u.email === emailNormalized);
-    if (alreadyExists) return { ok: false, error: "email_taken" };
-
-    const newUser: StoredUser = {
-      name: payload.name.trim(),
-      email: emailNormalized,
+    await api.post("/usuarios", {
+      nome: payload.name.trim(),
+      email: payload.email.trim().toLowerCase(),
       cpf: payload.cpf,
-      phoneCode: payload.phoneCode,
-      phone: payload.phone,
-      birthDate: payload.birthDate,
-      password: payload.password,
-    };
+      telefone: `${payload.phoneCode} ${payload.phone}`,
+      dataNascimento: payload.birthDate,
+      senha: payload.password,
+    });
 
-    await AsyncStorage.setItem(USERS_KEY, JSON.stringify([...users, newUser]));
     return { ok: true };
-  } catch {
+  } catch (error: any) {
+    if (error.response?.status === 409) {
+      return { ok: false, error: "email_taken" };
+    }
     return { ok: false, error: "unknown" };
   }
 }
 
 /**
- * Busca usuário pelo e-mail.
- * TODO: substituir por GET /api/users/me (autenticado via token)
+ * Valida credenciais e retorna o usuário + token JWT.
+ * POST /auth/login
+ */
+export async function authenticate(
+  email: string,
+  password: string
+): Promise<AuthResult> {
+  try {
+    const response = await api.post("/auth/login", {
+      email: email.trim().toLowerCase(),
+      senha: password,
+    });
+
+    const { token, usuario } = response.data;
+
+    // Salva o token para ser usado nos próximos requests
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+    return {
+      ok: true,
+      token,
+      user: {
+        id: usuario.id,
+        name: usuario.nome,
+        email: usuario.email,
+        cpf: usuario.cpf,
+        phoneCode: "+55",
+        phone: usuario.telefone,
+        birthDate: usuario.dataNascimento,
+      },
+    };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/**
+ * Busca usuário pelo token JWT (sessão ativa).
+ * GET /usuarios/me
  */
 export async function getUserByEmail(email: string): Promise<StoredUser | null> {
   try {
-    const users = await getUsers();
-    return users.find((u) => u.email === email.trim().toLowerCase()) ?? null;
+    const response = await api.get("/usuarios/me");
+    const u = response.data;
+
+    return {
+      id: u.id,
+      name: u.nome,
+      email: u.email,
+      cpf: u.cpf,
+      phoneCode: "+55",
+      phone: u.telefone,
+      birthDate: u.dataNascimento,
+    };
   } catch {
     return null;
   }
 }
 
-export type UpdateUserPayload = {
-  name?: string;
-  email?: string;
-  phoneCode?: string;
-  phone?: string;
-};
-
-export type UpdateUserResult =
-  | { ok: true; newEmail: string }
-  | { ok: false; error: "email_taken" | "not_found" | "unknown" };
-
 /**
  * Atualiza dados do perfil do usuário.
- * TODO: substituir por PATCH /api/users/me
+ * PUT /usuarios/{id}
  */
 export async function updateUser(
   currentEmail: string,
   updates: UpdateUserPayload
 ): Promise<UpdateUserResult> {
   try {
-    const users = await getUsers();
-    const emailNorm = currentEmail.trim().toLowerCase();
-    const idx = users.findIndex((u) => u.email === emailNorm);
-    if (idx === -1) return { ok: false, error: "not_found" };
+    const response = await api.put("/usuarios/me", {
+      nome: updates.name,
+      email: updates.email?.trim().toLowerCase(),
+      telefone: updates.phone
+        ? `${updates.phoneCode ?? "+55"} ${updates.phone}`
+        : undefined,
+    });
 
-    const newEmail = updates.email ? updates.email.trim().toLowerCase() : emailNorm;
-    if (newEmail !== emailNorm) {
-      const taken = users.some((u) => u.email === newEmail);
-      if (taken) return { ok: false, error: "email_taken" };
+    return {
+      ok: true,
+      newEmail: response.data.email ?? currentEmail,
+    };
+  } catch (error: any) {
+    if (error.response?.status === 409) {
+      return { ok: false, error: "email_taken" };
     }
-
-    users[idx] = { ...users[idx], ...updates, email: newEmail };
-    await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
-    return { ok: true, newEmail };
-  } catch {
+    if (error.response?.status === 404) {
+      return { ok: false, error: "not_found" };
+    }
     return { ok: false, error: "unknown" };
   }
 }
 
-export type PasswordChangeResult =
-  | { ok: true }
-  | { ok: false; error: "wrong_password" | "unknown" };
-
 /**
- * Altera a senha do usuário após validar a senha atual.
- * TODO: substituir por POST /api/users/me/password
+ * Altera a senha do usuário.
+ * POST /usuarios/me/senha
  */
 export async function updatePassword(
   email: string,
@@ -135,37 +128,24 @@ export async function updatePassword(
   newPassword: string
 ): Promise<PasswordChangeResult> {
   try {
-    const users = await getUsers();
-    const idx = users.findIndex((u) => u.email === email.trim().toLowerCase());
-    if (idx === -1) return { ok: false, error: "unknown" };
-    if (users[idx].password !== currentPassword) return { ok: false, error: "wrong_password" };
-    users[idx] = { ...users[idx], password: newPassword };
-    await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
+    await api.post("/usuarios/me/senha", {
+      senhaAtual: currentPassword,
+      novaSenha: newPassword,
+    });
+
     return { ok: true };
-  } catch {
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      return { ok: false, error: "wrong_password" };
+    }
     return { ok: false, error: "unknown" };
   }
 }
 
 /**
- * Valida credenciais e retorna o usuário se encontrado.
- * TODO: substituir por POST /api/auth/login → receber token JWT
+ * Encerra a sessão do usuário.
+ * Remove o token do header global.
  */
-export async function authenticate(
-  email: string,
-  password: string
-): Promise<AuthResult> {
-  try {
-    const users = await getUsers();
-    const emailNormalized = email.trim().toLowerCase();
-
-    const user = users.find(
-      (u) => u.email === emailNormalized && u.password === password
-    );
-
-    if (!user) return { ok: false };
-    return { ok: true, user };
-  } catch {
-    return { ok: false };
-  }
+export async function logout(): Promise<void> {
+  delete api.defaults.headers.common["Authorization"];
 }
