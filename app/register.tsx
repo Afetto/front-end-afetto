@@ -1,6 +1,6 @@
 import MyInput from "@/components/MyInput";
 import { RegisterInput, RegisterSchema } from "@/schemas/register.schema";
-import { authService } from "@/services/auth.service";
+import { register as registerService } from "@/services/auth.service"; // ← alias
 import { maskCPF, maskDate, maskPhone } from "@/utils/masks";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -70,9 +70,9 @@ export default function RegisterScreen() {
     mode: "onTouched",
   });
 
-  // ─── useMutation — substitui o registerUser direto ───────────────────────
-  const { mutate: register, isPending } = useMutation({
-    mutationFn: (data: RegisterInput) => authService.register(data),
+  // ─── useMutation ─────────────────────────────────────────────────────────
+  const { mutate: submitRegister, isPending } = useMutation({
+    mutationFn: (data: RegisterInput) => registerService(data), // ← sem conflito
     onSuccess: (result) => {
       if (!result.ok) {
         if (result.error === "email_taken") {
@@ -83,7 +83,6 @@ export default function RegisterScreen() {
         return;
       }
 
-      // Dispara animação de sucesso — igual ao original
       scale.value = 0.7;
       opacity.value = 0;
       setShowSuccess(true);
@@ -94,7 +93,7 @@ export default function RegisterScreen() {
   });
 
   function doRegister(data: RegisterInput) {
-    register(data);
+    submitRegister(data);
   }
 
   return (
@@ -109,12 +108,10 @@ export default function RegisterScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-1 px-6 pt-10 pb-10 gap-8">
-          {/* Título */}
           <Text className="text-4xl font-bold text-gray-900 leading-tight">
             Crie sua{"\n"}Conta!
           </Text>
 
-          {/* Campos */}
           <View className="gap-5">
             <MyInput
               name="name"
@@ -145,7 +142,6 @@ export default function RegisterScreen() {
               textContentType="emailAddress"
             />
 
-            {/* Celular — código + número lado a lado */}
             <View className="gap-1">
               <Text className="text-sm text-gray-700 font-medium">Celular</Text>
               <View className="flex-row gap-3">
@@ -193,7 +189,6 @@ export default function RegisterScreen() {
             />
           </View>
 
-          {/* Erro geral */}
           {errors.root && (
             <Text className="text-red-500 text-sm text-center -mt-4">
               {errors.root.message}
@@ -202,7 +197,6 @@ export default function RegisterScreen() {
 
           <View className="flex-1" />
 
-          {/* Botão criar conta — isPending substitui isSubmitting */}
           <TouchableOpacity
             onPress={handleSubmit(doRegister)}
             disabled={isPending}
@@ -221,7 +215,6 @@ export default function RegisterScreen() {
         </View>
       </ScrollView>
 
-      {/* Modal de sucesso — inalterado */}
       <Modal
         transparent
         visible={showSuccess}

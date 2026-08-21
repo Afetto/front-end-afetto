@@ -13,6 +13,7 @@ import "../global.css";
 
 import { useColorScheme } from "@/components/useColorScheme";
 import { SessionProvider } from "@/context/SessionContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -25,6 +26,7 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -54,21 +56,23 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <SessionProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ title: "" }} />
-          <Stack.Screen name="register" options={{ title: "" }} />
-          <Stack.Screen name="complete-profile" options={{ title: "" }} />
-          <Stack.Screen name="profile" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="register-success"
-            options={{ headerShown: false, presentation: "transparentModal", animation: "fade" }}
-          />
-        </Stack>
-      </ThemeProvider>
-    </SessionProvider>
+    <QueryClientProvider client={queryClient}>
+      {/*(<SessionProvider> */}
+        {/* <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}> */}
+          <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="login" options={{ title: "" }} />
+            <Stack.Screen name="register" options={{ title: "" }} />
+            <Stack.Screen name="complete-profile" options={{ title: "" }} />
+            <Stack.Screen name="profile" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="register-success"
+              options={{ headerShown: false, presentation: "transparentModal", animation: "fade" }}
+            />
+          </Stack>
+        {/* </ThemeProvider> */}
+   {/* </SessionProvider> */}
+    </QueryClientProvider>
   );
 }
