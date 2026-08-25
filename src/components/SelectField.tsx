@@ -1,5 +1,4 @@
-import { Text, TouchableOpacity } from "react-native";
-import { View } from "react-native-reanimated/lib/typescript/Animated";
+import { Text, TouchableOpacity, View } from "react-native";
 
 type SelectOption = { label: string; value: string };
 

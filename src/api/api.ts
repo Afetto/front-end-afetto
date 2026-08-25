@@ -1,7 +1,13 @@
 import axios from "axios";
 
+const baseUrl = process.env.EXPO_PUBLIC_API_URL;
+
+if (!baseUrl) {
+    throw new Error("A variável EXPO_PUBLIC_API_URL não foi configurada.");
+}
+
 export const api = axios.create({
-    baseURL: "https://SUA_API_URL_AQUI",
+    baseURL: baseUrl,
     headers: {
         "Content-Type": "application/json",
     },

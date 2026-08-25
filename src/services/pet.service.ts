@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api/api";
 import { CreatePetInput, Pet } from "@/schemas/pet.schema";
 
 export const petService = {

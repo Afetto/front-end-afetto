@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api/api";
 import { AuthResult, PasswordChangeResult, RegisterPayload, RegisterResult, StoredUser, UpdateUserPayload, UpdateUserResult } from "@/types/auth.types";
 
 

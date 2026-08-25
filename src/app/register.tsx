@@ -72,7 +72,7 @@ export default function RegisterScreen() {
 
   // ─── useMutation ─────────────────────────────────────────────────────────
   const { mutate: submitRegister, isPending } = useMutation({
-    mutationFn: (data: RegisterInput) => registerService(data), // ← sem conflito
+    mutationFn: (data: RegisterInput) => registerService(data),
     onSuccess: (result) => {
       if (!result.ok) {
         if (result.error === "email_taken") {

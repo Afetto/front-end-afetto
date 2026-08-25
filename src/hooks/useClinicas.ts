@@ -1,7 +1,7 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
-import { clinicaService } from "@/services/clinica.service";
+import { queryClient } from "@/api/queryClient";
 import { VincularClinicaInput } from "@/schemas/clinica.schema";
+import { clinicaService } from "@/services/clinica.service";
+import { useMutation, useQuery } from "@tanstack/react-query";
 const QUERY_KEY = ["clinicas"];
 
 // ─── READ ────────────────────────────────────────────────────────────────────
