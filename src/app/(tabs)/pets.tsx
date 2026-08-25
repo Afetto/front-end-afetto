@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { EmptyPets } from "@/components/PetsEmptyState";
 
 type Pet = {
   id: number;
@@ -31,9 +32,9 @@ const ESPECIES_ICON: Record<string, string> = {
 };
 
 const PETS_MOCK: Pet[] = [
-  { id: 1, nome: "Bolinha", especie: "Cachorro", raca: "Golden Retriever", idade: "3 anos", peso: "28kg", sexo: "M", saudavel: true },
-  { id: 2, nome: "Mimi", especie: "Gato", raca: "Siamês", idade: "1 ano", peso: "4kg", sexo: "F", saudavel: false },
-  { id: 3, nome: "Fofão", especie: "Coelho", raca: "Mini Rex", idade: "2 anos", peso: "2kg", sexo: "M", saudavel: true },
+  // { id: 1, nome: "Bolinha", especie: "Cachorro", raca: "Golden Retriever", idade: "3 anos", peso: "28kg", sexo: "M", saudavel: true },
+  // { id: 2, nome: "Mimi", especie: "Gato", raca: "Siamês", idade: "1 ano", peso: "4kg", sexo: "F", saudavel: false },
+  // { id: 3, nome: "Fofão", especie: "Coelho", raca: "Mini Rex", idade: "2 anos", peso: "2kg", sexo: "M", saudavel: true },
 ];
 
 export default function PetsScreen() {
@@ -49,6 +50,10 @@ export default function PetsScreen() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (pets.length === 0) {
+    return <EmptyPets />;
   }
 
   function renderCard({ item }: { item: Pet }) {
@@ -118,31 +123,25 @@ export default function PetsScreen() {
 
   return (
     <View className="flex-1 bg-surface">
+      {/* Header */}
       <View style={{ backgroundColor: "#1F3B30" }} className="px-5 pt-14 pb-5">
-        <Text className="text-xl font-bold text-white">
-          Meus Pets
-        </Text>
+        <Text className="text-xl font-bold text-white">Meus Pets</Text>
         <Text className="text-sm mt-1" style={{ color: "#A8C5A0" }}>
           {pets.length} {pets.length === 1 ? "pet cadastrado" : "pets cadastrados"}
         </Text>
       </View>
 
+      {/* Lista */}
       <FlatList
         data={pets}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderCard}
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-        ListEmptyComponent={
-          <View className="flex-1 items-center justify-center mt-16 gap-3">
-            <Ionicons name="paw-outline" size={48} color="#9A9585" />
-            <Text className="text-muted text-sm text-center">
-              Você ainda não tem pets cadastrados.
-            </Text>
-          </View>
-        }
+        contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
       />
 
-      <View className="absolute bottom-0 left-0 right-0 px-6 pb-10 gap-3"
+      {/* Footer — só aparece quando tem pets */}
+      <View
+        className="absolute bottom-0 left-0 right-0 px-6 pb-10 gap-3"
         style={{ backgroundColor: "#F5F0E8", paddingTop: 12, borderTopWidth: 1, borderTopColor: "#e0ddd5" }}
       >
         <TouchableOpacity
@@ -162,9 +161,8 @@ export default function PetsScreen() {
           onPress={handleConcluir}
           disabled={loading}
           activeOpacity={0.85}
-          className={`items-center justify-center py-4 rounded-2xl ${
-            loading ? "bg-primary/70" : "bg-primary"
-          }`}
+          className={`items-center justify-center py-4 rounded-2xl ${loading ? "bg-primary/70" : "bg-primary"
+            }`}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
