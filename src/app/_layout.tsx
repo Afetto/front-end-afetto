@@ -1,34 +1,24 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { AppState } from "react-native";
 import { useReactQueryDevTools } from "@dev-plugins/react-query";
+import { focusManager, QueryClientProvider } from "@tanstack/react-query";
 import "react-native-reanimated";
 import "../global.css";
 
-import { useColorScheme } from "@/components/useColorScheme";
+import { queryClient } from "@/api/queryClient";
 import { SessionProvider } from "@/context/SessionContext";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from "expo-router";
+export { ErrorBoundary } from "expo-router";
 
 export const unstable_settings = {
   initialRouteName: "index",
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
-const queryClient = new QueryClient();
-
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -36,46 +26,51 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
+  // AppState — refetch quando app volta ao foco
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (status) => {
+      focusManager.setFocused(status === "active");
+    });
+    return () => sub.remove();
+  }, []);
+
   useEffect(() => {
     if (error) throw error;
   }, [error]);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
+    if (loaded) SplashScreen.hideAsync();
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
-  }
+  if (!loaded) return null;
 
   return <RootLayoutNav />;
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
   useReactQueryDevTools(queryClient);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/*(<SessionProvider> */}
-        {/* <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}> */}
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="login" options={{ title: "" }} />
-            <Stack.Screen name="register" options={{ title: "" }} />
-            <Stack.Screen name="complete-profile" options={{ title: "" }} />
-            <Stack.Screen name="profile" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="register-success"
-              options={{ headerShown: false, presentation: "transparentModal", animation: "fade" }}
-            />
-          </Stack>
-        {/* </ThemeProvider> */}
-   {/* </SessionProvider> */}
+      <SessionProvider>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ title: "" }} />
+          <Stack.Screen name="register" options={{ title: "" }} />
+          <Stack.Screen name="complete-profile" options={{ title: "" }} />
+          <Stack.Screen name="profile" options={{ headerShown: false }} />
+          <Stack.Screen name="pets" options={{ title: "" }} />
+          <Stack.Screen
+            name="register-success"
+            options={{
+              headerShown: false,
+              presentation: "transparentModal",
+              animation: "fade",
+            }}
+          />
+        </Stack>
+      </SessionProvider>
     </QueryClientProvider>
   );
 }

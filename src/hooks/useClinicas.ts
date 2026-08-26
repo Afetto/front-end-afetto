@@ -1,7 +1,6 @@
-import { queryClient } from "@/api/queryClient";
 import { VincularClinicaInput } from "@/schemas/clinica.schema";
 import { clinicaService } from "@/services/clinica.service";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 const QUERY_KEY = ["clinicas"];
 
 // ─── READ ────────────────────────────────────────────────────────────────────
@@ -16,6 +15,8 @@ export function useClinicas() {
 // ─── VINCULAR ────────────────────────────────────────────────────────────────
 
 export function useVincularClinica() {
+    const queryClient = useQueryClient();
+
     return useMutation({
         mutationFn: (data: VincularClinicaInput) => clinicaService.vincular(data),
         onSuccess: () => {
@@ -27,6 +28,9 @@ export function useVincularClinica() {
 // ─── DESVINCULAR ─────────────────────────────────────────────────────────────
 
 export function useDesvincularClinica() {
+
+    const queryClient = useQueryClient();
+
     return useMutation({
         mutationFn: (clinicaId: number) => clinicaService.desvincular(clinicaId),
         onSuccess: () => {

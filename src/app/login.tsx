@@ -1,7 +1,9 @@
 import MyInput from "@/components/MyInput";
-import { useSession } from "@/context/SessionContext";
 import { LoginInput, LoginSchema } from "@/schemas/login.schema";
+import { authenticate } from "@/services/auth.service";
+import { useSession } from "@/context/SessionContext";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useForm } from "react-hook-form";
 import {
@@ -21,21 +23,36 @@ export default function LoginScreen() {
     control,
     handleSubmit,
     setError,
-    formState: { isSubmitting },
+    formState: { errors },
   } = useForm<LoginInput>({
     defaultValues: { email: "", password: "" },
     resolver: zodResolver(LoginSchema),
     mode: "onTouched",
   });
 
-  async function doLogin({ email, password }: LoginInput) {
-    const ok = await login(email, password);
+  // ─── useMutation ─────────────────────────────────────────────────────────
+  const { mutate: submitLogin, isPending } = useMutation({
+    mutationFn: ({ email, password }: LoginInput) =>
+      authenticate(email, password),
+    onSuccess: async (result) => {
+      if (!result.ok) {
+        setError("root", { message: "E-mail ou senha incorretos" });
+        return;
+      }
 
-    if (ok) {
-      router.replace("/(tabs)");
-    } else {
-      setError("root", { message: "E-mail ou senha incorretos" });
-    }
+      // Persiste sessão via contexto
+      const ok = await login(result.user.email, result.user.name);
+      if (ok) {
+        router.replace("/(tabs)");
+      }
+    },
+    onError: () => {
+      setError("root", { message: "Erro de conexão. Tente novamente." });
+    },
+  });
+
+  function doLogin(data: LoginInput) {
+    submitLogin(data);
   }
 
   return (
@@ -78,7 +95,7 @@ export default function LoginScreen() {
                 textContentType="password"
               />
 
-              {/* TODO - Alterar rota de "esquecer senha"  */}
+              {/* TODO - Alterar rota de "esquecer senha" */}
               <TouchableOpacity
                 onPress={() => router.push("/forgot-password")}
                 className="self-end mt-1"
@@ -89,26 +106,26 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Erro geral (credenciais inválidas) */}
-            {control._formState.errors.root && (
+            {/* Erro geral */}
+            {errors.root && (
               <Text className="text-red-500 text-sm text-center">
-                {control._formState.errors.root.message}
+                {errors.root.message}
               </Text>
             )}
           </View>
 
           <View className="flex-1" />
 
-          {/* Botão entrar */}
+          {/* Botão entrar — isPending substitui isSubmitting */}
           <TouchableOpacity
             onPress={handleSubmit(doLogin)}
-            disabled={isSubmitting}
+            disabled={isPending}
             activeOpacity={0.85}
             className={`items-center justify-center py-4 rounded-2xl ${
-              isSubmitting ? "bg-primary/70" : "bg-primary"
+              isPending ? "bg-primary/70" : "bg-primary"
             }`}
           >
-            {isSubmitting ? (
+            {isPending ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text className="text-white text-lg font-semibold">Entrar</Text>
