@@ -1,9 +1,14 @@
 import axios from "axios";
 
-const baseUrl = process.env.EXPO_PUBLIC_API_URL;
+const FALLBACK_API_URL = "http://localhost:3000";
 
-if (!baseUrl) {
-    throw new Error("A variável EXPO_PUBLIC_API_URL não foi configurada.");
+const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? FALLBACK_API_URL;
+
+if (!process.env.EXPO_PUBLIC_API_URL) {
+    console.warn(
+        `[api] EXPO_PUBLIC_API_URL não configurada — usando fallback ${FALLBACK_API_URL}. ` +
+        "Defina a variável no arquivo .env para conectar à API real."
+    );
 }
 
 export const api = axios.create({
