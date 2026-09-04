@@ -17,7 +17,7 @@ import {
 } from "react-native";
 
 export default function LoginScreen() {
-  const { login } = useSession();
+  const { login, loginDev } = useSession();
 
   const {
     control,
@@ -40,11 +40,16 @@ export default function LoginScreen() {
         return;
       }
 
-      // Persiste sessão via contexto
-      const ok = await login(result.user.email, result.user.name);
-      if (ok) {
-        router.replace("/(tabs)");
-      }
+      // Persiste sessão via contexto (dados já vieram da API)
+      await login(
+        {
+          id: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
+        },
+        result.token
+      );
+      router.replace("/(tabs)");
     },
     onError: () => {
       setError("root", { message: "Erro de conexão. Tente novamente." });
@@ -131,6 +136,21 @@ export default function LoginScreen() {
               <Text className="text-white text-lg font-semibold">Entrar</Text>
             )}
           </TouchableOpacity>
+
+          {__DEV__ && (
+            <TouchableOpacity
+              onPress={async () => {
+                await loginDev();
+                router.replace("/(tabs)");
+              }}
+              activeOpacity={0.7}
+              className="items-center justify-center py-3 rounded-2xl border border-dashed border-muted mt-2"
+            >
+              <Text className="text-muted text-sm">
+                🛠 Entrar como Dev (sem API)
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

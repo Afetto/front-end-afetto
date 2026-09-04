@@ -1,8 +1,23 @@
 import ConcentricCircles from "@/components/ConcentricCircles";
-import { router } from "expo-router";
-import { Text, TouchableOpacity, View } from "react-native";
+import { useSession } from "@/context/SessionContext";
+import { Redirect, router } from "expo-router";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 
 export default function OnboardingScreen() {
+  const { session, isLoading } = useSession();
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-primary">
+        <ActivityIndicator color="#E8A838" size="large" />
+      </View>
+    );
+  }
+
+  if (session) {
+    return <Redirect href="/(tabs)" />;
+  }
+
   return (
     <View className="flex-1 bg-primary">
       {/* Conteúdo principal */}

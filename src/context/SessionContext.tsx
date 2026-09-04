@@ -1,8 +1,9 @@
-import { authenticate } from "@/services/auth.service";
+import { api } from "@/api/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 
 const SESSION_KEY = "@afetto:session";
+const TOKEN_KEY = "@afetto:token";
 
 type SetupProgress = {
   profileCompleted: boolean;
@@ -11,6 +12,7 @@ type SetupProgress = {
 };
 
 type Session = {
+  id: number;
   email: string;
   name: string;
   setup: SetupProgress;
@@ -19,7 +21,11 @@ type Session = {
 type SessionContextData = {
   session: Session | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (
+    user: { id: number; email: string; name: string },
+    token: string
+  ) => Promise<void>;
+  loginDev: () => Promise<void>;
   logout: () => Promise<void>;
   completeStep: (step: keyof SetupProgress) => Promise<void>;
   updateProfile: (updates: { name?: string; email?: string }) => Promise<void>;
@@ -38,30 +44,54 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem(SESSION_KEY)
-      .then((raw) => {
-        if (raw) setSession(JSON.parse(raw));
+    Promise.all([
+      AsyncStorage.getItem(SESSION_KEY),
+      AsyncStorage.getItem(TOKEN_KEY),
+    ])
+      .then(([rawSession, token]) => {
+        if (rawSession) setSession(JSON.parse(rawSession));
+        if (token) {
+          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        }
       })
       .finally(() => setIsLoading(false));
   }, []);
 
-  async function login(email: string, password: string): Promise<boolean> {
-    // TODO: quando API existir, authenticate() já retornará o token — salvar token em vez da senha
-    const result = await authenticate(email, password);
-    if (!result.ok) return false;
-
+  async function login(
+    user: { id: number; email: string; name: string },
+    token: string
+  ): Promise<void> {
     const newSession: Session = {
-      email: result.user.email,
-      name: result.user.name,
+      id: user.id,
+      email: user.email,
+      name: user.name,
       setup: DEFAULT_SETUP,
     };
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+    await AsyncStorage.setItem(TOKEN_KEY, token);
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     setSession(newSession);
-    return true;
+  }
+
+  async function loginDev() {
+    const devSession: Session = {
+      id: 0,
+      name: "Dev User",
+      email: "dev@afetto.com",
+      setup: {
+        profileCompleted: true,
+        petRegistered: true,
+        clinicLinked: false,
+      },
+    };
+    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(devSession));
+    setSession(devSession);
   }
 
   async function logout() {
     await AsyncStorage.removeItem(SESSION_KEY);
+    await AsyncStorage.removeItem(TOKEN_KEY);
+    delete api.defaults.headers.common["Authorization"];
     setSession(null);
   }
 
@@ -83,7 +113,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SessionContext.Provider value={{ session, isLoading, login, logout, completeStep, updateProfile }}>
+    <SessionContext.Provider value={{ session, isLoading, login, loginDev, logout, completeStep, updateProfile }}>
       {children}
     </SessionContext.Provider>
   );

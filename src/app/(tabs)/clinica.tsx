@@ -1,29 +1,16 @@
+import { useSession } from "@/context/SessionContext";
+import { useClinicas, useVincularClinica } from "@/hooks/useClinicas";
+import { Clinica } from "@/schemas/clinica.schema";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-
-type Clinica = {
-  id: number;
-  nome: string;
-  bairro: string;
-  cidade: string;
-  especialidade: string;
-  vinculada: boolean;
-};
-
-const CLINICAS_MOCK: Clinica[] = [
-  { id: 1, nome: "VetCare Centro", bairro: "Centro", cidade: "São Paulo", especialidade: "Clínica Geral", vinculada: true },
-  { id: 2, nome: "PetSaúde Vila Madalena", bairro: "Vila Madalena", cidade: "São Paulo", especialidade: "24h", vinculada: false },
-  { id: 3, nome: "Clínica Bicho Feliz", bairro: "Pinheiros", cidade: "São Paulo", especialidade: "Exóticos", vinculada: false },
-  { id: 4, nome: "Hospital Vet Premium", bairro: "Moema", cidade: "São Paulo", especialidade: "Cirurgia", vinculada: false },
-  { id: 5, nome: "AmorPet Clínica", bairro: "Santana", cidade: "São Paulo", especialidade: "Clínica Geral", vinculada: false },
-];
 
 const BADGE_COLORS: Record<string, string> = {
   "Clínica Geral": "#A8C5A0",
@@ -33,16 +20,30 @@ const BADGE_COLORS: Record<string, string> = {
 };
 
 export default function ClinicaScreen() {
-  const [clinicas, setClinicas] = useState<Clinica[]>(CLINICAS_MOCK);
+  const { session, completeStep } = useSession();
+  const {
+    data: clinicas = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useClinicas();
+  const { mutate: vincular, isPending: vinculando } = useVincularClinica();
   const [busca, setBusca] = useState("");
 
   const clinicasFiltradas = clinicas.filter((c) =>
     c.nome.toLowerCase().includes(busca.toLowerCase())
   );
 
-  function vincular(id: number) {
-    setClinicas((prev) =>
-      prev.map((c) => ({ ...c, vinculada: c.id === id }))
+  function handleVincular(clinicaId: number) {
+    if (!session?.id) return;
+
+    vincular(
+      { clinicaId, usuarioId: session.id },
+      {
+        onSuccess: async () => {
+          await completeStep("clinicLinked");
+        },
+      }
     );
   }
 
@@ -86,16 +87,43 @@ export default function ClinicaScreen() {
             </View>
           ) : (
             <TouchableOpacity
-              onPress={() => vincular(item.id)}
+              onPress={() => handleVincular(item.id)}
+              disabled={vinculando}
               style={{ borderColor: "#E8A838" }}
               className="py-2 rounded-xl border items-center"
             >
-              <Text style={{ color: "#B07A0A" }} className="text-sm font-medium">
-                Vincular
-              </Text>
+              {vinculando ? (
+                <ActivityIndicator size="small" color="#E8A838" />
+              ) : (
+                <Text style={{ color: "#B07A0A" }} className="text-sm font-medium">
+                  Vincular
+                </Text>
+              )}
             </TouchableOpacity>
           )}
         </View>
+      </View>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-surface">
+        <ActivityIndicator color="#E8A838" size="large" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View className="flex-1 items-center justify-center bg-surface gap-3 px-8">
+        <Ionicons name="cloud-offline-outline" size={48} color="#9A9585" />
+        <Text className="text-muted text-sm text-center">
+          Erro ao carregar clínicas. Tente novamente.
+        </Text>
+        <TouchableOpacity onPress={() => refetch()}>
+          <Text className="text-amber font-semibold">Tentar novamente</Text>
+        </TouchableOpacity>
       </View>
     );
   }

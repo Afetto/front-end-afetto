@@ -1,5 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
+import { EmptyPets } from "@/components/PetsEmptyState";
 import { useSession } from "@/context/SessionContext";
+import { usePets } from "@/hooks/usePets";
+import { Pet } from "@/schemas/pet.schema";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -9,18 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { EmptyPets } from "@/components/PetsEmptyState";
-
-type Pet = {
-  id: number;
-  nome: string;
-  especie: string;
-  raca: string;
-  idade: string;
-  peso: string;
-  sexo: "M" | "F";
-  saudavel: boolean;
-};
 
 const ESPECIES_ICON: Record<string, string> = {
   Cachorro: "🐶",
@@ -31,16 +22,18 @@ const ESPECIES_ICON: Record<string, string> = {
   Outro: "🐾",
 };
 
-const PETS_MOCK: Pet[] = [
-  // { id: 1, nome: "Bolinha", especie: "Cachorro", raca: "Golden Retriever", idade: "3 anos", peso: "28kg", sexo: "M", saudavel: true },
-  // { id: 2, nome: "Mimi", especie: "Gato", raca: "Siamês", idade: "1 ano", peso: "4kg", sexo: "F", saudavel: false },
-  // { id: 3, nome: "Fofão", especie: "Coelho", raca: "Mini Rex", idade: "2 anos", peso: "2kg", sexo: "M", saudavel: true },
-];
+function calcularIdade(dataNascimento: string): string {
+  const [dia, mes, ano] = dataNascimento.split("/").map(Number);
+  const nascimento = new Date(ano, mes - 1, dia);
+  const hoje = new Date();
+  const anos = hoje.getFullYear() - nascimento.getFullYear();
+  return anos <= 0 ? "< 1 ano" : `${anos} ${anos === 1 ? "ano" : "anos"}`;
+}
 
 export default function PetsScreen() {
   const { completeStep } = useSession();
+  const { data: pets = [], isLoading, isError, refetch } = usePets();
   const [loading, setLoading] = useState(false);
-  const [pets] = useState<Pet[]>(PETS_MOCK);
 
   async function handleConcluir() {
     setLoading(true);
@@ -50,6 +43,28 @@ export default function PetsScreen() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-surface">
+        <ActivityIndicator color="#E8A838" size="large" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View className="flex-1 items-center justify-center bg-surface gap-3 px-8">
+        <Ionicons name="cloud-offline-outline" size={48} color="#9A9585" />
+        <Text className="text-muted text-sm text-center">
+          Erro ao carregar pets. Tente novamente.
+        </Text>
+        <TouchableOpacity onPress={() => refetch()}>
+          <Text className="text-amber font-semibold">Tentar novamente</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   if (pets.length === 0) {
@@ -78,25 +93,15 @@ export default function PetsScreen() {
               <Text className="text-xs text-muted">
                 {item.sexo === "M" ? "♂" : "♀"}
               </Text>
-              {item.saudavel ? (
-                <View
-                  style={{ backgroundColor: "#A8C5A022", borderColor: "#A8C5A0" }}
-                  className="px-2 py-0.5 rounded-full border"
-                >
-                  <Text style={{ color: "#2D4A3E" }} className="text-xs font-medium">
-                    Em dia ✓
-                  </Text>
-                </View>
-              ) : (
-                <View
-                  style={{ backgroundColor: "#E8A83822", borderColor: "#E8A838" }}
-                  className="px-2 py-0.5 rounded-full border"
-                >
-                  <Text style={{ color: "#B07A0A" }} className="text-xs font-medium">
-                    Atenção ⚠
-                  </Text>
-                </View>
-              )}
+              {/* TODO: status de saúde ainda não vem da API — placeholder fixo */}
+              <View
+                style={{ backgroundColor: "#A8C5A022", borderColor: "#A8C5A0" }}
+                className="px-2 py-0.5 rounded-full border"
+              >
+                <Text style={{ color: "#2D4A3E" }} className="text-xs font-medium">
+                  Em dia ✓
+                </Text>
+              </View>
             </View>
 
             <Text className="text-xs text-muted mt-0.5">
@@ -106,7 +111,9 @@ export default function PetsScreen() {
             <View className="flex-row gap-3 mt-2">
               <View className="flex-row items-center gap-1">
                 <Ionicons name="calendar-outline" size={12} color="#9A9585" />
-                <Text className="text-xs text-muted">{item.idade}</Text>
+                <Text className="text-xs text-muted">
+                  {calcularIdade(item.dataNascimento)}
+                </Text>
               </View>
               <View className="flex-row items-center gap-1">
                 <Ionicons name="barbell-outline" size={12} color="#9A9585" />
@@ -145,6 +152,7 @@ export default function PetsScreen() {
         style={{ backgroundColor: "#F5F0E8", paddingTop: 12, borderTopWidth: 1, borderTopColor: "#e0ddd5" }}
       >
         <TouchableOpacity
+          onPress={() => router.push("/add-pet" as any)}
           activeOpacity={0.85}
           style={{ borderColor: "#E8A838" }}
           className="items-center justify-center py-3 rounded-2xl border"

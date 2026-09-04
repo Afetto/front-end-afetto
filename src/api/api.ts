@@ -1,4 +1,8 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { router } from "expo-router";
+
+const TOKEN_KEY = "@afetto:token";
 
 const FALLBACK_API_URL = "http://localhost:3000";
 
@@ -20,19 +24,23 @@ export const api = axios.create({
 });
 
 // Interceptor para adicionar token JWT automaticamente
-api.interceptors.request.use((config) => {
-    // Se estiver usando AsyncStorage para o token:
-    // const token = await AsyncStorage.getItem("@afetto:token");
-    // if (token) config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(async (config) => {
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
 });
 
 // Interceptor para tratar erros globalmente
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
         if (error.response?.status === 401) {
-            // Token expirado — redirecionar para login
+            // Token expirado — limpa credenciais e redireciona para login
+            await AsyncStorage.removeItem(TOKEN_KEY);
+            delete api.defaults.headers.common["Authorization"];
+            router.replace("/login");
         }
         return Promise.reject(error);
     }

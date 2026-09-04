@@ -6,7 +6,7 @@ export const CompleteProfileSchema = z.object({
     tipoMoradia: z.enum(['casa', 'apartamento'], {
         errorMap: () => ({ message: 'Selecione o tipo de moradia' }),
     }),
-    telaTroteção: z.enum(['sim', 'nao'], {
+    telaProtecao: z.enum(['sim', 'nao'], {
         errorMap: () => ({ message: 'Selecione uma opção' }),
     }),
     quantidadePets: z

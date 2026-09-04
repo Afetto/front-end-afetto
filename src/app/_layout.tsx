@@ -53,23 +53,23 @@ function RootLayoutNav() {
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="login" options={{ title: "" }} />
-            <Stack.Screen name="register" options={{ title: "" }} />
-            <Stack.Screen name="complete-profile" options={{ title: "" }} />
-            <Stack.Screen name="profile" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="register-success"
-              options={{
-                headerShown: false,
-                presentation: "transparentModal",
-                animation: "fade",
-              }}
-            />
-          </Stack>
-        </SessionProvider>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ title: "" }} />
+          <Stack.Screen name="register" options={{ title: "" }} />
+          <Stack.Screen name="complete-profile" options={{ title: "" }} />
+          <Stack.Screen name="profile" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="register-success"
+            options={{
+              headerShown: false,
+              presentation: "transparentModal",
+              animation: "fade",
+            }}
+          />
+        </Stack>
+      </SessionProvider>
     </QueryClientProvider>
   );
 }

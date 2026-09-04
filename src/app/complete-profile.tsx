@@ -5,14 +5,14 @@ import {
   CompleteProfileInput,
   CompleteProfileSchema,
 } from "@/schemas/complete.profile.schema";
-import { updateUser } from "@/services/auth.service";
+import { completeProfile as completeProfileService } from "@/services/auth.service";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { maskCEP } from "@/utils/masks";
+import { maskCEP, maskDate } from "@/utils/masks";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -37,7 +37,7 @@ export default function CompleteProfileScreen() {
     defaultValues: {
       birthDate: "",
       tipoMoradia: undefined,
-      telaTroteção: undefined,
+      telaProtecao: undefined,
       quantidadePets: "1",
       cep: "",
       logradouro: "",
@@ -80,9 +80,19 @@ export default function CompleteProfileScreen() {
   // ─── useMutation ─────────────────────────────────────────────────────────
   const { mutate: submitProfile, isPending } = useMutation({
     mutationFn: (data: CompleteProfileInput) =>
-      updateUser("", {
-        name: undefined,
-        email: undefined,
+      completeProfileService({
+        tipoMoradia: data.tipoMoradia,
+        telaProtecao: data.telaProtecao,
+        quantidadePets: Number(data.quantidadePets),
+        endereco: {
+          cep: data.cep,
+          logradouro: data.logradouro,
+          numero: data.numero,
+          complemento: data.complemento,
+          bairro: data.bairro,
+          cidade: data.cidade,
+          estado: data.estado,
+        },
       }),
     onSuccess: async (result) => {
       if (!result.ok) {
@@ -132,6 +142,18 @@ export default function CompleteProfileScreen() {
                 Informações pessoais
               </Text>
             </View>
+
+            <MyInput
+              name="birthDate"
+              control={control}
+              label="Data de nascimento"
+              placeholder="DD/MM/AAAA"
+              keyboardType="numeric"
+              onChangeTransform={maskDate}
+              rightIcon={
+                <Ionicons name="calendar-outline" size={18} color="#9E9589" />
+              }
+            />
           </View>
 
           {/* ─── SEÇÃO: Sobre seu lar ──────────────────────────────────── */}
@@ -163,14 +185,14 @@ export default function CompleteProfileScreen() {
 
             {/* Tela de proteção */}
             <Controller
-              name="telaTroteção"
+              name="telaProtecao"
               control={control}
               render={({ field: { value, onChange } }) => (
                 <SelectField
                   label="Possui tela de proteção?"
                   value={value}
                   onChange={onChange}
-                  error={errors.telaTroteção?.message}
+                  error={errors.telaProtecao?.message}
                   options={[
                     { label: "✅  Sim", value: "sim" },
                     { label: "❌  Não", value: "nao" },

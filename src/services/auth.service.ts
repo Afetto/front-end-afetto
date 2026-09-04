@@ -149,3 +149,37 @@ export async function updatePassword(
 export async function logout(): Promise<void> {
   delete api.defaults.headers.common["Authorization"];
 }
+
+/**
+ * Envia os dados adicionais do perfil (moradia, pets e endereço).
+ * PUT /usuarios/me/perfil-completo
+ */
+export type CompleteProfilePayload = {
+  tipoMoradia: "casa" | "apartamento";
+  telaProtecao: "sim" | "nao";
+  quantidadePets: number;
+  endereco: {
+    cep: string;
+    logradouro: string;
+    numero: string;
+    complemento?: string;
+    bairro: string;
+    cidade: string;
+    estado: string;
+  };
+};
+
+export type CompleteProfileResult =
+  | { ok: true }
+  | { ok: false; error: "unknown" };
+
+export async function completeProfile(
+  payload: CompleteProfilePayload
+): Promise<CompleteProfileResult> {
+  try {
+    await api.put("/usuarios/me/perfil-completo", payload);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "unknown" };
+  }
+}
