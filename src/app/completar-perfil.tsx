@@ -31,6 +31,7 @@ export default function TelaCompletarPerfil() {
     control,
     handleSubmit,
     setValue,
+    getValues,
     setError,
     formState: { errors },
   } = useForm<CompletarPerfilInput>({
@@ -236,7 +237,7 @@ export default function TelaCompletarPerfil() {
                   ? <ActivityIndicator size="small" color="#E8A838" />
                   : <Ionicons name="search-outline" size={18} color="#9E9589" />
               }
-              onBlur={(value: string) => buscarCep(value)}
+              onBlur={() => buscarCep(getValues("cep"))}
             />
 
             {/* Logradouro + Número */}

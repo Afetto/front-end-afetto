@@ -100,9 +100,9 @@ export default function TelaLogin() {
                 textContentType="password"
               />
 
-              {/* TODO - Alterar rota de "esquecer senha" */}
+              {/* TODO - criar a tela "/esqueci-senha" e remover o cast */}
               <TouchableOpacity
-                onPress={() => router.push("/esqueci-senha")}
+                onPress={() => router.push("/esqueci-senha" as any)}
                 className="self-end mt-1"
               >
                 <Text className="text-sm text-gray-700">

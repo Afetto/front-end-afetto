@@ -4,10 +4,10 @@ export const CompletarPerfilSchema = z.object({
     // Informações adicionais
     birthDate: z.string().min(10, 'Data inválida'),
     tipoMoradia: z.enum(['casa', 'apartamento'], {
-        errorMap: () => ({ message: 'Selecione o tipo de moradia' }),
+        message: 'Selecione o tipo de moradia',
     }),
     telaProtecao: z.enum(['sim', 'nao'], {
-        errorMap: () => ({ message: 'Selecione uma opção' }),
+        message: 'Selecione uma opção',
     }),
     quantidadePets: z
         .string()
