@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-export default function RegisterSuccessScreen() {
+export default function TelaCadastroSucesso() {
   const scale = useSharedValue(0.7);
   const opacity = useSharedValue(0);
 

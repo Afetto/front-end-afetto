@@ -1,4 +1,4 @@
-import { useSession } from "@/context/SessionContext";
+import { useSessao } from "@/context/SessaoContext";
 import { Redirect } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 
@@ -6,10 +6,10 @@ type Props = {
   children: React.ReactNode;
 };
 
-export function ProtectedRoute({ children }: Props) {
-  const { session, isLoading } = useSession();
+export function RotaProtegida({ children }: Props) {
+  const { sessao, carregando } = useSessao();
 
-  if (isLoading) {
+  if (carregando) {
     return (
       <View className="flex-1 items-center justify-center bg-surface">
         <ActivityIndicator color="#E8A838" size="large" />
@@ -17,7 +17,7 @@ export function ProtectedRoute({ children }: Props) {
     );
   }
 
-  if (!session) {
+  if (!sessao) {
     return <Redirect href="/login" />;
   }
 

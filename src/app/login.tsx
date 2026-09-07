@@ -1,7 +1,7 @@
-import MyInput from "@/components/MyInput";
+import CampoTexto from "@/components/CampoTexto";
 import { LoginInput, LoginSchema } from "@/schemas/login.schema";
-import { authenticate } from "@/services/auth.service";
-import { useSession } from "@/context/SessionContext";
+import { autenticar } from "@/services/autenticacao.service";
+import { useSessao } from "@/context/SessaoContext";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -16,8 +16,8 @@ import {
   View,
 } from "react-native";
 
-export default function LoginScreen() {
-  const { login, loginDev } = useSession();
+export default function TelaLogin() {
+  const { entrar, entrarComoDevs } = useSessao();
 
   const {
     control,
@@ -31,23 +31,23 @@ export default function LoginScreen() {
   });
 
   // ─── useMutation ─────────────────────────────────────────────────────────
-  const { mutate: submitLogin, isPending } = useMutation({
+  const { mutate: enviarLogin, isPending: enviando } = useMutation({
     mutationFn: ({ email, password }: LoginInput) =>
-      authenticate(email, password),
-    onSuccess: async (result) => {
-      if (!result.ok) {
+      autenticar(email, password),
+    onSuccess: async (resultado) => {
+      if (!resultado.ok) {
         setError("root", { message: "E-mail ou senha incorretos" });
         return;
       }
 
       // Persiste sessão via contexto (dados já vieram da API)
-      await login(
+      await entrar(
         {
-          id: result.user.id,
-          email: result.user.email,
-          name: result.user.name,
+          id: resultado.user.id,
+          email: resultado.user.email,
+          name: resultado.user.name,
         },
-        result.token
+        resultado.token
       );
       router.replace("/(tabs)");
     },
@@ -56,8 +56,8 @@ export default function LoginScreen() {
     },
   });
 
-  function doLogin(data: LoginInput) {
-    submitLogin(data);
+  function fazerLogin(data: LoginInput) {
+    enviarLogin(data);
   }
 
   return (
@@ -79,7 +79,7 @@ export default function LoginScreen() {
 
           {/* Campos */}
           <View className="gap-5">
-            <MyInput
+            <CampoTexto
               name="email"
               control={control}
               label="Email"
@@ -90,7 +90,7 @@ export default function LoginScreen() {
             />
 
             <View className="gap-1">
-              <MyInput
+              <CampoTexto
                 name="password"
                 control={control}
                 label="Senha:"
@@ -102,7 +102,7 @@ export default function LoginScreen() {
 
               {/* TODO - Alterar rota de "esquecer senha" */}
               <TouchableOpacity
-                onPress={() => router.push("/forgot-password")}
+                onPress={() => router.push("/esqueci-senha")}
                 className="self-end mt-1"
               >
                 <Text className="text-sm text-gray-700">
@@ -121,16 +121,16 @@ export default function LoginScreen() {
 
           <View className="flex-1" />
 
-          {/* Botão entrar — isPending substitui isSubmitting */}
+          {/* Botão entrar — enviando substitui isSubmitting */}
           <TouchableOpacity
-            onPress={handleSubmit(doLogin)}
-            disabled={isPending}
+            onPress={handleSubmit(fazerLogin)}
+            disabled={enviando}
             activeOpacity={0.85}
             className={`items-center justify-center py-4 rounded-2xl ${
-              isPending ? "bg-primary/70" : "bg-primary"
+              enviando ? "bg-primary/70" : "bg-primary"
             }`}
           >
-            {isPending ? (
+            {enviando ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text className="text-white text-lg font-semibold">Entrar</Text>
@@ -140,7 +140,7 @@ export default function LoginScreen() {
           {__DEV__ && (
             <TouchableOpacity
               onPress={async () => {
-                await loginDev();
+                await entrarComoDevs();
                 router.replace("/(tabs)");
               }}
               activeOpacity={0.7}

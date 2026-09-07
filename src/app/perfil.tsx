@@ -1,9 +1,9 @@
-import { useSession } from "@/context/SessionContext";
+import { useSessao } from "@/context/SessaoContext";
 import {
-  getUserByEmail,
-  updatePassword,
-  updateUser,
-} from "@/services/auth.service";
+  atualizarSenha,
+  atualizarUsuario,
+  buscarUsuarioPorEmail,
+} from "@/services/autenticacao.service";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -50,166 +50,166 @@ const SHADOW = {
   elevation: 2,
 };
 
-export default function ProfileScreen() {
-  const { session, logout, updateProfile } = useSession();
+export default function TelaPerfil() {
+  const { sessao, sair, atualizarPerfil } = useSessao();
 
   // Dados do formulário
-  const [name, setName] = useState("");
+  const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [cpf, setCpf] = useState("");
 
   // Valores originais para detectar mudanças
-  const [original, setOriginal] = useState({ name: "", email: "", phone: "" });
+  const [originais, setOriginais] = useState({ nome: "", email: "", telefone: "" });
 
   // UI
-  const [whatsappNotif, setWhatsappNotif] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
+  const [notifWhatsapp, setNotifWhatsapp] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [erroSalvar, setErroSalvar] = useState("");
 
   // Modal de senha
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [currentPwd, setCurrentPwd] = useState("");
-  const [newPwd, setNewPwd] = useState("");
-  const [confirmPwd, setConfirmPwd] = useState("");
-  const [pwdError, setPwdError] = useState("");
-  const [isSavingPwd, setIsSavingPwd] = useState(false);
+  const [mostrarModalSenha, setMostrarModalSenha] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [erroSenha, setErroSenha] = useState("");
+  const [salvandoSenha, setSalvandoSenha] = useState(false);
 
   // Toast
   const toastOpacity = useSharedValue(0);
   const toastStyle = useAnimatedStyle(() => ({ opacity: toastOpacity.value }));
 
-  const isDirty =
-    name !== original.name ||
-    email !== original.email ||
-    phone !== original.phone;
+  const temAlteracoes =
+    nome !== originais.nome ||
+    email !== originais.email ||
+    telefone !== originais.telefone;
 
-  const loadUser = useCallback(async () => {
-    if (!session?.email) return;
-    const user = await getUserByEmail(session.email);
-    if (!user) return;
-    setName(user.name);
-    setEmail(user.email);
-    setPhone(user.phone);
-    setCpf(user.cpf);
-    setOriginal({ name: user.name, email: user.email, phone: user.phone });
-  }, [session?.email]);
+  const carregarUsuario = useCallback(async () => {
+    if (!sessao?.email) return;
+    const usuario = await buscarUsuarioPorEmail(sessao.email);
+    if (!usuario) return;
+    setNome(usuario.name);
+    setEmail(usuario.email);
+    setTelefone(usuario.phone);
+    setCpf(usuario.cpf);
+    setOriginais({ nome: usuario.name, email: usuario.email, telefone: usuario.phone });
+  }, [sessao?.email]);
 
   useEffect(() => {
-    loadUser();
-  }, [loadUser]);
+    carregarUsuario();
+  }, [carregarUsuario]);
 
-  const showToast = () => {
+  const exibirToast = () => {
     toastOpacity.value = withTiming(1, { duration: 200 });
     setTimeout(() => {
       toastOpacity.value = withTiming(0, { duration: 400 });
     }, 2500);
   };
 
-  const handleSave = async () => {
-    if (!session?.email) return;
+  const aoSalvar = async () => {
+    if (!sessao?.email) return;
 
-    const trimmedName = name.trim();
-    const trimmedEmail = email.trim().toLowerCase();
-    const trimmedPhone = phone.trim();
+    const nomeLimpo = nome.trim();
+    const emailLimpo = email.trim().toLowerCase();
+    const telefoneLimpo = telefone.trim();
 
-    if (!trimmedName) { setSaveError("Nome não pode estar vazio."); return; }
-    if (!trimmedEmail) { setSaveError("E-mail não pode estar vazio."); return; }
+    if (!nomeLimpo) { setErroSalvar("Nome não pode estar vazio."); return; }
+    if (!emailLimpo) { setErroSalvar("E-mail não pode estar vazio."); return; }
 
-    setIsSaving(true);
-    setSaveError("");
+    setSalvando(true);
+    setErroSalvar("");
 
-    const result = await updateUser(session.email, {
-      name: trimmedName,
-      email: trimmedEmail,
-      phone: trimmedPhone,
+    const resultado = await atualizarUsuario(sessao.email, {
+      name: nomeLimpo,
+      email: emailLimpo,
+      phone: telefoneLimpo,
     });
 
-    if (!result.ok) {
-      setSaveError(
-        result.error === "email_taken"
+    if (!resultado.ok) {
+      setErroSalvar(
+        resultado.error === "email_taken"
           ? "Este e-mail já está em uso."
           : "Erro ao salvar. Tente novamente."
       );
-      setIsSaving(false);
+      setSalvando(false);
       return;
     }
 
     // Sincroniza sessão em memória se nome ou email mudaram
-    const sessionUpdates: { name?: string; email?: string } = {};
-    if (trimmedName !== original.name) sessionUpdates.name = trimmedName;
-    if (result.newEmail !== original.email) sessionUpdates.email = result.newEmail;
-    if (Object.keys(sessionUpdates).length > 0) {
-      await updateProfile(sessionUpdates);
+    const atualizacoesSessao: { name?: string; email?: string } = {};
+    if (nomeLimpo !== originais.nome) atualizacoesSessao.name = nomeLimpo;
+    if (resultado.newEmail !== originais.email) atualizacoesSessao.email = resultado.newEmail;
+    if (Object.keys(atualizacoesSessao).length > 0) {
+      await atualizarPerfil(atualizacoesSessao);
     }
 
-    setName(trimmedName);
-    setEmail(result.newEmail);
-    setPhone(trimmedPhone);
-    setOriginal({ name: trimmedName, email: result.newEmail, phone: trimmedPhone });
-    setIsSaving(false);
-    showToast();
+    setNome(nomeLimpo);
+    setEmail(resultado.newEmail);
+    setTelefone(telefoneLimpo);
+    setOriginais({ nome: nomeLimpo, email: resultado.newEmail, telefone: telefoneLimpo });
+    setSalvando(false);
+    exibirToast();
   };
 
-  const handleLogout = () => {
+  const aoSair = () => {
     Alert.alert("Sair da conta", "Tem certeza que deseja sair?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Sair",
         style: "destructive",
         onPress: async () => {
-          await logout();
+          await sair();
           router.replace("/");
         },
       },
     ]);
   };
 
-  const handlePasswordChange = async () => {
-    setPwdError("");
-    if (!currentPwd || !newPwd || !confirmPwd) {
-      setPwdError("Preencha todos os campos.");
+  const aoAlterarSenha = async () => {
+    setErroSenha("");
+    if (!senhaAtual || !novaSenha || !confirmarSenha) {
+      setErroSenha("Preencha todos os campos.");
       return;
     }
-    if (newPwd.length < 6) {
-      setPwdError("Nova senha deve ter ao menos 6 caracteres.");
+    if (novaSenha.length < 6) {
+      setErroSenha("Nova senha deve ter ao menos 6 caracteres.");
       return;
     }
-    if (newPwd !== confirmPwd) {
-      setPwdError("As senhas não coincidem.");
+    if (novaSenha !== confirmarSenha) {
+      setErroSenha("As senhas não coincidem.");
       return;
     }
 
-    if (!session?.email) return;
-    setIsSavingPwd(true);
-    const result = await updatePassword(session.email, currentPwd, newPwd);
-    setIsSavingPwd(false);
+    if (!sessao?.email) return;
+    setSalvandoSenha(true);
+    const resultado = await atualizarSenha(sessao.email, senhaAtual, novaSenha);
+    setSalvandoSenha(false);
 
-    if (!result.ok) {
-      setPwdError(
-        result.error === "wrong_password"
+    if (!resultado.ok) {
+      setErroSenha(
+        resultado.error === "wrong_password"
           ? "Senha atual incorreta."
           : "Erro ao alterar senha. Tente novamente."
       );
       return;
     }
 
-    setShowPasswordModal(false);
-    setCurrentPwd("");
-    setNewPwd("");
-    setConfirmPwd("");
-    showToast();
+    setMostrarModalSenha(false);
+    setSenhaAtual("");
+    setNovaSenha("");
+    setConfirmarSenha("");
+    exibirToast();
   };
 
-  const closePasswordModal = () => {
-    setShowPasswordModal(false);
-    setCurrentPwd("");
-    setNewPwd("");
-    setConfirmPwd("");
-    setPwdError("");
+  const fecharModalSenha = () => {
+    setMostrarModalSenha(false);
+    setSenhaAtual("");
+    setNovaSenha("");
+    setConfirmarSenha("");
+    setErroSenha("");
   };
 
-  const initial = name[0]?.toUpperCase() ?? session?.name[0]?.toUpperCase() ?? "U";
+  const inicial = nome[0]?.toUpperCase() ?? sessao?.name[0]?.toUpperCase() ?? "U";
 
   return (
     <View style={styles.root}>
@@ -219,7 +219,7 @@ export default function ProfileScreen() {
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: isDirty ? 120 : 48 }}
+          contentContainerStyle={{ paddingBottom: temAlteracoes ? 120 : 48 }}
         >
           {/* ── Header ── */}
           <View style={styles.header}>
@@ -238,7 +238,7 @@ export default function ProfileScreen() {
             {/* Avatar */}
             <View style={styles.avatarWrapper}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarInitial}>{initial}</Text>
+                <Text style={styles.avatarInitial}>{inicial}</Text>
               </View>
               <View style={styles.avatarEditBadge}>
                 <Ionicons name="create" size={11} color={C.white} />
@@ -246,7 +246,7 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={styles.userName}>
-              {name || session?.name || "Usuário"}
+              {nome || sessao?.name || "Usuário"}
             </Text>
             <Text style={styles.planLabel}>Plano Gratuito</Text>
           </View>
@@ -262,8 +262,8 @@ export default function ProfileScreen() {
                   <Text style={styles.fieldLabel}>Nome completo</Text>
                   <TextInput
                     style={styles.fieldInput}
-                    value={name}
-                    onChangeText={setName}
+                    value={nome}
+                    onChangeText={setNome}
                     autoCapitalize="words"
                     returnKeyType="next"
                     underlineColorAndroid="transparent"
@@ -289,8 +289,8 @@ export default function ProfileScreen() {
                   <Text style={styles.fieldLabel}>WhatsApp</Text>
                   <TextInput
                     style={styles.fieldInput}
-                    value={phone}
-                    onChangeText={setPhone}
+                    value={telefone}
+                    onChangeText={setTelefone}
                     keyboardType="phone-pad"
                     returnKeyType="done"
                     underlineColorAndroid="transparent"
@@ -308,8 +308,8 @@ export default function ProfileScreen() {
                 </View>
               </View>
 
-              {saveError !== "" && (
-                <Text style={styles.errorText}>{saveError}</Text>
+              {erroSalvar !== "" && (
+                <Text style={styles.errorText}>{erroSalvar}</Text>
               )}
             </View>
 
@@ -319,7 +319,7 @@ export default function ProfileScreen() {
               <View style={styles.card}>
                 <TouchableOpacity
                   style={[styles.fieldRow, styles.fieldBorder, styles.rowCentered]}
-                  onPress={() => setShowPasswordModal(true)}
+                  onPress={() => setMostrarModalSenha(true)}
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.fieldText, { flex: 1 }]}>Alterar senha</Text>
@@ -331,8 +331,8 @@ export default function ProfileScreen() {
                     Notificações WhatsApp
                   </Text>
                   <Switch
-                    value={whatsappNotif}
-                    onValueChange={setWhatsappNotif}
+                    value={notifWhatsapp}
+                    onValueChange={setNotifWhatsapp}
                     trackColor={{ false: "rgba(0,0,0,0.15)", true: C.amber }}
                     thumbColor={C.white}
                   />
@@ -353,7 +353,7 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={handleLogout}
+                  onPress={aoSair}
                   style={styles.logoutBtn}
                   activeOpacity={0.7}
                 >
@@ -367,16 +367,16 @@ export default function ProfileScreen() {
       </KeyboardAvoidingView>
 
       {/* ── Botão salvar fixo (aparece só quando há mudanças) ── */}
-      {isDirty && (
+      {temAlteracoes && (
         <View style={styles.saveContainer}>
           <TouchableOpacity
-            onPress={handleSave}
-            disabled={isSaving}
-            style={[styles.saveBtn, isSaving && { opacity: 0.7 }]}
+            onPress={aoSalvar}
+            disabled={salvando}
+            style={[styles.saveBtn, salvando && { opacity: 0.7 }]}
             activeOpacity={0.85}
           >
             <Text style={styles.saveBtnText}>
-              {isSaving ? "Salvando..." : "Salvar alterações"}
+              {salvando ? "Salvando..." : "Salvar alterações"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -391,15 +391,15 @@ export default function ProfileScreen() {
       {/* ── Modal alterar senha ── */}
       <Modal
         transparent
-        visible={showPasswordModal}
+        visible={mostrarModalSenha}
         animationType="slide"
-        onRequestClose={closePasswordModal}
+        onRequestClose={fecharModalSenha}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Alterar senha</Text>
-              <TouchableOpacity onPress={closePasswordModal} hitSlop={8}>
+              <TouchableOpacity onPress={fecharModalSenha} hitSlop={8}>
                 <Ionicons name="close" size={22} color={C.muted} />
               </TouchableOpacity>
             </View>
@@ -409,8 +409,8 @@ export default function ProfileScreen() {
                 <Text style={styles.fieldLabel}>Senha atual</Text>
                 <TextInput
                   style={styles.modalInput}
-                  value={currentPwd}
-                  onChangeText={setCurrentPwd}
+                  value={senhaAtual}
+                  onChangeText={setSenhaAtual}
                   secureTextEntry
                   placeholder="••••••••"
                   placeholderTextColor={C.muted}
@@ -423,8 +423,8 @@ export default function ProfileScreen() {
                 <Text style={styles.fieldLabel}>Nova senha</Text>
                 <TextInput
                   style={styles.modalInput}
-                  value={newPwd}
-                  onChangeText={setNewPwd}
+                  value={novaSenha}
+                  onChangeText={setNovaSenha}
                   secureTextEntry
                   placeholder="••••••••"
                   placeholderTextColor={C.muted}
@@ -437,29 +437,29 @@ export default function ProfileScreen() {
                 <Text style={styles.fieldLabel}>Confirmar nova senha</Text>
                 <TextInput
                   style={styles.modalInput}
-                  value={confirmPwd}
-                  onChangeText={setConfirmPwd}
+                  value={confirmarSenha}
+                  onChangeText={setConfirmarSenha}
                   secureTextEntry
                   placeholder="••••••••"
                   placeholderTextColor={C.muted}
                   underlineColorAndroid="transparent"
                   returnKeyType="done"
-                  onSubmitEditing={handlePasswordChange}
+                  onSubmitEditing={aoAlterarSenha}
                 />
               </View>
 
-              {pwdError !== "" && (
-                <Text style={styles.errorText}>{pwdError}</Text>
+              {erroSenha !== "" && (
+                <Text style={styles.errorText}>{erroSenha}</Text>
               )}
 
               <TouchableOpacity
-                onPress={handlePasswordChange}
-                disabled={isSavingPwd}
-                style={[styles.saveBtn, { marginTop: 4 }, isSavingPwd && { opacity: 0.7 }]}
+                onPress={aoAlterarSenha}
+                disabled={salvandoSenha}
+                style={[styles.saveBtn, { marginTop: 4 }, salvandoSenha && { opacity: 0.7 }]}
                 activeOpacity={0.85}
               >
                 <Text style={styles.saveBtnText}>
-                  {isSavingPwd ? "Confirmando..." : "Confirmar"}
+                  {salvandoSenha ? "Confirmando..." : "Confirmar"}
                 </Text>
               </TouchableOpacity>
             </View>

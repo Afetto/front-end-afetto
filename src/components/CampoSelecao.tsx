@@ -1,17 +1,17 @@
 import { Text, TouchableOpacity, View } from "react-native";
 
-type SelectOption = { label: string; value: string };
+type OpcaoSelecao = { label: string; value: string };
 
-type SelectFieldProps = {
+type CampoSelecaoProps = {
   label: string;
-  options: SelectOption[];
+  options: OpcaoSelecao[];
   value: string;
   onChange: (value: string) => void;
   error?: string;
 };
 
 
-export function SelectField({ label, options, value, onChange, error }: SelectFieldProps) {
+export function CampoSelecao({ label, options, value, onChange, error }: CampoSelecaoProps) {
   return (
     <View className="gap-1">
       <Text className="text-sm text-gray-700 font-medium">{label}</Text>

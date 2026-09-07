@@ -1,6 +1,6 @@
 import { View } from "react-native";
 
-export default function ConcentricCircles() {
+export default function CirculosConcentricos() {
   return (
     <View className="h-[200px] items-center overflow-hidden">
       <View className="absolute -bottom-[300px] w-[500px] h-[500px] rounded-full bg-[rgba(210,200,140,0.25)]" />

@@ -1,11 +1,11 @@
-import MyInput from "@/components/MyInput";
-import { SelectField } from "@/components/SelectField";
-import { useSession } from "@/context/SessionContext";
+import CampoTexto from "@/components/CampoTexto";
+import { CampoSelecao } from "@/components/CampoSelecao";
+import { useSessao } from "@/context/SessaoContext";
 import {
-  CompleteProfileInput,
-  CompleteProfileSchema,
-} from "@/schemas/complete.profile.schema";
-import { completeProfile as completeProfileService } from "@/services/auth.service";
+  CompletarPerfilInput,
+  CompletarPerfilSchema,
+} from "@/schemas/completar-perfil.schema";
+import { completarPerfil as servicoCompletarPerfil } from "@/services/autenticacao.service";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -23,9 +23,9 @@ import {
   View,
 } from "react-native";
 
-export default function CompleteProfileScreen() {
-  const { completeStep } = useSession();
-  const [cepLoading, setCepLoading] = useState(false);
+export default function TelaCompletarPerfil() {
+  const { concluirEtapa } = useSessao();
+  const [cepCarregando, setCepCarregando] = useState(false);
 
   const {
     control,
@@ -33,7 +33,7 @@ export default function CompleteProfileScreen() {
     setValue,
     setError,
     formState: { errors },
-  } = useForm<CompleteProfileInput>({
+  } = useForm<CompletarPerfilInput>({
     defaultValues: {
       birthDate: "",
       tipoMoradia: undefined,
@@ -47,7 +47,7 @@ export default function CompleteProfileScreen() {
       cidade: "",
       estado: "",
     },
-    resolver: zodResolver(CompleteProfileSchema),
+    resolver: zodResolver(CompletarPerfilSchema),
     mode: "onTouched",
   });
 
@@ -56,7 +56,7 @@ export default function CompleteProfileScreen() {
     const raw = cep.replace(/\D/g, "");
     if (raw.length !== 8) return;
 
-    setCepLoading(true);
+    setCepCarregando(true);
     try {
       const res = await fetch(`https://viacep.com.br/ws/${raw}/json/`);
       const data = await res.json();
@@ -73,14 +73,14 @@ export default function CompleteProfileScreen() {
     } catch {
       setError("cep", { message: "Erro ao buscar CEP" });
     } finally {
-      setCepLoading(false);
+      setCepCarregando(false);
     }
   }
 
   // ─── useMutation ─────────────────────────────────────────────────────────
-  const { mutate: submitProfile, isPending } = useMutation({
-    mutationFn: (data: CompleteProfileInput) =>
-      completeProfileService({
+  const { mutate: enviarPerfil, isPending: enviando } = useMutation({
+    mutationFn: (data: CompletarPerfilInput) =>
+      servicoCompletarPerfil({
         tipoMoradia: data.tipoMoradia,
         telaProtecao: data.telaProtecao,
         quantidadePets: Number(data.quantidadePets),
@@ -94,12 +94,12 @@ export default function CompleteProfileScreen() {
           estado: data.estado,
         },
       }),
-    onSuccess: async (result) => {
-      if (!result.ok) {
+    onSuccess: async (resultado) => {
+      if (!resultado.ok) {
         setError("root", { message: "Erro ao salvar perfil. Tente novamente." });
         return;
       }
-      await completeStep("profileCompleted");
+      await concluirEtapa("perfilCompleto");
       router.back();
     },
     onError: () => {
@@ -107,8 +107,8 @@ export default function CompleteProfileScreen() {
     },
   });
 
-  function doSubmit(data: CompleteProfileInput) {
-    submitProfile(data);
+  function aoEnviar(data: CompletarPerfilInput) {
+    enviarPerfil(data);
   }
 
   return (
@@ -143,7 +143,7 @@ export default function CompleteProfileScreen() {
               </Text>
             </View>
 
-            <MyInput
+            <CampoTexto
               name="birthDate"
               control={control}
               label="Data de nascimento"
@@ -170,7 +170,7 @@ export default function CompleteProfileScreen() {
               name="tipoMoradia"
               control={control}
               render={({ field: { value, onChange } }) => (
-                <SelectField
+                <CampoSelecao
                   label="Tipo de moradia"
                   value={value}
                   onChange={onChange}
@@ -188,7 +188,7 @@ export default function CompleteProfileScreen() {
               name="telaProtecao"
               control={control}
               render={({ field: { value, onChange } }) => (
-                <SelectField
+                <CampoSelecao
                   label="Possui tela de proteção?"
                   value={value}
                   onChange={onChange}
@@ -202,7 +202,7 @@ export default function CompleteProfileScreen() {
             />
 
             {/* Quantidade de pets */}
-            <MyInput
+            <CampoTexto
               name="quantidadePets"
               control={control}
               label="Quantidade de pets"
@@ -224,7 +224,7 @@ export default function CompleteProfileScreen() {
             </View>
 
             {/* CEP */}
-            <MyInput
+            <CampoTexto
               name="cep"
               control={control}
               label="CEP"
@@ -232,7 +232,7 @@ export default function CompleteProfileScreen() {
               keyboardType="numeric"
               onChangeTransform={maskCEP}
               rightIcon={
-                cepLoading
+                cepCarregando
                   ? <ActivityIndicator size="small" color="#E8A838" />
                   : <Ionicons name="search-outline" size={18} color="#9E9589" />
               }
@@ -242,7 +242,7 @@ export default function CompleteProfileScreen() {
             {/* Logradouro + Número */}
             <View className="flex-row gap-3">
               <View className="flex-1">
-                <MyInput
+                <CampoTexto
                   name="logradouro"
                   control={control}
                   label="Logradouro"
@@ -251,7 +251,7 @@ export default function CompleteProfileScreen() {
                 />
               </View>
               <View className="w-24">
-                <MyInput
+                <CampoTexto
                   name="numero"
                   control={control}
                   label="Número"
@@ -262,7 +262,7 @@ export default function CompleteProfileScreen() {
             </View>
 
             {/* Complemento */}
-            <MyInput
+            <CampoTexto
               name="complemento"
               control={control}
               label="Complemento (opcional)"
@@ -271,7 +271,7 @@ export default function CompleteProfileScreen() {
             />
 
             {/* Bairro */}
-            <MyInput
+            <CampoTexto
               name="bairro"
               control={control}
               label="Bairro"
@@ -282,7 +282,7 @@ export default function CompleteProfileScreen() {
             {/* Cidade + Estado */}
             <View className="flex-row gap-3">
               <View className="flex-1">
-                <MyInput
+                <CampoTexto
                   name="cidade"
                   control={control}
                   label="Cidade"
@@ -291,7 +291,7 @@ export default function CompleteProfileScreen() {
                 />
               </View>
               <View className="w-20">
-                <MyInput
+                <CampoTexto
                   name="estado"
                   control={control}
                   label="UF"
@@ -314,13 +314,13 @@ export default function CompleteProfileScreen() {
 
           {/* Botão concluir */}
           <TouchableOpacity
-            onPress={handleSubmit(doSubmit)}
-            disabled={isPending}
+            onPress={handleSubmit(aoEnviar)}
+            disabled={enviando}
             activeOpacity={0.85}
-            className={`items-center justify-center py-4 rounded-2xl mb-10 ${isPending ? "bg-primary/70" : "bg-primary"
+            className={`items-center justify-center py-4 rounded-2xl mb-10 ${enviando ? "bg-primary/70" : "bg-primary"
               }`}
           >
-            {isPending ? (
+            {enviando ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text className="text-white text-lg font-semibold">Concluir</Text>

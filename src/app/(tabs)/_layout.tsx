@@ -1,4 +1,4 @@
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { RotaProtegida } from "@/components/RotaProtegida";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
@@ -10,7 +10,7 @@ function TabIcon({ name, color }: { name: IoniconName; color: string }) {
 
 export default function TabLayout() {
   return (
-    <ProtectedRoute>
+    <RotaProtegida>
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -57,6 +57,6 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-    </ProtectedRoute>
+    </RotaProtegida>
   );
 }

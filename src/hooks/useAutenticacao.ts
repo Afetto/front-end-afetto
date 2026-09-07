@@ -1,34 +1,34 @@
 import { LoginInput } from "@/schemas/login.schema";
-import { RegisterInput } from "@/schemas/register.schema";
-import { authenticate, register, logout } from "@/services/auth.service";
+import { CadastroInput } from "@/schemas/cadastro.schema";
+import { autenticar, cadastrar, sair } from "@/services/autenticacao.service";
 import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 
 // ─── LOGIN ───────────────────────────────────────────────────────────────────
 
-export function useLogin() {
+export function useEntrar() {
     return useMutation({
         mutationFn: ({ email, password }: LoginInput) =>
-            authenticate(email, password),
+            autenticar(email, password),
         onSuccess: () => {
             router.replace("/(tabs)");
         },
     });
 }
 
-// ─── REGISTER ────────────────────────────────────────────────────────────────
+// ─── CADASTRO ────────────────────────────────────────────────────────────────
 
-export function useRegister() {
+export function useCadastrar() {
     return useMutation({
-        mutationFn: (data: RegisterInput) => register(data),
+        mutationFn: (data: CadastroInput) => cadastrar(data),
     });
 }
 
 // ─── LOGOUT ──────────────────────────────────────────────────────────────────
 
-export function useLogout() {
+export function useSair() {
     return useMutation({
-        mutationFn: logout,
+        mutationFn: sair,
         onSuccess: () => {
             router.replace("/login");
         },

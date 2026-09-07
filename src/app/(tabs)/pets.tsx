@@ -1,5 +1,5 @@
-import { EmptyPets } from "@/components/PetsEmptyState";
-import { useSession } from "@/context/SessionContext";
+import { PetsVazio } from "@/components/PetsVazio";
+import { useSessao } from "@/context/SessaoContext";
 import { usePets } from "@/hooks/usePets";
 import { Pet } from "@/schemas/pet.schema";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,22 +30,22 @@ function calcularIdade(dataNascimento: string): string {
   return anos <= 0 ? "< 1 ano" : `${anos} ${anos === 1 ? "ano" : "anos"}`;
 }
 
-export default function PetsScreen() {
-  const { completeStep } = useSession();
-  const { data: pets = [], isLoading, isError, refetch } = usePets();
-  const [loading, setLoading] = useState(false);
+export default function TelaPets() {
+  const { concluirEtapa } = useSessao();
+  const { data: pets = [], isLoading: carregando, isError: temErro, refetch } = usePets();
+  const [concluindo, setConcluindo] = useState(false);
 
   async function handleConcluir() {
-    setLoading(true);
+    setConcluindo(true);
     try {
-      await completeStep("petRegistered");
+      await concluirEtapa("petCadastrado");
       router.back();
     } finally {
-      setLoading(false);
+      setConcluindo(false);
     }
   }
 
-  if (isLoading) {
+  if (carregando) {
     return (
       <View className="flex-1 items-center justify-center bg-surface">
         <ActivityIndicator color="#E8A838" size="large" />
@@ -53,7 +53,7 @@ export default function PetsScreen() {
     );
   }
 
-  if (isError) {
+  if (temErro) {
     return (
       <View className="flex-1 items-center justify-center bg-surface gap-3 px-8">
         <Ionicons name="cloud-offline-outline" size={48} color="#9A9585" />
@@ -68,7 +68,7 @@ export default function PetsScreen() {
   }
 
   if (pets.length === 0) {
-    return <EmptyPets />;
+    return <PetsVazio />;
   }
 
   function renderCard({ item }: { item: Pet }) {
@@ -152,7 +152,7 @@ export default function PetsScreen() {
         style={{ backgroundColor: "#F5F0E8", paddingTop: 12, borderTopWidth: 1, borderTopColor: "#e0ddd5" }}
       >
         <TouchableOpacity
-          onPress={() => router.push("/add-pet" as any)}
+          onPress={() => router.push("/cadastrar-pet" as any)}
           activeOpacity={0.85}
           style={{ borderColor: "#E8A838" }}
           className="items-center justify-center py-3 rounded-2xl border"
@@ -167,12 +167,12 @@ export default function PetsScreen() {
 
         <TouchableOpacity
           onPress={handleConcluir}
-          disabled={loading}
+          disabled={concluindo}
           activeOpacity={0.85}
-          className={`items-center justify-center py-4 rounded-2xl ${loading ? "bg-primary/70" : "bg-primary"
+          className={`items-center justify-center py-4 rounded-2xl ${concluindo ? "bg-primary/70" : "bg-primary"
             }`}
         >
-          {loading ? (
+          {concluindo ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text className="text-white text-lg font-semibold">Concluir</Text>

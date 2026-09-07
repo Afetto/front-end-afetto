@@ -1,6 +1,6 @@
-import MyInput from "@/components/MyInput";
-import { RegisterInput, RegisterSchema } from "@/schemas/register.schema";
-import { register as registerService } from "@/services/auth.service"; // ← alias
+import CampoTexto from "@/components/CampoTexto";
+import { CadastroInput, CadastroSchema } from "@/schemas/cadastro.schema";
+import { cadastrar as servicoCadastrar } from "@/services/autenticacao.service"; // ← alias
 import { maskCPF, maskDate, maskPhone } from "@/utils/masks";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,8 +26,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-export default function RegisterScreen() {
-  const [showSuccess, setShowSuccess] = useState(false);
+export default function TelaCadastro() {
+  const [mostrarSucesso, setMostrarSucesso] = useState(false);
 
   const scale = useSharedValue(0.7);
   const opacity = useSharedValue(0);
@@ -38,25 +38,25 @@ export default function RegisterScreen() {
   }));
 
   useEffect(() => {
-    if (!showSuccess) return;
+    if (!mostrarSucesso) return;
 
     scale.value = withSpring(1, { damping: 14, mass: 0.8 });
     opacity.value = withTiming(1, { duration: 250 });
 
     const timer = setTimeout(() => {
-      setShowSuccess(false);
+      setMostrarSucesso(false);
       router.replace("/login");
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, [showSuccess]);
+  }, [mostrarSucesso]);
 
   const {
     control,
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<RegisterInput>({
+  } = useForm<CadastroInput>({
     defaultValues: {
       name: "",
       cpf: "",
@@ -66,16 +66,16 @@ export default function RegisterScreen() {
       birthDate: "",
       password: "",
     },
-    resolver: zodResolver(RegisterSchema),
+    resolver: zodResolver(CadastroSchema),
     mode: "onTouched",
   });
 
   // ─── useMutation ─────────────────────────────────────────────────────────
-  const { mutate: submitRegister, isPending } = useMutation({
-    mutationFn: (data: RegisterInput) => registerService(data),
-    onSuccess: (result) => {
-      if (!result.ok) {
-        if (result.error === "email_taken") {
+  const { mutate: enviarCadastro, isPending: enviando } = useMutation({
+    mutationFn: (data: CadastroInput) => servicoCadastrar(data),
+    onSuccess: (resultado) => {
+      if (!resultado.ok) {
+        if (resultado.error === "email_taken") {
           setError("email", { message: "Este e-mail já está cadastrado" });
         } else {
           setError("root", { message: "Erro ao criar conta. Tente novamente." });
@@ -85,15 +85,15 @@ export default function RegisterScreen() {
 
       scale.value = 0.7;
       opacity.value = 0;
-      setShowSuccess(true);
+      setMostrarSucesso(true);
     },
     onError: () => {
       setError("root", { message: "Erro de conexão. Tente novamente." });
     },
   });
 
-  function doRegister(data: RegisterInput) {
-    submitRegister(data);
+  function fazerCadastro(data: CadastroInput) {
+    enviarCadastro(data);
   }
 
   return (
@@ -113,7 +113,7 @@ export default function RegisterScreen() {
           </Text>
 
           <View className="gap-5">
-            <MyInput
+            <CampoTexto
               name="name"
               control={control}
               label="Nome"
@@ -123,7 +123,7 @@ export default function RegisterScreen() {
               autoCapitalize="words"
             />
 
-            <MyInput
+            <CampoTexto
               name="cpf"
               control={control}
               label="CPF"
@@ -132,7 +132,7 @@ export default function RegisterScreen() {
               onChangeTransform={maskCPF}
             />
 
-            <MyInput
+            <CampoTexto
               name="email"
               control={control}
               label="Email"
@@ -146,7 +146,7 @@ export default function RegisterScreen() {
               <Text className="text-sm text-gray-700 font-medium">Celular</Text>
               <View className="flex-row gap-3">
                 <View className="w-20">
-                  <MyInput
+                  <CampoTexto
                     name="phoneCode"
                     control={control}
                     keyboardType="phone-pad"
@@ -154,7 +154,7 @@ export default function RegisterScreen() {
                   />
                 </View>
                 <View className="flex-1">
-                  <MyInput
+                  <CampoTexto
                     name="phone"
                     control={control}
                     placeholder="99999-9999"
@@ -166,7 +166,7 @@ export default function RegisterScreen() {
               </View>
             </View>
 
-            <MyInput
+            <CampoTexto
               name="birthDate"
               control={control}
               label="Data de nascimento"
@@ -178,7 +178,7 @@ export default function RegisterScreen() {
               }
             />
 
-            <MyInput
+            <CampoTexto
               name="password"
               control={control}
               label="Senha:"
@@ -198,13 +198,13 @@ export default function RegisterScreen() {
           <View className="flex-1" />
 
           <TouchableOpacity
-            onPress={handleSubmit(doRegister)}
-            disabled={isPending}
+            onPress={handleSubmit(fazerCadastro)}
+            disabled={enviando}
             activeOpacity={0.85}
-            className={`items-center justify-center py-4 rounded-2xl ${isPending ? "bg-primary/70" : "bg-primary"
+            className={`items-center justify-center py-4 rounded-2xl ${enviando ? "bg-primary/70" : "bg-primary"
               }`}
           >
-            {isPending ? (
+            {enviando ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text className="text-white text-lg font-semibold">
@@ -217,7 +217,7 @@ export default function RegisterScreen() {
 
       <Modal
         transparent
-        visible={showSuccess}
+        visible={mostrarSucesso}
         animationType="fade"
         statusBarTranslucent
       >

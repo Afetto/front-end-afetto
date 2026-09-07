@@ -18,7 +18,7 @@ type Props<T extends FieldValues> = TextInputProps & {
   onChangeTransform?: (value: string) => string;
 };
 
-export default function MyInput<T extends FieldValues>({
+export default function CampoTexto<T extends FieldValues>({
   name,
   control,
   label,

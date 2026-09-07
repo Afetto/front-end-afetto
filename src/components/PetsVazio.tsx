@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export function EmptyPets() {
+export function PetsVazio() {
   return (
     <View className="flex-1 bg-surface">
       {/* Header */}

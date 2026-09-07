@@ -1,4 +1,4 @@
-import { useSession } from "@/context/SessionContext";
+import { useSessao } from "@/context/SessaoContext";
 import { useClinicas, useVincularClinica } from "@/hooks/useClinicas";
 import { Clinica } from "@/schemas/clinica.schema";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,12 +19,12 @@ const BADGE_COLORS: Record<string, string> = {
   "Cirurgia": "#2D4A3E",
 };
 
-export default function ClinicaScreen() {
-  const { session, completeStep } = useSession();
+export default function TelaClinica() {
+  const { sessao, concluirEtapa } = useSessao();
   const {
     data: clinicas = [],
-    isLoading,
-    isError,
+    isLoading: carregando,
+    isError: temErro,
     refetch,
   } = useClinicas();
   const { mutate: vincular, isPending: vinculando } = useVincularClinica();
@@ -35,13 +35,13 @@ export default function ClinicaScreen() {
   );
 
   function handleVincular(clinicaId: number) {
-    if (!session?.id) return;
+    if (!sessao?.id) return;
 
     vincular(
-      { clinicaId, usuarioId: session.id },
+      { clinicaId, usuarioId: sessao.id },
       {
         onSuccess: async () => {
-          await completeStep("clinicLinked");
+          await concluirEtapa("clinicaVinculada");
         },
       }
     );
@@ -106,7 +106,7 @@ export default function ClinicaScreen() {
     );
   }
 
-  if (isLoading) {
+  if (carregando) {
     return (
       <View className="flex-1 items-center justify-center bg-surface">
         <ActivityIndicator color="#E8A838" size="large" />
@@ -114,7 +114,7 @@ export default function ClinicaScreen() {
     );
   }
 
-  if (isError) {
+  if (temErro) {
     return (
       <View className="flex-1 items-center justify-center bg-surface gap-3 px-8">
         <Ionicons name="cloud-offline-outline" size={48} color="#9A9585" />

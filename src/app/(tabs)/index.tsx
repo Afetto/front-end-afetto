@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useSession } from "@/context/SessionContext";
+import { useSessao } from "@/context/SessaoContext";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -10,51 +10,51 @@ import {
   View,
 } from "react-native";
 
-export default function HomeScreen() {
-  const { session } = useSession();
-  const [hasPets, setHasPets] = useState(false);
+export default function TelaInicio() {
+  const { sessao } = useSessao();
+  const [temPets, setTemPets] = useState(false);
 
-  const setup = session?.setup ?? {
-    profileCompleted: false,
-    petRegistered: false,
-    clinicLinked: false,
+  const progresso = sessao?.progresso ?? {
+    perfilCompleto: false,
+    petCadastrado: false,
+    clinicaVinculada: false,
   };
 
   const checklist = [
     {
-      id: "register",
+      id: "cadastro",
       title: "Finalize seu cadastro!",
       subtitle: "Coloque suas infos adicionais!",
-      completed: setup.profileCompleted,
+      completed: progresso.perfilCompleto,
       optional: false,
-      route: "/complete-profile",
+      route: "/completar-perfil",
     },
     {
       id: "pet",
       title: "Cadastrar seu Pet",
       subtitle: "Nome, raça, idade e histórico",
-      completed: setup.petRegistered,
+      completed: progresso.petCadastrado,
       optional: false,
       route: "/(tabs)/pets",
     },
     {
-      id: "clinic",
+      id: "clinica",
       title: "Vincular sua clínica",
       subtitle: "Nunca perca uma vacina",
-      completed: setup.clinicLinked,
+      completed: progresso.clinicaVinculada,
       optional: true,
       route: "/(tabs)/clinica",
     },
   ];
 
-  const totalCount = checklist.length;
-  const completedCount = checklist.filter((i) => i.completed).length;
-  const currentStep = Math.min(completedCount + 1, totalCount);
-  const progress = currentStep / totalCount;
-  const nextIncomplete = checklist.find((i) => !i.completed);
-  const stepLabel = `Etapa ${currentStep} de ${totalCount} — ${nextIncomplete?.title}`;
+  const total = checklist.length;
+  const concluidos = checklist.filter((i) => i.completed).length;
+  const etapaAtual = Math.min(concluidos + 1, total);
+  const percentual = etapaAtual / total;
+  const proximoPendente = checklist.find((i) => !i.completed);
+  const rotuloEtapa = `Etapa ${etapaAtual} de ${total} — ${proximoPendente?.title}`;
 
-  const allMandatoryDone = checklist
+  const obrigatoriosConcluidos = checklist
     .filter((i) => !i.optional)
     .every((i) => i.completed);
 
@@ -72,13 +72,13 @@ export default function HomeScreen() {
               <Text className="text-amber">tto</Text>
             </Text>
             <Text className="text-3xl font-bold text-white mt-1">
-              Olá, {session?.name ?? "Usuário"}!
+              Olá, {sessao?.name ?? "Usuário"}!
             </Text>
           </View>
 
           {/* Avatar */}
           <TouchableOpacity
-            onPress={() => router.push("/profile")}
+            onPress={() => router.push("/perfil")}
             activeOpacity={0.7}
             className="w-12 h-12 rounded-full bg-white/20 items-center justify-center"
           >
@@ -88,19 +88,19 @@ export default function HomeScreen() {
 
         {/* Subtítulo */}
         <Text className="text-base text-amber underline mt-2">
-          {allMandatoryDone
+          {obrigatoriosConcluidos
             ? "Tudo certo! Seu pet está protegido."
             : "Vamos começar o perfil do seu pet!"}
         </Text>
 
         {/* Barra de progresso */}
-        {!allMandatoryDone && (
+        {!obrigatoriosConcluidos && (
           <View className="mt-5">
-            <Text className="text-xs text-white/70 mb-2">{stepLabel}</Text>
+            <Text className="text-xs text-white/70 mb-2">{rotuloEtapa}</Text>
             <View className="h-2 bg-white/20 rounded-full overflow-hidden">
               <View
                 className="h-2 bg-amber rounded-full"
-                style={{ width: `${progress * 100}%` }}
+                style={{ width: `${percentual * 100}%` }}
               />
             </View>
           </View>
@@ -120,15 +120,15 @@ export default function HomeScreen() {
             Seus <Text className="text-amber">Pets</Text>
           </Text>
           <Switch
-            value={hasPets}
-            onValueChange={setHasPets}
+            value={temPets}
+            onValueChange={setTemPets}
             trackColor={{ false: "rgba(255,255,255,0.25)", true: "#E8A838" }}
             thumbColor="#fff"
           />
         </TouchableOpacity>
 
         {/* Checklist — some apenas enquanto os passos obrigatórios não estiverem completos */}
-        {!allMandatoryDone && (
+        {!obrigatoriosConcluidos && (
         <View className="gap-3">
           <Text className="text-base font-semibold text-gray-800">
             Sua configuração

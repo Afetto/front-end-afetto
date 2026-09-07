@@ -15,4 +15,4 @@ export const VincularClinicaSchema = z.object({
 });
 
 export type Clinica = z.infer<typeof ClinicaSchema>;
-export type VincularClinicaInput = z.infer<typeof VincularClinicaSchema>;
+export type DadosVincularClinica = z.infer<typeof VincularClinicaSchema>;

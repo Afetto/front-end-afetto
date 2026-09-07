@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const CompleteProfileSchema = z.object({
+export const CompletarPerfilSchema = z.object({
     // Informações adicionais
     birthDate: z.string().min(10, 'Data inválida'),
     tipoMoradia: z.enum(['casa', 'apartamento'], {
@@ -24,4 +24,4 @@ export const CompleteProfileSchema = z.object({
     estado: z.string().length(2, 'Estado inválido'),
 });
 
-export type CompleteProfileInput = z.infer<typeof CompleteProfileSchema>;
+export type CompletarPerfilInput = z.infer<typeof CompletarPerfilSchema>;

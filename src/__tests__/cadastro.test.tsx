@@ -8,10 +8,10 @@ import {
 import type { ReactNode } from "react";
 
 import { api } from "@/api/api";
-import RegisterScreen from "@/app/register";
+import TelaCadastro from "@/app/cadastro";
 
 // Mocka o boundary HTTP: tudo abaixo de `api.post` continua rodando de verdade
-// (schema -> react-hook-form -> useMutation -> auth.service -> mapeamento do payload).
+// (schema -> react-hook-form -> useMutation -> autenticacao.service -> mapeamento do payload).
 jest.mock("@/api/api", () => ({
   api: { post: jest.fn() },
 }));
@@ -76,7 +76,7 @@ function fillForm() {
   );
 }
 
-describe("RegisterScreen — cadastro end-to-end (HTTP mockado)", () => {
+describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -84,7 +84,7 @@ describe("RegisterScreen — cadastro end-to-end (HTTP mockado)", () => {
   it("faz POST /usuarios com o payload mapeado e exibe o sucesso", async () => {
     postMock.mockResolvedValueOnce({ data: {} });
 
-    render(<RegisterScreen />, { wrapper });
+    render(<TelaCadastro />, { wrapper });
     fillForm();
     fireEvent.press(screen.getByText("Criar Conta"));
 
@@ -98,7 +98,7 @@ describe("RegisterScreen — cadastro end-to-end (HTTP mockado)", () => {
   it("mostra erro no campo e-mail quando a API responde 409", async () => {
     postMock.mockRejectedValueOnce({ response: { status: 409 } });
 
-    render(<RegisterScreen />, { wrapper });
+    render(<TelaCadastro />, { wrapper });
     fillForm();
     fireEvent.press(screen.getByText("Criar Conta"));
 
@@ -109,7 +109,7 @@ describe("RegisterScreen — cadastro end-to-end (HTTP mockado)", () => {
   });
 
   it("não chama a API quando o formulário é inválido", async () => {
-    render(<RegisterScreen />, { wrapper });
+    render(<TelaCadastro />, { wrapper });
 
     fireEvent.press(screen.getByText("Criar Conta"));
 
@@ -118,7 +118,7 @@ describe("RegisterScreen — cadastro end-to-end (HTTP mockado)", () => {
   });
 
   it("bloqueia o envio quando o CPF é inválido", async () => {
-    render(<RegisterScreen />, { wrapper });
+    render(<TelaCadastro />, { wrapper });
     fillForm();
     fireEvent.changeText(
       screen.getByPlaceholderText("000.000.000-00"),

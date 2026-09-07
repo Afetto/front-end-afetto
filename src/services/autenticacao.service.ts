@@ -1,12 +1,20 @@
 import { api } from "@/api/api";
-import { AuthResult, PasswordChangeResult, RegisterPayload, RegisterResult, StoredUser, UpdateUserPayload, UpdateUserResult } from "@/types/auth.types";
+import {
+  DadosAtualizacaoUsuario,
+  DadosCadastro,
+  ResultadoAtualizacaoUsuario,
+  ResultadoAutenticacao,
+  ResultadoCadastro,
+  ResultadoTrocaSenha,
+  UsuarioArmazenado,
+} from "@/types/autenticacao.types";
 
 
 /**
  * Cadastra um novo usuário.
  * POST /usuarios
  */
-export async function register(payload: RegisterPayload): Promise<RegisterResult> {
+export async function cadastrar(payload: DadosCadastro): Promise<ResultadoCadastro> {
   try {
     await api.post("/usuarios", {
       nome: payload.name.trim(),
@@ -30,10 +38,10 @@ export async function register(payload: RegisterPayload): Promise<RegisterResult
  * Valida credenciais e retorna o usuário + token JWT.
  * POST /auth/login
  */
-export async function authenticate(
+export async function autenticar(
   email: string,
   password: string
-): Promise<AuthResult> {
+): Promise<ResultadoAutenticacao> {
   try {
     const response = await api.post("/auth/login", {
       email: email.trim().toLowerCase(),
@@ -67,7 +75,7 @@ export async function authenticate(
  * Busca usuário pelo token JWT (sessão ativa).
  * GET /usuarios/me
  */
-export async function getUserByEmail(email: string): Promise<StoredUser | null> {
+export async function buscarUsuarioPorEmail(email: string): Promise<UsuarioArmazenado | null> {
   try {
     const response = await api.get("/usuarios/me");
     const u = response.data;
@@ -90,10 +98,10 @@ export async function getUserByEmail(email: string): Promise<StoredUser | null> 
  * Atualiza dados do perfil do usuário.
  * PUT /usuarios/{id}
  */
-export async function updateUser(
+export async function atualizarUsuario(
   currentEmail: string,
-  updates: UpdateUserPayload
-): Promise<UpdateUserResult> {
+  updates: DadosAtualizacaoUsuario
+): Promise<ResultadoAtualizacaoUsuario> {
   try {
     const response = await api.put("/usuarios/me", {
       nome: updates.name,
@@ -122,11 +130,11 @@ export async function updateUser(
  * Altera a senha do usuário.
  * POST /usuarios/me/senha
  */
-export async function updatePassword(
+export async function atualizarSenha(
   email: string,
   currentPassword: string,
   newPassword: string
-): Promise<PasswordChangeResult> {
+): Promise<ResultadoTrocaSenha> {
   try {
     await api.post("/usuarios/me/senha", {
       senhaAtual: currentPassword,
@@ -146,7 +154,7 @@ export async function updatePassword(
  * Encerra a sessão do usuário.
  * Remove o token do header global.
  */
-export async function logout(): Promise<void> {
+export async function sair(): Promise<void> {
   delete api.defaults.headers.common["Authorization"];
 }
 
@@ -154,7 +162,7 @@ export async function logout(): Promise<void> {
  * Envia os dados adicionais do perfil (moradia, pets e endereço).
  * PUT /usuarios/me/perfil-completo
  */
-export type CompleteProfilePayload = {
+export type DadosPerfilCompleto = {
   tipoMoradia: "casa" | "apartamento";
   telaProtecao: "sim" | "nao";
   quantidadePets: number;
@@ -169,13 +177,13 @@ export type CompleteProfilePayload = {
   };
 };
 
-export type CompleteProfileResult =
+export type ResultadoPerfilCompleto =
   | { ok: true }
   | { ok: false; error: "unknown" };
 
-export async function completeProfile(
-  payload: CompleteProfilePayload
-): Promise<CompleteProfileResult> {
+export async function completarPerfil(
+  payload: DadosPerfilCompleto
+): Promise<ResultadoPerfilCompleto> {
   try {
     await api.put("/usuarios/me/perfil-completo", payload);
     return { ok: true };

@@ -1,6 +1,6 @@
-// ─── TIPOS — contratos idênticos ao auth.service original ────────────────────
+// ─── TIPOS — contratos idênticos ao autenticacao.service original ─────────────
 
-export type RegisterPayload = {
+export type DadosCadastro = {
   name: string;
   email: string;
   cpf: string;
@@ -10,11 +10,11 @@ export type RegisterPayload = {
   password: string;
 };
 
-export type RegisterResult =
+export type ResultadoCadastro =
   | { ok: true }
   | { ok: false; error: "email_taken" | "unknown" };
 
-export type StoredUser = {
+export type UsuarioArmazenado = {
   id: number;
   name: string;
   email: string;
@@ -24,21 +24,21 @@ export type StoredUser = {
   birthDate: string;
 };
 
-export type AuthResult =
-  | { ok: true; user: StoredUser; token: string }
+export type ResultadoAutenticacao =
+  | { ok: true; user: UsuarioArmazenado; token: string }
   | { ok: false };
 
-export type UpdateUserPayload = {
+export type DadosAtualizacaoUsuario = {
   name?: string;
   email?: string;
   phoneCode?: string;
   phone?: string;
 };
 
-export type UpdateUserResult =
+export type ResultadoAtualizacaoUsuario =
   | { ok: true; newEmail: string }
   | { ok: false; error: "email_taken" | "not_found" | "unknown" };
 
-export type PasswordChangeResult =
+export type ResultadoTrocaSenha =
   | { ok: true }
   | { ok: false; error: "wrong_password" | "unknown" };

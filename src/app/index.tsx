@@ -1,12 +1,12 @@
-import ConcentricCircles from "@/components/ConcentricCircles";
-import { useSession } from "@/context/SessionContext";
+import CirculosConcentricos from "@/components/CirculosConcentricos";
+import { useSessao } from "@/context/SessaoContext";
 import { Redirect, router } from "expo-router";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 
-export default function OnboardingScreen() {
-  const { session, isLoading } = useSession();
+export default function TelaOnboarding() {
+  const { sessao, carregando } = useSessao();
 
-  if (isLoading) {
+  if (carregando) {
     return (
       <View className="flex-1 items-center justify-center bg-primary">
         <ActivityIndicator color="#E8A838" size="large" />
@@ -14,7 +14,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  if (session) {
+  if (sessao) {
     return <Redirect href="/(tabs)" />;
   }
 
@@ -38,7 +38,7 @@ export default function OnboardingScreen() {
         {/* Botões */}
         <View className="gap-4 mt-6">
           <TouchableOpacity
-            onPress={() => router.push("/register")}
+            onPress={() => router.push("/cadastro")}
             activeOpacity={0.85}
             className="bg-golden items-center justify-center py-4 rounded-2xl"
           >
@@ -57,7 +57,7 @@ export default function OnboardingScreen() {
         </View>
       </View>
 
-      <ConcentricCircles />
+      <CirculosConcentricos />
     </View>
   );
 }

@@ -1,4 +1,4 @@
-import { VincularClinicaInput } from "@/schemas/clinica.schema";
+import { DadosVincularClinica } from "@/schemas/clinica.schema";
 import { clinicaService } from "@/services/clinica.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 const QUERY_KEY = ["clinicas"];
@@ -18,7 +18,7 @@ export function useVincularClinica() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: VincularClinicaInput) => clinicaService.vincular(data),
+        mutationFn: (data: DadosVincularClinica) => clinicaService.vincular(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEY });
         },

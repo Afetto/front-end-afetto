@@ -1,5 +1,5 @@
 import { api } from "@/api/api";
-import { Clinica, VincularClinicaInput } from "@/schemas/clinica.schema";
+import { Clinica, DadosVincularClinica } from "@/schemas/clinica.schema";
 
 
 export const clinicaService = {
@@ -13,7 +13,7 @@ export const clinicaService = {
         return response.data;
     },
 
-    vincular: async (data: VincularClinicaInput): Promise<void> => {
+    vincular: async (data: DadosVincularClinica): Promise<void> => {
         await api.post("/clinicas/vincular", data);
     },
 

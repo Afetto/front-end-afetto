@@ -10,7 +10,7 @@ import "react-native-reanimated";
 import "../global.css";
 
 import { queryClient } from "@/api/queryClient";
-import { SessionProvider } from "@/context/SessionContext";
+import { SessaoProvider } from "@/context/SessaoContext";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -52,16 +52,16 @@ function RootLayoutNav() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SessionProvider>
+      <SessaoProvider>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ title: "" }} />
-          <Stack.Screen name="register" options={{ title: "" }} />
-          <Stack.Screen name="complete-profile" options={{ title: "" }} />
-          <Stack.Screen name="profile" options={{ headerShown: false }} />
+          <Stack.Screen name="cadastro" options={{ title: "" }} />
+          <Stack.Screen name="completar-perfil" options={{ title: "" }} />
+          <Stack.Screen name="perfil" options={{ headerShown: false }} />
           <Stack.Screen
-            name="register-success"
+            name="cadastro-sucesso"
             options={{
               headerShown: false,
               presentation: "transparentModal",
@@ -69,7 +69,7 @@ function RootLayoutNav() {
             }}
           />
         </Stack>
-      </SessionProvider>
+      </SessaoProvider>
     </QueryClientProvider>
   );
 }

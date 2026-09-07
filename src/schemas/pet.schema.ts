@@ -10,7 +10,7 @@ export const PetSchema = z.object({
     dataNascimento: z.string().min(1, "Informe a data de nascimento"),
 });
 
-export const CreatePetSchema = PetSchema.omit({ id: true });
+export const CadastroPetSchema = PetSchema.omit({ id: true });
 
 export type Pet = z.infer<typeof PetSchema>;
-export type CreatePetInput = z.infer<typeof CreatePetSchema>;
+export type DadosCadastroPet = z.infer<typeof CadastroPetSchema>;

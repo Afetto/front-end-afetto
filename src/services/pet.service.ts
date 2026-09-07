@@ -1,5 +1,5 @@
 import { api } from "@/api/api";
-import { CreatePetInput, Pet } from "@/schemas/pet.schema";
+import { DadosCadastroPet, Pet } from "@/schemas/pet.schema";
 
 export const petService = {
     getAll: async (): Promise<Pet[]> => {
@@ -12,12 +12,12 @@ export const petService = {
         return response.data;
     },
 
-    create: async (data: CreatePetInput): Promise<Pet> => {
+    create: async (data: DadosCadastroPet): Promise<Pet> => {
         const response = await api.post("/pets", data);
         return response.data;
     },
 
-    update: async (id: number, data: Partial<CreatePetInput>): Promise<Pet> => {
+    update: async (id: number, data: Partial<DadosCadastroPet>): Promise<Pet> => {
         const response = await api.put(`/pets/${id}`, data);
         return response.data;
     },
