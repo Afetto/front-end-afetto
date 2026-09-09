@@ -24,7 +24,7 @@ export default function TelaCadastroSucesso() {
     return () => clearTimeout(timer);
   }, []);
 
-  const cardStyle = useAnimatedStyle(() => ({
+  const estiloCartao = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
     opacity: opacity.value,
   }));
@@ -32,7 +32,7 @@ export default function TelaCadastroSucesso() {
   return (
     <View className="flex-1 bg-black/60 items-center justify-center px-8">
       <Animated.View
-        style={cardStyle}
+        style={estiloCartao}
         className="bg-white rounded-3xl p-8 items-center gap-5 w-full"
       >
         <View className="w-20 h-20 rounded-full bg-green-medium items-center justify-center">

@@ -1,7 +1,7 @@
 import CampoTexto from "@/components/CampoTexto";
 import { CadastroInput, CadastroSchema } from "@/schemas/cadastro.schema";
 import { cadastrar as servicoCadastrar } from "@/services/autenticacao.service"; // ← alias
-import { maskCPF, maskDate, maskPhone } from "@/utils/masks";
+import { mascararCPF, mascararData, mascararCelular } from "@/utils/mascaras";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -32,7 +32,7 @@ export default function TelaCadastro() {
   const scale = useSharedValue(0.7);
   const opacity = useSharedValue(0);
 
-  const cardStyle = useAnimatedStyle(() => ({
+  const estiloCartao = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
     opacity: opacity.value,
   }));
@@ -129,7 +129,7 @@ export default function TelaCadastro() {
               label="CPF"
               placeholder="000.000.000-00"
               keyboardType="numeric"
-              onChangeTransform={maskCPF}
+              transformarTexto={mascararCPF}
             />
 
             <CampoTexto
@@ -160,7 +160,7 @@ export default function TelaCadastro() {
                     placeholder="99999-9999"
                     keyboardType="phone-pad"
                     textContentType="telephoneNumber"
-                    onChangeTransform={maskPhone}
+                    transformarTexto={mascararCelular}
                   />
                 </View>
               </View>
@@ -172,8 +172,8 @@ export default function TelaCadastro() {
               label="Data de nascimento"
               placeholder="DD/MM/AAAA"
               keyboardType="numeric"
-              onChangeTransform={maskDate}
-              rightIcon={
+              transformarTexto={mascararData}
+              iconeDireita={
                 <Ionicons name="calendar-outline" size={18} color="#9E9589" />
               }
             />
@@ -183,7 +183,7 @@ export default function TelaCadastro() {
               control={control}
               label="Senha:"
               placeholder="••••••••"
-              secureText
+              campoSenha
               autoComplete="password-new"
               textContentType="newPassword"
             />
@@ -222,7 +222,7 @@ export default function TelaCadastro() {
         statusBarTranslucent
       >
         <View style={styles.overlay}>
-          <Animated.View style={[styles.card, cardStyle]}>
+          <Animated.View style={[styles.card, estiloCartao]}>
             <View className="w-20 h-20 rounded-full bg-green-medium items-center justify-center">
               <Ionicons name="checkmark" size={44} color="#fff" />
             </View>

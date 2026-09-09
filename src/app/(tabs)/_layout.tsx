@@ -2,13 +2,13 @@ import { RotaProtegida } from "@/components/RotaProtegida";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
-type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+type NomeIcone = React.ComponentProps<typeof Ionicons>["name"];
 
-function TabIcon({ name, color }: { name: IoniconName; color: string }) {
+function IconeAba({ name, color }: { name: NomeIcone; color: string }) {
   return <Ionicons name={name} size={24} color={color} />;
 }
 
-export default function TabLayout() {
+export default function LayoutAbas() {
   return (
     <RotaProtegida>
       <Tabs
@@ -27,15 +27,15 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: "Home",
-            tabBarIcon: ({ color }) => <TabIcon name="home" color={color} />,
+            title: "Início",
+            tabBarIcon: ({ color }) => <IconeAba name="home" color={color} />,
           }}
         />
         <Tabs.Screen
           name="pets"
           options={{
             title: "Pets",
-            tabBarIcon: ({ color }) => <TabIcon name="paw" color={color} />,
+            tabBarIcon: ({ color }) => <IconeAba name="paw" color={color} />,
           }}
         />
         <Tabs.Screen
@@ -43,7 +43,7 @@ export default function TabLayout() {
           options={{
             title: "Assistente",
             tabBarIcon: ({ color }) => (
-              <TabIcon name="chatbubble-ellipses" color={color} />
+              <IconeAba name="chatbubble-ellipses" color={color} />
             ),
           }}
         />
@@ -52,7 +52,7 @@ export default function TabLayout() {
           options={{
             title: "Clínica",
             tabBarIcon: ({ color }) => (
-              <TabIcon name="add-circle" color={color} />
+              <IconeAba name="add-circle" color={color} />
             ),
           }}
         />

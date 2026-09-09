@@ -4,7 +4,7 @@ import { autenticar, cadastrar, sair } from "@/services/autenticacao.service";
 import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 
-// ─── LOGIN ───────────────────────────────────────────────────────────────────
+// ─── ENTRAR ──────────────────────────────────────────────────────────────────
 
 export function useEntrar() {
     return useMutation({
@@ -24,7 +24,7 @@ export function useCadastrar() {
     });
 }
 
-// ─── LOGOUT ──────────────────────────────────────────────────────────────────
+// ─── SAIR ────────────────────────────────────────────────────────────────────
 
 export function useSair() {
     return useMutation({

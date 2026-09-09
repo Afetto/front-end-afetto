@@ -23,40 +23,40 @@ export default function TelaInicio() {
   const checklist = [
     {
       id: "cadastro",
-      title: "Finalize seu cadastro!",
-      subtitle: "Coloque suas infos adicionais!",
-      completed: progresso.perfilCompleto,
-      optional: false,
-      route: "/completar-perfil",
+      titulo: "Finalize seu cadastro!",
+      subtitulo: "Coloque suas infos adicionais!",
+      concluido: progresso.perfilCompleto,
+      opcional: false,
+      rota: "/completar-perfil",
     },
     {
       id: "pet",
-      title: "Cadastrar seu Pet",
-      subtitle: "Nome, raça, idade e histórico",
-      completed: progresso.petCadastrado,
-      optional: false,
-      route: "/(tabs)/pets",
+      titulo: "Cadastrar seu Pet",
+      subtitulo: "Nome, raça, idade e histórico",
+      concluido: progresso.petCadastrado,
+      opcional: false,
+      rota: "/(tabs)/pets",
     },
     {
       id: "clinica",
-      title: "Vincular sua clínica",
-      subtitle: "Nunca perca uma vacina",
-      completed: progresso.clinicaVinculada,
-      optional: true,
-      route: "/(tabs)/clinica",
+      titulo: "Vincular sua clínica",
+      subtitulo: "Nunca perca uma vacina",
+      concluido: progresso.clinicaVinculada,
+      opcional: true,
+      rota: "/(tabs)/clinica",
     },
   ];
 
   const total = checklist.length;
-  const concluidos = checklist.filter((i) => i.completed).length;
+  const concluidos = checklist.filter((i) => i.concluido).length;
   const etapaAtual = Math.min(concluidos + 1, total);
   const percentual = etapaAtual / total;
-  const proximoPendente = checklist.find((i) => !i.completed);
-  const rotuloEtapa = `Etapa ${etapaAtual} de ${total} — ${proximoPendente?.title}`;
+  const proximoPendente = checklist.find((i) => !i.concluido);
+  const rotuloEtapa = `Etapa ${etapaAtual} de ${total} — ${proximoPendente?.titulo}`;
 
   const obrigatoriosConcluidos = checklist
-    .filter((i) => !i.optional)
-    .every((i) => i.completed);
+    .filter((i) => !i.opcional)
+    .every((i) => i.concluido);
 
   return (
     <ScrollView
@@ -72,7 +72,7 @@ export default function TelaInicio() {
               <Text className="text-amber">tto</Text>
             </Text>
             <Text className="text-3xl font-bold text-white mt-1">
-              Olá, {sessao?.name ?? "Usuário"}!
+              Olá, {sessao?.nome ?? "Usuário"}!
             </Text>
           </View>
 
@@ -137,10 +137,10 @@ export default function TelaInicio() {
           {checklist.map((item) => (
             <TouchableOpacity
               key={item.id}
-              activeOpacity={item.completed ? 1 : 0.7}
+              activeOpacity={item.concluido ? 1 : 0.7}
               onPress={() => {
-                if (!item.completed && item.route) {
-                  router.push(item.route as any);
+                if (!item.concluido && item.rota) {
+                  router.push(item.rota as any);
                 }
               }}
               className="bg-white rounded-2xl px-4 py-4 flex-row items-center gap-4"
@@ -153,7 +153,7 @@ export default function TelaInicio() {
               }}
             >
               {/* Ícone de status */}
-              {item.completed ? (
+              {item.concluido ? (
                 <View className="w-8 h-8 rounded-full bg-green-medium items-center justify-center">
                   <Ionicons name="checkmark" size={16} color="#fff" />
                 </View>
@@ -167,21 +167,21 @@ export default function TelaInicio() {
               <View className="flex-1">
                 <View className="flex-row items-center gap-2 flex-wrap">
                   <Text className="text-sm font-semibold text-gray-900">
-                    {item.title}
+                    {item.titulo}
                   </Text>
-                  {item.optional && (
+                  {item.opcional && (
                     <View className="bg-golden-pale px-2 py-0.5 rounded-full">
                       <Text className="text-xs text-golden">opcional</Text>
                     </View>
                   )}
                 </View>
                 <Text className="text-xs text-muted mt-0.5">
-                  {item.subtitle}
+                  {item.subtitulo}
                 </Text>
               </View>
 
               {/* Seta */}
-              {!item.completed && (
+              {!item.concluido && (
                 <Ionicons name="chevron-forward" size={16} color="#9E9589" />
               )}
             </TouchableOpacity>

@@ -8,7 +8,7 @@ import {
 import type { ReactNode } from "react";
 
 import { api } from "@/api/api";
-import TelaCadastro from "@/app/cadastro";
+import TelaCadastro from "@/app/(auth)/cadastro";
 
 // Mocka o boundary HTTP: tudo abaixo de `api.post` continua rodando de verdade
 // (schema -> react-hook-form -> useMutation -> autenticacao.service -> mapeamento do payload).
@@ -16,7 +16,7 @@ jest.mock("@/api/api", () => ({
   api: { post: jest.fn() },
 }));
 
-const postMock = api.post as jest.Mock;
+const mockPost = api.post as jest.Mock;
 
 function wrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({
@@ -31,7 +31,7 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 // Valores "crus" digitados pelo usuário — as máscaras formatam no onChange.
-const RAW_INPUT = {
+const ENTRADA_CRUA = {
   name: "Fulano de Tal",
   cpf: "52998224725",
   email: "teste@afetto.com",
@@ -40,7 +40,7 @@ const RAW_INPUT = {
   password: "123456",
 };
 
-const EXPECTED_PAYLOAD = {
+const PAYLOAD_ESPERADO = {
   nome: "Fulano de Tal",
   email: "teste@afetto.com",
   cpf: "529.982.247-25",
@@ -49,30 +49,30 @@ const EXPECTED_PAYLOAD = {
   senha: "123456",
 };
 
-function fillForm() {
+function preencherFormulario() {
   fireEvent.changeText(
     screen.getByPlaceholderText("Jack Sullivan"),
-    RAW_INPUT.name
+    ENTRADA_CRUA.name
   );
   fireEvent.changeText(
     screen.getByPlaceholderText("000.000.000-00"),
-    RAW_INPUT.cpf
+    ENTRADA_CRUA.cpf
   );
   fireEvent.changeText(
     screen.getByPlaceholderText("exemplo@email.com"),
-    RAW_INPUT.email
+    ENTRADA_CRUA.email
   );
   fireEvent.changeText(
     screen.getByPlaceholderText("99999-9999"),
-    RAW_INPUT.phone
+    ENTRADA_CRUA.phone
   );
   fireEvent.changeText(
     screen.getByPlaceholderText("DD/MM/AAAA"),
-    RAW_INPUT.birthDate
+    ENTRADA_CRUA.birthDate
   );
   fireEvent.changeText(
     screen.getByPlaceholderText("••••••••"),
-    RAW_INPUT.password
+    ENTRADA_CRUA.password
   );
 }
 
@@ -82,24 +82,24 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
   });
 
   it("faz POST /usuarios com o payload mapeado e exibe o sucesso", async () => {
-    postMock.mockResolvedValueOnce({ data: {} });
+    mockPost.mockResolvedValueOnce({ data: {} });
 
     render(<TelaCadastro />, { wrapper });
-    fillForm();
+    preencherFormulario();
     fireEvent.press(screen.getByText("Criar Conta"));
 
     await waitFor(() => {
-      expect(postMock).toHaveBeenCalledWith("/usuarios", EXPECTED_PAYLOAD);
+      expect(mockPost).toHaveBeenCalledWith("/usuarios", PAYLOAD_ESPERADO);
     });
 
     expect(await screen.findByText("Conta criada!")).toBeTruthy();
   });
 
   it("mostra erro no campo e-mail quando a API responde 409", async () => {
-    postMock.mockRejectedValueOnce({ response: { status: 409 } });
+    mockPost.mockRejectedValueOnce({ response: { status: 409 } });
 
     render(<TelaCadastro />, { wrapper });
-    fillForm();
+    preencherFormulario();
     fireEvent.press(screen.getByText("Criar Conta"));
 
     expect(
@@ -114,12 +114,12 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
     fireEvent.press(screen.getByText("Criar Conta"));
 
     expect(await screen.findByText("Nome é obrigatório")).toBeTruthy();
-    expect(postMock).not.toHaveBeenCalled();
+    expect(mockPost).not.toHaveBeenCalled();
   });
 
   it("bloqueia o envio quando o CPF é inválido", async () => {
     render(<TelaCadastro />, { wrapper });
-    fillForm();
+    preencherFormulario();
     fireEvent.changeText(
       screen.getByPlaceholderText("000.000.000-00"),
       "11111111111"
@@ -127,6 +127,6 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
     fireEvent.press(screen.getByText("Criar Conta"));
 
     expect(await screen.findByText("CPF inválido")).toBeTruthy();
-    expect(postMock).not.toHaveBeenCalled();
+    expect(mockPost).not.toHaveBeenCalled();
   });
 });

@@ -4,57 +4,57 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const QUERY_KEY = ["pets"];
 
-// ─── READ ────────────────────────────────────────────────────────────────────
+// ─── LEITURA ─────────────────────────────────────────────────────────────────
 
 export function usePets() {
   return useQuery({
     queryKey: QUERY_KEY,
-    queryFn: petService.getAll,
+    queryFn: petService.listar,
   });
 }
 
 export function usePet(id: number) {
   return useQuery({
     queryKey: [...QUERY_KEY, id],
-    queryFn: () => petService.getById(id),
+    queryFn: () => petService.buscarPorId(id),
     enabled: !!id,
   });
 }
 
-// ─── CREATE ──────────────────────────────────────────────────────────────────
+// ─── CRIAÇÃO ─────────────────────────────────────────────────────────────────
 
-export function useCreatePet() {
+export function useCriarPet() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: DadosCadastroPet) => petService.create(data),
+    mutationFn: (data: DadosCadastroPet) => petService.criar(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },
   });
 }
 
-// ─── UPDATE ──────────────────────────────────────────────────────────────────
+// ─── ATUALIZAÇÃO ─────────────────────────────────────────────────────────────
 
-export function useUpdatePet() {
+export function useAtualizarPet() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<DadosCadastroPet> }) =>
-      petService.update(id, data),
+      petService.atualizar(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },
   });
 }
 
-// ─── DELETE ──────────────────────────────────────────────────────────────────
+// ─── REMOÇÃO ─────────────────────────────────────────────────────────────────
 
-export function useDeletePet() {
+export function useRemoverPet() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => petService.delete(id),
+    mutationFn: (id: number) => petService.remover(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },

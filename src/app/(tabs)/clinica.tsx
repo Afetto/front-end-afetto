@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 
-const BADGE_COLORS: Record<string, string> = {
+const CORES_ESPECIALIDADE: Record<string, string> = {
   "Clínica Geral": "#A8C5A0",
   "24h": "#E8A838",
   "Exóticos": "#9A9585",
@@ -34,7 +34,7 @@ export default function TelaClinica() {
     c.nome.toLowerCase().includes(busca.toLowerCase())
   );
 
-  function handleVincular(clinicaId: number) {
+  function aoVincular(clinicaId: number) {
     if (!sessao?.id) return;
 
     vincular(
@@ -47,9 +47,9 @@ export default function TelaClinica() {
     );
   }
 
-  function renderCard({ item }: { item: Clinica }) {
+  function renderizarCartao({ item }: { item: Clinica }) {
     const inicial = item.nome.charAt(0).toUpperCase();
-    const badgeColor = BADGE_COLORS[item.especialidade] ?? "#9A9585";
+    const corEspecialidade = CORES_ESPECIALIDADE[item.especialidade] ?? "#9A9585";
 
     return (
       <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
@@ -67,10 +67,10 @@ export default function TelaClinica() {
               {item.bairro}, {item.cidade}
             </Text>
             <View
-              style={{ backgroundColor: badgeColor + "22", borderColor: badgeColor }}
+              style={{ backgroundColor: corEspecialidade + "22", borderColor: corEspecialidade }}
               className="self-start mt-1 px-2 py-0.5 rounded-full border"
             >
-              <Text style={{ color: badgeColor }} className="text-xs font-medium">
+              <Text style={{ color: corEspecialidade }} className="text-xs font-medium">
                 {item.especialidade}
               </Text>
             </View>
@@ -87,7 +87,7 @@ export default function TelaClinica() {
             </View>
           ) : (
             <TouchableOpacity
-              onPress={() => handleVincular(item.id)}
+              onPress={() => aoVincular(item.id)}
               disabled={vinculando}
               style={{ borderColor: "#E8A838" }}
               className="py-2 rounded-xl border items-center"
@@ -153,7 +153,7 @@ export default function TelaClinica() {
       <FlatList
         data={clinicasFiltradas}
         keyExtractor={(item) => String(item.id)}
-        renderItem={renderCard}
+        renderItem={renderizarCartao}
         contentContainerStyle={{ padding: 16 }}
         ListEmptyComponent={
           <View className="items-center justify-center mt-16 gap-2">

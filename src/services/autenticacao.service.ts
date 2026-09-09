@@ -40,12 +40,12 @@ export async function cadastrar(payload: DadosCadastro): Promise<ResultadoCadast
  */
 export async function autenticar(
   email: string,
-  password: string
+  senha: string
 ): Promise<ResultadoAutenticacao> {
   try {
     const response = await api.post("/auth/login", {
       email: email.trim().toLowerCase(),
-      senha: password,
+      senha,
     });
 
     const { token, usuario } = response.data;
@@ -56,14 +56,14 @@ export async function autenticar(
     return {
       ok: true,
       token,
-      user: {
+      usuario: {
         id: usuario.id,
-        name: usuario.nome,
+        nome: usuario.nome,
         email: usuario.email,
         cpf: usuario.cpf,
-        phoneCode: "+55",
-        phone: usuario.telefone,
-        birthDate: usuario.dataNascimento,
+        codigoDDI: "+55",
+        telefone: usuario.telefone,
+        dataNascimento: usuario.dataNascimento,
       },
     };
   } catch {
@@ -82,12 +82,12 @@ export async function buscarUsuarioPorEmail(email: string): Promise<UsuarioArmaz
 
     return {
       id: u.id,
-      name: u.nome,
+      nome: u.nome,
       email: u.email,
       cpf: u.cpf,
-      phoneCode: "+55",
-      phone: u.telefone,
-      birthDate: u.dataNascimento,
+      codigoDDI: "+55",
+      telefone: u.telefone,
+      dataNascimento: u.dataNascimento,
     };
   } catch {
     return null;
@@ -99,21 +99,21 @@ export async function buscarUsuarioPorEmail(email: string): Promise<UsuarioArmaz
  * PUT /usuarios/{id}
  */
 export async function atualizarUsuario(
-  currentEmail: string,
-  updates: DadosAtualizacaoUsuario
+  emailAtual: string,
+  alteracoes: DadosAtualizacaoUsuario
 ): Promise<ResultadoAtualizacaoUsuario> {
   try {
     const response = await api.put("/usuarios/me", {
-      nome: updates.name,
-      email: updates.email?.trim().toLowerCase(),
-      telefone: updates.phone
-        ? `${updates.phoneCode ?? "+55"} ${updates.phone}`
+      nome: alteracoes.nome,
+      email: alteracoes.email?.trim().toLowerCase(),
+      telefone: alteracoes.telefone
+        ? `${alteracoes.codigoDDI ?? "+55"} ${alteracoes.telefone}`
         : undefined,
     });
 
     return {
       ok: true,
-      newEmail: response.data.email ?? currentEmail,
+      novoEmail: response.data.email ?? emailAtual,
     };
   } catch (error: any) {
     if (error.response?.status === 409) {
@@ -132,13 +132,13 @@ export async function atualizarUsuario(
  */
 export async function atualizarSenha(
   email: string,
-  currentPassword: string,
-  newPassword: string
+  senhaAtual: string,
+  novaSenha: string
 ): Promise<ResultadoTrocaSenha> {
   try {
     await api.post("/usuarios/me/senha", {
-      senhaAtual: currentPassword,
-      novaSenha: newPassword,
+      senhaAtual,
+      novaSenha,
     });
 
     return { ok: true };

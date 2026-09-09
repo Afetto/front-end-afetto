@@ -3,12 +3,12 @@ import { clinicaService } from "@/services/clinica.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 const QUERY_KEY = ["clinicas"];
 
-// ─── READ ────────────────────────────────────────────────────────────────────
+// ─── LEITURA ─────────────────────────────────────────────────────────────────
 
 export function useClinicas() {
     return useQuery({
         queryKey: QUERY_KEY,
-        queryFn: clinicaService.getAll,
+        queryFn: clinicaService.listar,
     });
 }
 

@@ -77,7 +77,7 @@ export default function TelaPerfil() {
 
   // Toast
   const toastOpacity = useSharedValue(0);
-  const toastStyle = useAnimatedStyle(() => ({ opacity: toastOpacity.value }));
+  const estiloToast = useAnimatedStyle(() => ({ opacity: toastOpacity.value }));
 
   const temAlteracoes =
     nome !== originais.nome ||
@@ -88,11 +88,11 @@ export default function TelaPerfil() {
     if (!sessao?.email) return;
     const usuario = await buscarUsuarioPorEmail(sessao.email);
     if (!usuario) return;
-    setNome(usuario.name);
+    setNome(usuario.nome);
     setEmail(usuario.email);
-    setTelefone(usuario.phone);
+    setTelefone(usuario.telefone);
     setCpf(usuario.cpf);
-    setOriginais({ nome: usuario.name, email: usuario.email, telefone: usuario.phone });
+    setOriginais({ nome: usuario.nome, email: usuario.email, telefone: usuario.telefone });
   }, [sessao?.email]);
 
   useEffect(() => {
@@ -120,9 +120,9 @@ export default function TelaPerfil() {
     setErroSalvar("");
 
     const resultado = await atualizarUsuario(sessao.email, {
-      name: nomeLimpo,
+      nome: nomeLimpo,
       email: emailLimpo,
-      phone: telefoneLimpo,
+      telefone: telefoneLimpo,
     });
 
     if (!resultado.ok) {
@@ -136,17 +136,17 @@ export default function TelaPerfil() {
     }
 
     // Sincroniza sessão em memória se nome ou email mudaram
-    const atualizacoesSessao: { name?: string; email?: string } = {};
-    if (nomeLimpo !== originais.nome) atualizacoesSessao.name = nomeLimpo;
-    if (resultado.newEmail !== originais.email) atualizacoesSessao.email = resultado.newEmail;
-    if (Object.keys(atualizacoesSessao).length > 0) {
-      await atualizarPerfil(atualizacoesSessao);
+    const alteracoesSessao: { nome?: string; email?: string } = {};
+    if (nomeLimpo !== originais.nome) alteracoesSessao.nome = nomeLimpo;
+    if (resultado.novoEmail !== originais.email) alteracoesSessao.email = resultado.novoEmail;
+    if (Object.keys(alteracoesSessao).length > 0) {
+      await atualizarPerfil(alteracoesSessao);
     }
 
     setNome(nomeLimpo);
-    setEmail(resultado.newEmail);
+    setEmail(resultado.novoEmail);
     setTelefone(telefoneLimpo);
-    setOriginais({ nome: nomeLimpo, email: resultado.newEmail, telefone: telefoneLimpo });
+    setOriginais({ nome: nomeLimpo, email: resultado.novoEmail, telefone: telefoneLimpo });
     setSalvando(false);
     exibirToast();
   };
@@ -209,7 +209,7 @@ export default function TelaPerfil() {
     setErroSenha("");
   };
 
-  const inicial = nome[0]?.toUpperCase() ?? sessao?.name[0]?.toUpperCase() ?? "U";
+  const inicial = nome[0]?.toUpperCase() ?? sessao?.nome[0]?.toUpperCase() ?? "U";
 
   return (
     <View style={styles.root}>
@@ -246,7 +246,7 @@ export default function TelaPerfil() {
             </View>
 
             <Text style={styles.userName}>
-              {nome || sessao?.name || "Usuário"}
+              {nome || sessao?.nome || "Usuário"}
             </Text>
             <Text style={styles.planLabel}>Plano Gratuito</Text>
           </View>
@@ -383,7 +383,7 @@ export default function TelaPerfil() {
       )}
 
       {/* ── Toast de sucesso ── */}
-      <Animated.View style={[styles.toast, toastStyle]} pointerEvents="none">
+      <Animated.View style={[styles.toast, estiloToast]} pointerEvents="none">
         <Ionicons name="checkmark-circle" size={18} color={C.white} />
         <Text style={styles.toastText}>Salvo com sucesso!</Text>
       </Animated.View>

@@ -12,7 +12,7 @@ import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { maskCEP, maskDate } from "@/utils/masks";
+import { mascararCEP, mascararData } from "@/utils/mascaras";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -150,8 +150,8 @@ export default function TelaCompletarPerfil() {
               label="Data de nascimento"
               placeholder="DD/MM/AAAA"
               keyboardType="numeric"
-              onChangeTransform={maskDate}
-              rightIcon={
+              transformarTexto={mascararData}
+              iconeDireita={
                 <Ionicons name="calendar-outline" size={18} color="#9E9589" />
               }
             />
@@ -176,7 +176,7 @@ export default function TelaCompletarPerfil() {
                   value={value}
                   onChange={onChange}
                   error={errors.tipoMoradia?.message}
-                  options={[
+                  opcoes={[
                     { label: "🏠  Casa", value: "casa" },
                     { label: "🏢  Apartamento", value: "apartamento" },
                   ]}
@@ -194,7 +194,7 @@ export default function TelaCompletarPerfil() {
                   value={value}
                   onChange={onChange}
                   error={errors.telaProtecao?.message}
-                  options={[
+                  opcoes={[
                     { label: "✅  Sim", value: "sim" },
                     { label: "❌  Não", value: "nao" },
                   ]}
@@ -209,7 +209,7 @@ export default function TelaCompletarPerfil() {
               label="Quantidade de pets"
               placeholder="1"
               keyboardType="numeric"
-              rightIcon={
+              iconeDireita={
                 <Ionicons name="paw-outline" size={18} color="#9E9589" />
               }
             />
@@ -231,8 +231,8 @@ export default function TelaCompletarPerfil() {
               label="CEP"
               placeholder="00000-000"
               keyboardType="numeric"
-              onChangeTransform={maskCEP}
-              rightIcon={
+              transformarTexto={mascararCEP}
+              iconeDireita={
                 cepCarregando
                   ? <ActivityIndicator size="small" color="#E8A838" />
                   : <Ionicons name="search-outline" size={18} color="#9E9589" />

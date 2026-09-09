@@ -8,7 +8,7 @@ export const UsuarioSchema = z.object({
     cpf: z.string().length(14, "CPF inválido"),
 });
 
-export const UpdateUsuarioSchema = UsuarioSchema.omit({ id: true, cpf: true }).partial();
+export const AtualizarUsuarioSchema = UsuarioSchema.omit({ id: true, cpf: true }).partial();
 
 export type Usuario = z.infer<typeof UsuarioSchema>;
-export type UpdateUsuarioInput = z.infer<typeof UpdateUsuarioSchema>;
+export type AtualizarUsuarioInput = z.infer<typeof AtualizarUsuarioSchema>;

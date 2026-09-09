@@ -2,8 +2,8 @@ import { api } from "@/api/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 
-const SESSION_KEY = "@afetto:session";
-const TOKEN_KEY = "@afetto:token";
+const CHAVE_SESSAO = "@afetto:session";
+const CHAVE_TOKEN = "@afetto:token";
 
 type ProgressoOnboarding = {
   perfilCompleto: boolean;
@@ -14,7 +14,7 @@ type ProgressoOnboarding = {
 type Sessao = {
   id: number;
   email: string;
-  name: string;
+  nome: string;
   progresso: ProgressoOnboarding;
 };
 
@@ -22,13 +22,13 @@ type DadosSessaoContexto = {
   sessao: Sessao | null;
   carregando: boolean;
   entrar: (
-    user: { id: number; email: string; name: string },
+    usuario: { id: number; email: string; nome: string },
     token: string
   ) => Promise<void>;
-  entrarComoDevs: () => Promise<void>;
+  entrarComoDev: () => Promise<void>;
   sair: () => Promise<void>;
   concluirEtapa: (etapa: keyof ProgressoOnboarding) => Promise<void>;
-  atualizarPerfil: (updates: { name?: string; email?: string }) => Promise<void>;
+  atualizarPerfil: (alteracoes: { nome?: string; email?: string }) => Promise<void>;
 };
 
 const PROGRESSO_PADRAO: ProgressoOnboarding = {
@@ -45,8 +45,8 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     Promise.all([
-      AsyncStorage.getItem(SESSION_KEY),
-      AsyncStorage.getItem(TOKEN_KEY),
+      AsyncStorage.getItem(CHAVE_SESSAO),
+      AsyncStorage.getItem(CHAVE_TOKEN),
     ])
       .then(([sessaoBruta, token]) => {
         if (sessaoBruta) setSessao(JSON.parse(sessaoBruta));
@@ -58,25 +58,25 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function entrar(
-    user: { id: number; email: string; name: string },
+    usuario: { id: number; email: string; nome: string },
     token: string
   ): Promise<void> {
     const novaSessao: Sessao = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
+      id: usuario.id,
+      email: usuario.email,
+      nome: usuario.nome,
       progresso: PROGRESSO_PADRAO,
     };
-    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(novaSessao));
-    await AsyncStorage.setItem(TOKEN_KEY, token);
+    await AsyncStorage.setItem(CHAVE_SESSAO, JSON.stringify(novaSessao));
+    await AsyncStorage.setItem(CHAVE_TOKEN, token);
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     setSessao(novaSessao);
   }
 
-  async function entrarComoDevs() {
+  async function entrarComoDev() {
     const sessaoDev: Sessao = {
       id: 0,
-      name: "Dev User",
+      nome: "Dev User",
       email: "dev@afetto.com",
       progresso: {
         perfilCompleto: true,
@@ -84,21 +84,21 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
         clinicaVinculada: false,
       },
     };
-    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(sessaoDev));
+    await AsyncStorage.setItem(CHAVE_SESSAO, JSON.stringify(sessaoDev));
     setSessao(sessaoDev);
   }
 
   async function sair() {
-    await AsyncStorage.removeItem(SESSION_KEY);
-    await AsyncStorage.removeItem(TOKEN_KEY);
+    await AsyncStorage.removeItem(CHAVE_SESSAO);
+    await AsyncStorage.removeItem(CHAVE_TOKEN);
     delete api.defaults.headers.common["Authorization"];
     setSessao(null);
   }
 
-  async function atualizarPerfil(updates: { name?: string; email?: string }) {
+  async function atualizarPerfil(alteracoes: { nome?: string; email?: string }) {
     if (!sessao) return;
-    const atualizada: Sessao = { ...sessao, ...updates };
-    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(atualizada));
+    const atualizada: Sessao = { ...sessao, ...alteracoes };
+    await AsyncStorage.setItem(CHAVE_SESSAO, JSON.stringify(atualizada));
     setSessao(atualizada);
   }
 
@@ -108,12 +108,12 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
       ...sessao,
       progresso: { ...sessao.progresso, [etapa]: true },
     };
-    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(atualizada));
+    await AsyncStorage.setItem(CHAVE_SESSAO, JSON.stringify(atualizada));
     setSessao(atualizada);
   }
 
   return (
-    <SessaoContext.Provider value={{ sessao, carregando, entrar, entrarComoDevs, sair, concluirEtapa, atualizarPerfil }}>
+    <SessaoContext.Provider value={{ sessao, carregando, entrar, entrarComoDev, sair, concluirEtapa, atualizarPerfil }}>
       {children}
     </SessaoContext.Provider>
   );

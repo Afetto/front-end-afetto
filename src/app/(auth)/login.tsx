@@ -17,7 +17,7 @@ import {
 } from "react-native";
 
 export default function TelaLogin() {
-  const { entrar, entrarComoDevs } = useSessao();
+  const { entrar, entrarComoDev } = useSessao();
 
   const {
     control,
@@ -43,9 +43,9 @@ export default function TelaLogin() {
       // Persiste sessão via contexto (dados já vieram da API)
       await entrar(
         {
-          id: resultado.user.id,
-          email: resultado.user.email,
-          name: resultado.user.name,
+          id: resultado.usuario.id,
+          email: resultado.usuario.email,
+          nome: resultado.usuario.nome,
         },
         resultado.token
       );
@@ -95,7 +95,7 @@ export default function TelaLogin() {
                 control={control}
                 label="Senha:"
                 placeholder="••••••••"
-                secureText
+                campoSenha
                 autoComplete="password"
                 textContentType="password"
               />
@@ -140,7 +140,7 @@ export default function TelaLogin() {
           {__DEV__ && (
             <TouchableOpacity
               onPress={async () => {
-                await entrarComoDevs();
+                await entrarComoDev();
                 router.replace("/(tabs)");
               }}
               activeOpacity={0.7}

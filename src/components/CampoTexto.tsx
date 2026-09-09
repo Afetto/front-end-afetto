@@ -9,25 +9,25 @@ import {
   View,
 } from "react-native";
 
-type Props<T extends FieldValues> = TextInputProps & {
+type CampoTextoProps<T extends FieldValues> = TextInputProps & {
   name: Path<T>;
   control: Control<T>;
   label?: string;
-  secureText?: boolean;
-  rightIcon?: ReactNode;
-  onChangeTransform?: (value: string) => string;
+  campoSenha?: boolean;
+  iconeDireita?: ReactNode;
+  transformarTexto?: (valor: string) => string;
 };
 
 export default function CampoTexto<T extends FieldValues>({
   name,
   control,
   label,
-  secureText = false,
-  rightIcon,
-  onChangeTransform,
+  campoSenha = false,
+  iconeDireita,
+  transformarTexto,
   ...rest
-}: Props<T>) {
-  const [hidden, setHidden] = useState(secureText);
+}: CampoTextoProps<T>) {
+  const [oculto, setOculto] = useState(campoSenha);
 
   return (
     <Controller
@@ -48,10 +48,10 @@ export default function CampoTexto<T extends FieldValues>({
               className="flex-1 py-4 text-base text-gray-900"
               onBlur={onBlur}
               onChangeText={(text) =>
-                onChange(onChangeTransform ? onChangeTransform(text) : text)
+                onChange(transformarTexto ? transformarTexto(text) : text)
               }
               value={value}
-              secureTextEntry={hidden}
+              secureTextEntry={oculto}
               autoCapitalize="none"
               autoCorrect={false}
               placeholderTextColor="#9E9589"
@@ -59,20 +59,20 @@ export default function CampoTexto<T extends FieldValues>({
               {...rest}
             />
 
-            {secureText && (
+            {campoSenha && (
               <TouchableOpacity
-                onPress={() => setHidden((prev) => !prev)}
+                onPress={() => setOculto((anterior) => !anterior)}
                 hitSlop={8}
               >
                 <Ionicons
-                  name={hidden ? "chevron-down" : "chevron-up"}
+                  name={oculto ? "chevron-down" : "chevron-up"}
                   size={18}
                   color="#9E9589"
                 />
               </TouchableOpacity>
             )}
 
-            {!secureText && rightIcon && rightIcon}
+            {!campoSenha && iconeDireita && iconeDireita}
           </View>
 
           {error && (

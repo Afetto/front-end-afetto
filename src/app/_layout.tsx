@@ -20,54 +20,44 @@ export const unstable_settings = {
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
-  const [loaded, error] = useFonts({
+export default function LayoutRaiz() {
+  const [fontesCarregadas, erroFontes] = useFonts({
     SpaceMono: require("../../assets/fonts/SpaceMono-Regular.ttf"),
     ...FontAwesome.font,
   });
 
   // AppState — refetch quando app volta ao foco
   useEffect(() => {
-    const sub = AppState.addEventListener("change", (status) => {
+    const inscricao = AppState.addEventListener("change", (status) => {
       focusManager.setFocused(status === "active");
     });
-    return () => sub.remove();
+    return () => inscricao.remove();
   }, []);
 
   useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+    if (erroFontes) throw erroFontes;
+  }, [erroFontes]);
 
   useEffect(() => {
-    if (loaded) SplashScreen.hideAsync();
-  }, [loaded]);
+    if (fontesCarregadas) SplashScreen.hideAsync();
+  }, [fontesCarregadas]);
 
-  if (!loaded) return null;
+  if (!fontesCarregadas) return null;
 
-  return <RootLayoutNav />;
+  return <LayoutRaizNav />;
 }
 
-function RootLayoutNav() {
+function LayoutRaizNav() {
   useReactQueryDevTools(queryClient);
 
   return (
     <QueryClientProvider client={queryClient}>
       <SessaoProvider>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ title: "" }} />
-          <Stack.Screen name="cadastro" options={{ title: "" }} />
-          <Stack.Screen name="completar-perfil" options={{ title: "" }} />
-          <Stack.Screen name="perfil" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="cadastro-sucesso"
-            options={{
-              headerShown: false,
-              presentation: "transparentModal",
-              animation: "fade",
-            }}
-          />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(app)" />
+          <Stack.Screen name="(tabs)" />
         </Stack>
       </SessaoProvider>
     </QueryClientProvider>

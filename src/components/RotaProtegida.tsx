@@ -2,11 +2,11 @@ import { useSessao } from "@/context/SessaoContext";
 import { Redirect } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 
-type Props = {
+type RotaProtegidaProps = {
   children: React.ReactNode;
 };
 
-export function RotaProtegida({ children }: Props) {
+export function RotaProtegida({ children }: RotaProtegidaProps) {
   const { sessao, carregando } = useSessao();
 
   if (carregando) {

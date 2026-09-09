@@ -6,9 +6,9 @@ import { auth } from '@/lib/firebase';
 type ValorAutenticacaoContexto = {
     usuario: User | null;
     carregando: boolean;
-    cadastrar: (email: string, password: string) => Promise<void>;
-    entrar: (email: string, password: string) => Promise<void>;
-    sair: (email: string, password: string) => Promise<void>;
+    cadastrar: (email: string, senha: string) => Promise<void>;
+    entrar: (email: string, senha: string) => Promise<void>;
+    sair: (email: string, senha: string) => Promise<void>;
 };
 
 const AutenticacaoContext = createContext<ValorAutenticacaoContexto | null>(null);
@@ -22,13 +22,12 @@ export function AutenticacaoProvider({ children }: PropsWithChildren) {
         onAuthStateChanged(auth, (proximoUsuario) => {
             setUsuario(proximoUsuario);
             setCarregando(false);
-            console.log("deu bom");
         });
     }, []);
 
-    async function entrar(email: string, password: string) {}
-    async function cadastrar(email: string, password: string) {
-        await createUserWithEmailAndPassword(auth, email, password);
+    async function entrar(email: string, senha: string) {}
+    async function cadastrar(email: string, senha: string) {
+        await createUserWithEmailAndPassword(auth, email, senha);
     }
     async function sair() {}
 

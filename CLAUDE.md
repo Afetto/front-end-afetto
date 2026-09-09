@@ -29,16 +29,20 @@ src/
 │   ├── api.ts          ← instância do Axios com baseURL e interceptors
 │   └── queryClient.ts  ← QueryClient do TanStack Query
 ├── app/
-│   ├── _layout.tsx           ← raiz: QueryClientProvider + SessaoProvider + Stack
-│   ├── index.tsx             ← guard de rotas (redireciona para login ou tabs)
-│   ├── login.tsx
-│   ├── cadastro.tsx
-│   ├── completar-perfil.tsx
-│   ├── cadastro-sucesso.tsx
-│   ├── perfil.tsx
-│   └── (tabs)/
-│       ├── _layout.tsx ← tabs: Home, Pets, Assistente, Clínica
-│       ├── index.tsx   ← Home
+│   ├── _layout.tsx           ← raiz: QueryClientProvider + SessaoProvider + Stack (grupos)
+│   ├── index.tsx             ← onboarding + gate (sessão → tabs; sem sessão → onboarding)
+│   ├── (auth)/               ← telas PRÉ-login (URLs sem o prefixo do grupo)
+│   │   ├── _layout.tsx
+│   │   ├── login.tsx              → /login
+│   │   ├── cadastro.tsx           → /cadastro
+│   │   └── cadastro-sucesso.tsx   → /cadastro-sucesso (modal transparente)
+│   ├── (app)/                ← telas PÓS-login fora das tabs (Stack)
+│   │   ├── _layout.tsx
+│   │   ├── completar-perfil.tsx   → /completar-perfil
+│   │   └── perfil.tsx             → /perfil
+│   └── (tabs)/               ← app principal (protegido por <RotaProtegida>)
+│       ├── _layout.tsx ← abas: Início, Pets, Assistente, Clínica
+│       ├── index.tsx   ← Início (Home)
 │       ├── pets.tsx
 │       ├── clinica.tsx
 │       └── assistente.tsx
@@ -49,11 +53,12 @@ src/
 │   ├── PetsVazio.tsx            ← estado vazio da lista de pets
 │   └── CirculosConcentricos.tsx ← decoração da tela de onboarding
 ├── context/
-│   └── SessaoContext.tsx  ← sessão, entrar, sair, concluirEtapa
+│   ├── SessaoContext.tsx        ← sessão, entrar, entrarComoDev, sair, concluirEtapa
+│   └── AutenticacaoContext.tsx  ← contexto Firebase (ainda não integrado)
 ├── hooks/
-│   ├── usePets.ts          ← useQuery + useMutation para pets
-│   ├── useClinicas.ts      ← useQuery + useMutation para clínicas
-│   └── useAutenticacao.ts  ← useMutation para entrar, cadastrar, sair
+│   ├── usePets.ts          ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet
+│   ├── useClinicas.ts      ← useClinicas, useVincularClinica, useDesvincularClinica
+│   └── useAutenticacao.ts  ← useEntrar, useCadastrar, useSair
 ├── schemas/
 │   ├── login.schema.ts
 │   ├── cadastro.schema.ts
@@ -62,11 +67,13 @@ src/
 │   ├── clinica.schema.ts
 │   └── usuario.schema.ts
 ├── services/
-│   ├── autenticacao.service.ts ← cadastrar, autenticar, sair, atualizarUsuario
-│   ├── pet.service.ts          ← getAll, getById, create, update, delete
-│   └── clinica.service.ts      ← getAll, vincular, desvincular
+│   ├── autenticacao.service.ts ← cadastrar, autenticar, sair, atualizarUsuario, atualizarSenha, completarPerfil
+│   ├── pet.service.ts          ← listar, buscarPorId, criar, atualizar, remover
+│   └── clinica.service.ts      ← listar, buscarPorId, vincular, desvincular
 ├── types/
 │   └── autenticacao.types.ts   ← tipos globais de autenticação
+├── utils/
+│   └── mascaras.ts             ← mascararCPF, mascararCelular, mascararData, mascararCEP
 └── global.css                  ← Tailwind base/components/utilities
 ```
 
@@ -116,10 +123,10 @@ Leia os arquivos existentes do projeto antes de escrever código. Identifique pa
 ### 5. Arquitetura de hooks
 ```ts
 // CORRETO — invalidação via hook
-export function useCreatePet() {
+export function useCriarPet() {
   const queryClient = useQueryClient(); // ← hook
   return useMutation({
-    mutationFn: (data) => petService.create(data),
+    mutationFn: (data) => petService.criar(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pets"] }),
   });
 }
@@ -132,6 +139,16 @@ import { queryClient } from "@/api/queryClient"; // ← nunca nos hooks
 - Use `router.push`, `router.replace`, `router.back` do `expo-router`
 - Rotas das tabs: `/(tabs)`, `/(tabs)/clinica` etc.
 - Rotas fora das tabs: `/completar-perfil`, `/cadastro`, `/perfil`, `/login` etc.
+- Os grupos `(auth)` e `(app)` **não** aparecem na URL — `(auth)/login.tsx` continua sendo `/login`. Nunca escreva `/(auth)/...` nos `router.push`.
+
+**Onde criar uma tela nova (telas do Figma):**
+
+| Tipo de tela | Pasta |
+|---|---|
+| Pré-login (ex.: `/esqueci-senha`, `/verificar-email`) | `src/app/(auth)/` |
+| Pós-login, fora das abas, em Stack (ex.: detalhe/edição, agenda de vacina) | `src/app/(app)/` |
+| Nova aba fixa | `src/app/(tabs)/` + entrada no `(tabs)/_layout.tsx` |
+| Fluxo de pet (cadastrar/detalhe) | `src/app/(app)/pet/` — ex.: `pet/cadastrar.tsx` → `/pet/cadastrar`, `pet/[id].tsx` → `/pet/123` |
 
 ### 7. Proteção de rotas
 - Telas privadas devem usar `<RotaProtegida>` ou verificar `useSessao()`

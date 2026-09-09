@@ -3,12 +3,12 @@ import { Clinica, DadosVincularClinica } from "@/schemas/clinica.schema";
 
 
 export const clinicaService = {
-    getAll: async (): Promise<Clinica[]> => {
+    listar: async (): Promise<Clinica[]> => {
         const response = await api.get("/clinicas");
         return response.data;
     },
 
-    getById: async (id: number): Promise<Clinica> => {
+    buscarPorId: async (id: number): Promise<Clinica> => {
         const response = await api.get(`/clinicas/${id}`);
         return response.data;
     },

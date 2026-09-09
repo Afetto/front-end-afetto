@@ -1,4 +1,6 @@
 // ─── TIPOS — contratos idênticos ao autenticacao.service original ─────────────
+// Obs.: os campos de `DadosCadastro` espelham os identificadores do formulário
+// (react-hook-form + CadastroSchema) e por isso permanecem em inglês.
 
 export type DadosCadastro = {
   name: string;
@@ -16,27 +18,27 @@ export type ResultadoCadastro =
 
 export type UsuarioArmazenado = {
   id: number;
-  name: string;
+  nome: string;
   email: string;
   cpf: string;
-  phoneCode: string;
-  phone: string;
-  birthDate: string;
+  codigoDDI: string;
+  telefone: string;
+  dataNascimento: string;
 };
 
 export type ResultadoAutenticacao =
-  | { ok: true; user: UsuarioArmazenado; token: string }
+  | { ok: true; usuario: UsuarioArmazenado; token: string }
   | { ok: false };
 
 export type DadosAtualizacaoUsuario = {
-  name?: string;
+  nome?: string;
   email?: string;
-  phoneCode?: string;
-  phone?: string;
+  codigoDDI?: string;
+  telefone?: string;
 };
 
 export type ResultadoAtualizacaoUsuario =
-  | { ok: true; newEmail: string }
+  | { ok: true; novoEmail: string }
   | { ok: false; error: "email_taken" | "not_found" | "unknown" };
 
 export type ResultadoTrocaSenha =

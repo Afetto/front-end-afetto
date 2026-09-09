@@ -2,21 +2,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { router } from "expo-router";
 
-const TOKEN_KEY = "@afetto:token";
+const CHAVE_TOKEN = "@afetto:token";
 
-const FALLBACK_API_URL = "http://localhost:3000";
+const URL_API_PADRAO = "http://localhost:3000";
 
-const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? FALLBACK_API_URL;
+const urlBase = process.env.EXPO_PUBLIC_API_URL ?? URL_API_PADRAO;
 
 if (!process.env.EXPO_PUBLIC_API_URL) {
     console.warn(
-        `[api] EXPO_PUBLIC_API_URL não configurada — usando fallback ${FALLBACK_API_URL}. ` +
+        `[api] EXPO_PUBLIC_API_URL não configurada — usando fallback ${URL_API_PADRAO}. ` +
         "Defina a variável no arquivo .env para conectar à API real."
     );
 }
 
 export const api = axios.create({
-    baseURL: baseUrl,
+    baseURL: urlBase,
     headers: {
         "Content-Type": "application/json",
     },
@@ -25,7 +25,7 @@ export const api = axios.create({
 
 // Interceptor para adicionar token JWT automaticamente
 api.interceptors.request.use(async (config) => {
-    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    const token = await AsyncStorage.getItem(CHAVE_TOKEN);
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -38,7 +38,7 @@ api.interceptors.response.use(
     async (error) => {
         if (error.response?.status === 401) {
             // Token expirado — limpa credenciais e redireciona para login
-            await AsyncStorage.removeItem(TOKEN_KEY);
+            await AsyncStorage.removeItem(CHAVE_TOKEN);
             delete api.defaults.headers.common["Authorization"];
             router.replace("/login");
         }

@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 
-const ESPECIES_ICON: Record<string, string> = {
+const ICONE_ESPECIE: Record<string, string> = {
   Cachorro: "🐶",
   Gato: "🐱",
   Coelho: "🐰",
@@ -35,7 +35,7 @@ export default function TelaPets() {
   const { data: pets = [], isLoading: carregando, isError: temErro, refetch } = usePets();
   const [concluindo, setConcluindo] = useState(false);
 
-  async function handleConcluir() {
+  async function aoConcluir() {
     setConcluindo(true);
     try {
       await concluirEtapa("petCadastrado");
@@ -71,8 +71,8 @@ export default function TelaPets() {
     return <PetsVazio />;
   }
 
-  function renderCard({ item }: { item: Pet }) {
-    const icone = ESPECIES_ICON[item.especie] ?? "🐾";
+  function renderizarCartao({ item }: { item: Pet }) {
+    const icone = ICONE_ESPECIE[item.especie] ?? "🐾";
 
     return (
       <TouchableOpacity
@@ -142,7 +142,7 @@ export default function TelaPets() {
       <FlatList
         data={pets}
         keyExtractor={(item) => String(item.id)}
-        renderItem={renderCard}
+        renderItem={renderizarCartao}
         contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
       />
 
@@ -166,7 +166,7 @@ export default function TelaPets() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={handleConcluir}
+          onPress={aoConcluir}
           disabled={concluindo}
           activeOpacity={0.85}
           className={`items-center justify-center py-4 rounded-2xl ${concluindo ? "bg-primary/70" : "bg-primary"
