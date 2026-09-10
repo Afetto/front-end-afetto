@@ -20,7 +20,6 @@ type DadosSessaoContexto = {
   sessao: Sessao | null;
   carregando: boolean;
   entrar: (usuario: { id: string; email: string; nome: string }) => Promise<void>;
-  entrarComoDev: () => Promise<void>;
   sair: () => Promise<void>;
   concluirEtapa: (etapa: keyof ProgressoOnboarding) => Promise<void>;
   atualizarPerfil: (alteracoes: { nome?: string; email?: string }) => Promise<void>;
@@ -75,21 +74,6 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
     setSessao(novaSessao);
   }
 
-  async function entrarComoDev() {
-    const sessaoDev: Sessao = {
-      id: "dev",
-      nome: "Dev User",
-      email: "dev@afetto.com",
-      progresso: {
-        perfilCompleto: true,
-        petCadastrado: true,
-        clinicaVinculada: false,
-      },
-    };
-    await AsyncStorage.setItem(CHAVE_SESSAO, JSON.stringify(sessaoDev));
-    setSessao(sessaoDev);
-  }
-
   async function sair() {
     await AsyncStorage.removeItem(CHAVE_SESSAO);
     setSessao(null);
@@ -113,7 +97,7 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SessaoContext.Provider value={{ sessao, carregando, entrar, entrarComoDev, sair, concluirEtapa, atualizarPerfil }}>
+    <SessaoContext.Provider value={{ sessao, carregando, entrar, sair, concluirEtapa, atualizarPerfil }}>
       {children}
     </SessaoContext.Provider>
   );

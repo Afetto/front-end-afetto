@@ -17,7 +17,7 @@ import {
 } from "react-native";
 
 export default function TelaLogin() {
-  const { entrar, entrarComoDev } = useSessao();
+  const { entrar } = useSessao();
 
   const {
     control,
@@ -135,21 +135,6 @@ export default function TelaLogin() {
               <Text className="text-white text-lg font-semibold">Entrar</Text>
             )}
           </TouchableOpacity>
-
-          {__DEV__ && (
-            <TouchableOpacity
-              onPress={async () => {
-                await entrarComoDev();
-                router.replace("/(tabs)");
-              }}
-              activeOpacity={0.7}
-              className="items-center justify-center py-3 rounded-2xl border border-dashed border-muted mt-2"
-            >
-              <Text className="text-muted text-sm">
-                🛠 Entrar como Dev (sem API)
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

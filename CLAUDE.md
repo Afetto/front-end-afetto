@@ -53,7 +53,7 @@ src/
 │   ├── PetsVazio.tsx            ← estado vazio da lista de pets
 │   └── CirculosConcentricos.tsx ← decoração da tela de onboarding
 ├── context/
-│   ├── SessaoContext.tsx        ← sessão, entrar, entrarComoDev, sair, concluirEtapa
+│   ├── SessaoContext.tsx        ← sessão, entrar, sair, concluirEtapa
 │   └── AutenticacaoContext.tsx  ← contexto Firebase (ainda não integrado)
 ├── hooks/
 │   ├── usePets.ts          ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet
