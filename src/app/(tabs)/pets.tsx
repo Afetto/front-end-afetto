@@ -77,26 +77,14 @@ export default function TelaPets() {
     );
   }
 
-  if (temErro) {
-    return (
-      <View className="flex-1 items-center justify-center bg-surface gap-3 px-8">
-        <Ionicons name="cloud-offline-outline" size={48} color="#9A9585" />
-        <Text className="text-muted text-sm text-center">
-          Erro ao carregar pets. Tente novamente.
-        </Text>
-        <TouchableOpacity onPress={() => refetch()}>
-          <Text className="text-amber font-semibold">Tentar novamente</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
+  // Sem pets (ou falha ao carregar) → estado vazio com CTA para cadastrar.
   if (pets.length === 0) {
-    return <PetsVazio />;
+    return <PetsVazio erro={temErro} aoTentarNovamente={() => refetch()} />;
   }
 
   function renderizarCartao({ item }: { item: Pet }) {
     const icone = ICONE_ESPECIE[item.especie] ?? "🐾";
+    const idade = calcularIdade(item.dataNasc);
 
     return (
       <TouchableOpacity
@@ -114,9 +102,11 @@ export default function TelaPets() {
           <View className="flex-1">
             <View className="flex-row items-center gap-2">
               <Text className="text-base font-bold text-primary">{item.nome}</Text>
-              <Text className="text-xs text-muted">
-                {item.sexo === "MACHO" ? "♂" : "♀"}
-              </Text>
+              {item.sexo && (
+                <Text className="text-xs text-muted">
+                  {item.sexo === "MACHO" ? "♂" : "♀"}
+                </Text>
+              )}
               {/* TODO: status de saúde ainda não vem da API — placeholder fixo */}
               <View
                 style={{ backgroundColor: "#A8C5A022", borderColor: "#A8C5A0" }}
@@ -133,20 +123,22 @@ export default function TelaPets() {
               {item.raca ? ` • ${item.raca}` : ""}
             </Text>
 
-            <View className="flex-row gap-3 mt-2">
-              <View className="flex-row items-center gap-1">
-                <Ionicons name="calendar-outline" size={12} color="#9A9585" />
-                <Text className="text-xs text-muted">
-                  {calcularIdade(item.dataNasc)}
-                </Text>
+            {(idade !== "—" || item.peso != null) && (
+              <View className="flex-row gap-3 mt-2">
+                {idade !== "—" && (
+                  <View className="flex-row items-center gap-1">
+                    <Ionicons name="calendar-outline" size={12} color="#9A9585" />
+                    <Text className="text-xs text-muted">{idade}</Text>
+                  </View>
+                )}
+                {item.peso != null && (
+                  <View className="flex-row items-center gap-1">
+                    <Ionicons name="barbell-outline" size={12} color="#9A9585" />
+                    <Text className="text-xs text-muted">{item.peso} kg</Text>
+                  </View>
+                )}
               </View>
-              {item.peso != null && (
-                <View className="flex-row items-center gap-1">
-                  <Ionicons name="barbell-outline" size={12} color="#9A9585" />
-                  <Text className="text-xs text-muted">{item.peso} kg</Text>
-                </View>
-              )}
-            </View>
+            )}
           </View>
 
           <Ionicons name="chevron-forward" size={18} color="#9A9585" />
@@ -179,7 +171,7 @@ export default function TelaPets() {
         style={{ backgroundColor: "#F5F0E8", paddingTop: 12, borderTopWidth: 1, borderTopColor: "#e0ddd5" }}
       >
         <TouchableOpacity
-          onPress={() => router.push("/cadastrar-pet" as any)}
+          onPress={() => router.push("/pet/cadastrar" as any)}
           activeOpacity={0.85}
           style={{ borderColor: "#E8A838" }}
           className="items-center justify-center py-3 rounded-2xl border"

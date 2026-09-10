@@ -4,8 +4,14 @@ import { DadosCadastroPet, Pet } from "@/schemas/pet.schema";
 
 export const petService = {
     listar: async (): Promise<Pet[]> => {
-        const response = await api.get("/pet", { params: { page: 0, size: 100 } });
-        return extrairLista<Pet>(response.data);
+        try {
+            const response = await api.get("/pet", { params: { page: 0, size: 100 } });
+            return extrairLista<Pet>(response.data);
+        } catch (error: any) {
+            // Alguns endpoints da API respondem 404 quando a coleção está vazia
+            if (error?.response?.status === 404) return [];
+            throw error;
+        }
     },
 
     buscarPorId: async (id: string): Promise<Pet> => {

@@ -19,21 +19,58 @@ export const ESPECIES_PET = [
 export const EspeciePetSchema = z.enum(ESPECIES_PET);
 export const SexoPetSchema = z.enum(["MACHO", "FEMEA"]);
 
+// Resposta da API. A listagem GET /pet traz só id/nome/especie/raca; o detalhe
+// GET /pet/{id} traz o resto. Por isso quase tudo é opcional na leitura.
 export const PetSchema = z.object({
     id: z.string(),
-    nome: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
+    nome: z.string(),
     especie: EspeciePetSchema,
     raca: z.string().optional().default(""),
-    sexo: SexoPetSchema,
+    sexo: SexoPetSchema.optional(),
     peso: z.number().nonnegative().optional(),
     dataNasc: z.string().optional().default(""), // YYYY-MM-DD
     descricao: z.string().optional().default(""),
-    idUsuario: z.string(), // dono do pet (UUID)
 });
 
-export const CadastroPetSchema = PetSchema.omit({ id: true });
+// Corpo do POST/PUT /pet.
+export type DadosCadastroPet = {
+    nome: string;
+    especie: EspeciePet;
+    sexo: SexoPet;
+    raca?: string;
+    peso?: number;
+    dataNasc?: string;
+    descricao?: string;
+    idUsuario: string; // dono do pet (UUID)
+};
+
+// Schema do formulário (react-hook-form): campos numéricos/datas entram como
+// texto e a espécie/sexo podem estar indefinidos até o usuário escolher.
+export const FormCadastroPetSchema = z.object({
+    nome: z.string().min(2, "Nome deve ter ao menos 2 caracteres").trim(),
+    especie: z.enum(ESPECIES_PET, { message: "Selecione a espécie" }),
+    sexo: z.enum(["MACHO", "FEMEA"], { message: "Selecione o sexo" }),
+    raca: z.string().trim().optional(),
+    peso: z
+        .string()
+        .trim()
+        .optional()
+        .refine(
+            (v) => !v || !Number.isNaN(Number(v.replace(",", "."))),
+            "Peso inválido"
+        ),
+    dataNasc: z
+        .string()
+        .trim()
+        .optional()
+        .refine(
+            (v) => !v || /^\d{2}\/\d{2}\/\d{4}$/.test(v),
+            "Use o formato DD/MM/AAAA"
+        ),
+    descricao: z.string().trim().optional(),
+});
 
 export type EspeciePet = z.infer<typeof EspeciePetSchema>;
 export type SexoPet = z.infer<typeof SexoPetSchema>;
 export type Pet = z.infer<typeof PetSchema>;
-export type DadosCadastroPet = z.infer<typeof CadastroPetSchema>;
+export type FormCadastroPet = z.infer<typeof FormCadastroPetSchema>;

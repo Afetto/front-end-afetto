@@ -1,7 +1,13 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
-export function PetsVazio() {
+type PetsVazioProps = {
+  erro?: boolean;
+  aoTentarNovamente?: () => void;
+};
+
+export function PetsVazio({ erro, aoTentarNovamente }: PetsVazioProps = {}) {
   return (
     <View className="flex-1 bg-surface">
       {/* Header */}
@@ -21,6 +27,7 @@ export function PetsVazio() {
           Adicione seu primeiro pet para começar a acompanhar a saúde dele.
         </Text>
         <TouchableOpacity
+          onPress={() => router.push("/pet/cadastrar" as any)}
           activeOpacity={0.85}
           style={{ borderColor: "#E8A838" }}
           className="flex-row items-center gap-2 mt-2 px-6 py-3 rounded-2xl border"
@@ -30,6 +37,14 @@ export function PetsVazio() {
             Adicionar novo pet
           </Text>
         </TouchableOpacity>
+
+        {erro && (
+          <TouchableOpacity onPress={aoTentarNovamente} className="mt-1">
+            <Text className="text-muted text-xs text-center underline">
+              Não foi possível carregar seus pets. Tentar novamente
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
