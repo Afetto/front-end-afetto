@@ -1,5 +1,4 @@
 import axios from "axios";
-import { router } from "expo-router";
 
 // A API do Afetto usa autenticação por sessão via cookie (JSESSIONID),
 // não JWT/Bearer. O cookie é enviado automaticamente em toda requisição
@@ -15,22 +14,17 @@ if (!process.env.EXPO_PUBLIC_API_URL) {
     );
 }
 
-export const api = axios.create({
-    baseURL: urlBase,
-    headers: {
-        "Content-Type": "application/json",
-    },
-    timeout: 10000,
-    withCredentials: true, // ← ESSENCIAL — envia o cookie JSESSIONID
-});
+// export const api = axios.create({
+//     baseURL: urlBase,
+//     headers: {
+//         "Content-Type": "application/json",
+//     },
+//     timeout: 10000,
+//     withCredentials: true, // ← ESSENCIAL — envia o cookie JSESSIONID
+// });
 
-// Interceptor de resposta — sessão expirada / não autenticada volta para o login
-api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        if (error.response?.status === 403) {
-            router.replace("/login");
-        }
-        return Promise.reject(error);
-    }
-);
+// Sem interceptor de redirecionamento global: um 403 de um endpoint protegido
+// não deve jogar o app inteiro para o login (isso causava "bounce" ao navegar
+// entre as abas quando o cookie de sessão não era reenviado pelo navegador).
+// Cada tela trata o próprio erro (isError do useQuery) e a proteção de rota
+// fica no <RotaProtegida>, que verifica a sessão local persistida.
