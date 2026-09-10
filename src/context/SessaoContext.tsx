@@ -1,9 +1,7 @@
-import { api } from "@/api/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 
 const CHAVE_SESSAO = "@afetto:session";
-const CHAVE_TOKEN = "@afetto:token";
 
 type ProgressoOnboarding = {
   perfilCompleto: boolean;
@@ -21,10 +19,7 @@ type Sessao = {
 type DadosSessaoContexto = {
   sessao: Sessao | null;
   carregando: boolean;
-  entrar: (
-    usuario: { id: number; email: string; nome: string },
-    token: string
-  ) => Promise<void>;
+  entrar: (usuario: { id: number; email: string; nome: string }) => Promise<void>;
   entrarComoDev: () => Promise<void>;
   sair: () => Promise<void>;
   concluirEtapa: (etapa: keyof ProgressoOnboarding) => Promise<void>;
@@ -44,32 +39,27 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      AsyncStorage.getItem(CHAVE_SESSAO),
-      AsyncStorage.getItem(CHAVE_TOKEN),
-    ])
-      .then(([sessaoBruta, token]) => {
+    AsyncStorage.getItem(CHAVE_SESSAO)
+      .then((sessaoBruta) => {
         if (sessaoBruta) setSessao(JSON.parse(sessaoBruta));
-        if (token) {
-          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        }
       })
       .finally(() => setCarregando(false));
   }, []);
 
-  async function entrar(
-    usuario: { id: number; email: string; nome: string },
-    token: string
-  ): Promise<void> {
+  async function entrar(usuario: {
+    id: number;
+    email: string;
+    nome: string;
+  }): Promise<void> {
     const novaSessao: Sessao = {
       id: usuario.id,
       email: usuario.email,
       nome: usuario.nome,
       progresso: PROGRESSO_PADRAO,
     };
+    // O cookie de sessão (JSESSIONID) é persistido automaticamente pelo axios;
+    // aqui guardamos apenas os dados do usuário para a UI.
     await AsyncStorage.setItem(CHAVE_SESSAO, JSON.stringify(novaSessao));
-    await AsyncStorage.setItem(CHAVE_TOKEN, token);
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     setSessao(novaSessao);
   }
 
@@ -90,8 +80,6 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
 
   async function sair() {
     await AsyncStorage.removeItem(CHAVE_SESSAO);
-    await AsyncStorage.removeItem(CHAVE_TOKEN);
-    delete api.defaults.headers.common["Authorization"];
     setSessao(null);
   }
 

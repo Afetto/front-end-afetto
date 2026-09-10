@@ -26,8 +26,11 @@ export type UsuarioArmazenado = {
   dataNascimento: string;
 };
 
+// A API autentica por cookie de sessão (JSESSIONID) — não há token no corpo da
+// resposta. O login também não devolve id/nome; virão de GET /usuario/me quando
+// o backend expuser esse endpoint.
 export type ResultadoAutenticacao =
-  | { ok: true; usuario: UsuarioArmazenado; token: string }
+  | { ok: true; usuario: { id: number; nome: string; email: string } }
   | { ok: false };
 
 export type DadosAtualizacaoUsuario = {

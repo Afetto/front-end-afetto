@@ -1,10 +1,10 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { router } from "expo-router";
 
-const CHAVE_TOKEN = "@afetto:token";
-
-const URL_API_PADRAO = "http://localhost:3000";
+// A API do Afetto usa autenticação por sessão via cookie (JSESSIONID),
+// não JWT/Bearer. O cookie é enviado automaticamente em toda requisição
+// graças ao `withCredentials: true` abaixo.
+const URL_API_PADRAO = "https://java-afetto-fork.onrender.com";
 
 const urlBase = process.env.EXPO_PUBLIC_API_URL ?? URL_API_PADRAO;
 
@@ -21,25 +21,14 @@ export const api = axios.create({
         "Content-Type": "application/json",
     },
     timeout: 10000,
+    withCredentials: true, // ← ESSENCIAL — envia o cookie JSESSIONID
 });
 
-// Interceptor para adicionar token JWT automaticamente
-api.interceptors.request.use(async (config) => {
-    const token = await AsyncStorage.getItem(CHAVE_TOKEN);
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
-
-// Interceptor para tratar erros globalmente
+// Interceptor de resposta — sessão expirada / não autenticada volta para o login
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        if (error.response?.status === 401) {
-            // Token expirado — limpa credenciais e redireciona para login
-            await AsyncStorage.removeItem(CHAVE_TOKEN);
-            delete api.defaults.headers.common["Authorization"];
+        if (error.response?.status === 403) {
             router.replace("/login");
         }
         return Promise.reject(error);

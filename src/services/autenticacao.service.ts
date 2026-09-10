@@ -9,25 +9,30 @@ import {
   UsuarioArmazenado,
 } from "@/types/autenticacao.types";
 
+/** Converte uma data de DD/MM/AAAA para o formato ISO YYYY-MM-DD que o backend espera. */
+function converterDataParaISO(data: string): string {
+  const [dia, mes, ano] = data.split("/");
+  return `${ano}-${mes}-${dia}`;
+}
 
 /**
  * Cadastra um novo usuário.
- * POST /usuarios
+ * POST /usuario
  */
-export async function cadastrar(payload: DadosCadastro): Promise<ResultadoCadastro> {
+export async function cadastrar(dados: DadosCadastro): Promise<ResultadoCadastro> {
   try {
-    await api.post("/usuarios", {
-      nome: payload.name.trim(),
-      email: payload.email.trim().toLowerCase(),
-      cpf: payload.cpf,
-      telefone: `${payload.phoneCode} ${payload.phone}`,
-      dataNascimento: payload.birthDate,
-      senha: payload.password,
+    await api.post("/usuario", {
+      nome: dados.name.trim(),
+      cpf: dados.cpf.replace(/\D/g, ""), // só números: "12345678900"
+      email: dados.email.trim().toLowerCase(),
+      senha: dados.password,
+      telefone: `${dados.phoneCode} ${dados.phone}`.replace(/\D/g, ""),
+      dataNascimento: converterDataParaISO(dados.birthDate), // DD/MM/AAAA → YYYY-MM-DD
     });
 
     return { ok: true };
   } catch (error: any) {
-    if (error.response?.status === 409) {
+    if (error.response?.status === 403) {
       return { ok: false, error: "email_taken" };
     }
     return { ok: false, error: "unknown" };
@@ -35,35 +40,28 @@ export async function cadastrar(payload: DadosCadastro): Promise<ResultadoCadast
 }
 
 /**
- * Valida credenciais e retorna o usuário + token JWT.
- * POST /auth/login
+ * Autentica o usuário. A sessão é mantida por cookie (JSESSIONID), enviado
+ * automaticamente pelo axios (`withCredentials: true`).
+ * POST /login
  */
 export async function autenticar(
   email: string,
   senha: string
 ): Promise<ResultadoAutenticacao> {
   try {
-    const response = await api.post("/auth/login", {
+    const resposta = await api.post("/login", {
       email: email.trim().toLowerCase(),
       senha,
     });
 
-    const { token, usuario } = response.data;
-
-    // Salva o token para ser usado nos próximos requests
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
+    // O backend retorna apenas { usuario: "email@...", mensagem: "..." } — sem
+    // id/nome/token. Guardamos o e-mail; o perfil completo virá de GET /usuario/me.
     return {
       ok: true,
-      token,
       usuario: {
-        id: usuario.id,
-        nome: usuario.nome,
-        email: usuario.email,
-        cpf: usuario.cpf,
-        codigoDDI: "+55",
-        telefone: usuario.telefone,
-        dataNascimento: usuario.dataNascimento,
+        id: 0,
+        nome: "",
+        email: resposta.data.usuario,
       },
     };
   } catch {
@@ -152,10 +150,11 @@ export async function atualizarSenha(
 
 /**
  * Encerra a sessão do usuário.
- * Remove o token do header global.
+ * A sessão é por cookie — não há token no cliente para remover. A limpeza da
+ * sessão local (AsyncStorage) fica a cargo do SessaoContext.
  */
 export async function sair(): Promise<void> {
-  delete api.defaults.headers.common["Authorization"];
+  // Sem operação no cliente por enquanto — placeholder para um POST /logout futuro.
 }
 
 /**

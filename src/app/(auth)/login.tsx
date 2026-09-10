@@ -40,15 +40,14 @@ export default function TelaLogin() {
         return;
       }
 
-      // Persiste sessão via contexto (dados já vieram da API)
-      await entrar(
-        {
-          id: resultado.usuario.id,
-          email: resultado.usuario.email,
-          nome: resultado.usuario.nome,
-        },
-        resultado.token
-      );
+      // Login OK — o cookie de sessão já foi salvo automaticamente.
+      // A API não devolve id/nome; guardamos o e-mail como nome provisório
+      // até existir GET /usuario/me para buscar o perfil completo.
+      await entrar({
+        id: resultado.usuario.id,
+        email: resultado.usuario.email,
+        nome: resultado.usuario.nome || resultado.usuario.email,
+      });
       router.replace("/(tabs)");
     },
     onError: () => {

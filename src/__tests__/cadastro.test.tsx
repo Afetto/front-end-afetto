@@ -40,13 +40,14 @@ const ENTRADA_CRUA = {
   password: "123456",
 };
 
+// A API em produção espera CPF/telefone só com dígitos e data em ISO (YYYY-MM-DD).
 const PAYLOAD_ESPERADO = {
   nome: "Fulano de Tal",
+  cpf: "52998224725",
   email: "teste@afetto.com",
-  cpf: "529.982.247-25",
-  telefone: "+55 99999-8888",
-  dataNascimento: "10/05/1990",
   senha: "123456",
+  telefone: "55999998888",
+  dataNascimento: "1990-05-10",
 };
 
 function preencherFormulario() {
@@ -81,7 +82,7 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
     jest.clearAllMocks();
   });
 
-  it("faz POST /usuarios com o payload mapeado e exibe o sucesso", async () => {
+  it("faz POST /usuario com o payload mapeado e exibe o sucesso", async () => {
     mockPost.mockResolvedValueOnce({ data: {} });
 
     render(<TelaCadastro />, { wrapper });
@@ -89,14 +90,14 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
     fireEvent.press(screen.getByText("Criar Conta"));
 
     await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith("/usuarios", PAYLOAD_ESPERADO);
+      expect(mockPost).toHaveBeenCalledWith("/usuario", PAYLOAD_ESPERADO);
     });
 
     expect(await screen.findByText("Conta criada!")).toBeTruthy();
   });
 
-  it("mostra erro no campo e-mail quando a API responde 409", async () => {
-    mockPost.mockRejectedValueOnce({ response: { status: 409 } });
+  it("mostra erro no campo e-mail quando a API responde 403", async () => {
+    mockPost.mockRejectedValueOnce({ response: { status: 403 } });
 
     render(<TelaCadastro />, { wrapper });
     preencherFormulario();
