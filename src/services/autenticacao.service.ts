@@ -26,19 +26,70 @@ function converterDataParaISO(data: string): string {
   return `${ano}-${mes}-${dia}`;
 }
 
+// Item da listagem GET /usuario — NÃO traz id nem email: só o nome e um link
+// HATEOAS com o id embutido no href.
+type UsuarioListaItem = { linkUsuario?: { href?: string } };
+
+const MAX_PAGINAS_BUSCA = 15;
+
+function idDoHref(href: string | undefined): string | null {
+  if (!href) return null;
+  const partes = href.split("/").filter(Boolean);
+  return partes[partes.length - 1] || null;
+}
+
 /**
- * Resolve o usuário logado a partir do e-mail — a API não tem GET /usuario/me,
- * então varremos a listagem paginada GET /usuario e filtramos pelo e-mail.
+ * Resolve o usuário logado pelo e-mail. A API não tem GET /usuario/me e a
+ * listagem GET /usuario não expõe e-mail/id — só um link HATEOAS. Então
+ * varremos as páginas, extraímos o id de cada link e buscamos o detalhe
+ * (GET /usuario/{id}) até casar o e-mail.
+ *
+ * ⚠️ O(n) em número de usuários — stopgap aceitável enquanto a base é pequena.
+ * O ideal é o backend expor GET /usuario/me (ou e-mail/filtro na listagem).
  */
-async function resolverUsuarioPorEmail(email: string): Promise<UsuarioApi | null> {
+async function resolverUsuarioPorEmail(email: string): Promise<UsuarioArmazenado | null> {
+  const alvo = email.trim().toLowerCase();
   try {
-    const response = await api.get("/usuario", { params: { page: 0, size: 200 } });
-    const lista = extrairLista<UsuarioApi>(response.data);
-    const alvo = email.trim().toLowerCase();
-    return lista.find((u) => u.email?.trim().toLowerCase() === alvo) ?? null;
+    let pageNumber = 0;
+    let totalPages = 1;
+
+    while (pageNumber < totalPages && pageNumber < MAX_PAGINAS_BUSCA) {
+      const { data } = await api.get("/usuario", { params: { pageNumber } });
+      totalPages = Number((data as { totalPages?: number })?.totalPages ?? 1);
+
+      for (const item of extrairLista<UsuarioListaItem>(data)) {
+        const id = idDoHref(item?.linkUsuario?.href);
+        if (!id) continue;
+        try {
+          const { data: detalhe } = await api.get<UsuarioApi>(`/usuario/${id}`);
+          if (detalhe?.email?.trim().toLowerCase() === alvo) {
+            return mapearUsuario(detalhe);
+          }
+        } catch {
+          // detalhe indisponível — segue para o próximo
+        }
+      }
+
+      pageNumber++;
+    }
   } catch {
-    return null;
+    // listagem indisponível (ex.: sessão não propagou o cookie)
   }
+  return null;
+}
+
+/**
+ * Busca o usuário logado: usa o id quando já temos; senão cai no crawl por e-mail.
+ */
+export async function buscarUsuarioLogado(
+  id: string,
+  email: string
+): Promise<UsuarioArmazenado | null> {
+  if (id) {
+    const porId = await buscarUsuarioPorId(id);
+    if (porId) return porId;
+  }
+  return email ? resolverUsuarioPorEmail(email) : null;
 }
 
 function mapearUsuario(u: UsuarioApi): UsuarioArmazenado {

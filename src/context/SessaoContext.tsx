@@ -41,7 +41,19 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     AsyncStorage.getItem(CHAVE_SESSAO)
       .then((sessaoBruta) => {
-        if (sessaoBruta) setSessao(JSON.parse(sessaoBruta));
+        if (!sessaoBruta) return;
+        try {
+          const salva = JSON.parse(sessaoBruta);
+          // Só aceita se tiver o formato atual — descarta sessões de versões
+          // antigas do app (que usavam `name`/`setup` em vez de `nome`/`progresso`).
+          if (salva && typeof salva.nome === "string" && salva.progresso) {
+            setSessao(salva);
+          } else {
+            AsyncStorage.removeItem(CHAVE_SESSAO);
+          }
+        } catch {
+          AsyncStorage.removeItem(CHAVE_SESSAO);
+        }
       })
       .finally(() => setCarregando(false));
   }, []);

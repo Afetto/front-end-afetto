@@ -2,7 +2,7 @@ import { useSessao } from "@/context/SessaoContext";
 import {
   atualizarSenha,
   atualizarUsuario,
-  buscarUsuarioPorId,
+  buscarUsuarioLogado,
 } from "@/services/autenticacao.service";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -54,6 +54,7 @@ export default function TelaPerfil() {
   const { sessao, sair, atualizarPerfil } = useSessao();
 
   // Dados do formulário
+  const [idUsuario, setIdUsuario] = useState("");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -85,15 +86,16 @@ export default function TelaPerfil() {
     telefone !== originais.telefone;
 
   const carregarUsuario = useCallback(async () => {
-    if (!sessao?.id) return;
-    const usuario = await buscarUsuarioPorId(sessao.id);
+    if (!sessao?.id && !sessao?.email) return;
+    const usuario = await buscarUsuarioLogado(sessao?.id ?? "", sessao?.email ?? "");
     if (!usuario) return;
+    setIdUsuario(usuario.id);
     setNome(usuario.nome);
     setEmail(usuario.email);
     setTelefone(usuario.telefone);
     setCpf(usuario.cpf);
     setOriginais({ nome: usuario.nome, email: usuario.email, telefone: usuario.telefone });
-  }, [sessao?.id]);
+  }, [sessao?.id, sessao?.email]);
 
   useEffect(() => {
     carregarUsuario();
@@ -107,7 +109,11 @@ export default function TelaPerfil() {
   };
 
   const aoSalvar = async () => {
-    if (!sessao?.id) return;
+    const id = idUsuario || sessao?.id;
+    if (!id) {
+      setErroSalvar("Não foi possível identificar seu usuário. Tente sair e entrar de novo.");
+      return;
+    }
 
     const nomeLimpo = nome.trim();
     const emailLimpo = email.trim().toLowerCase();
@@ -119,7 +125,7 @@ export default function TelaPerfil() {
     setSalvando(true);
     setErroSalvar("");
 
-    const resultado = await atualizarUsuario(sessao.id, {
+    const resultado = await atualizarUsuario(id, {
       nome: nomeLimpo,
       email: emailLimpo,
       telefone: telefoneLimpo,
@@ -180,9 +186,13 @@ export default function TelaPerfil() {
       return;
     }
 
-    if (!sessao?.id) return;
+    const id = idUsuario || sessao?.id;
+    if (!id) {
+      setErroSenha("Não foi possível identificar seu usuário. Tente sair e entrar de novo.");
+      return;
+    }
     setSalvandoSenha(true);
-    const resultado = await atualizarSenha(sessao.id, senhaAtual, novaSenha);
+    const resultado = await atualizarSenha(id, senhaAtual, novaSenha);
     setSalvandoSenha(false);
 
     if (!resultado.ok) {
@@ -209,7 +219,8 @@ export default function TelaPerfil() {
     setErroSenha("");
   };
 
-  const inicial = nome[0]?.toUpperCase() ?? sessao?.nome[0]?.toUpperCase() ?? "U";
+  const inicial =
+    (nome || sessao?.nome || "U").trim().charAt(0).toUpperCase() || "U";
 
   return (
     <View style={styles.root}>
