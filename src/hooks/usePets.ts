@@ -13,7 +13,7 @@ export function usePets() {
   });
 }
 
-export function usePet(id: number) {
+export function usePet(id: string) {
   return useQuery({
     queryKey: [...QUERY_KEY, id],
     queryFn: () => petService.buscarPorId(id),
@@ -40,7 +40,7 @@ export function useAtualizarPet() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<DadosCadastroPet> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<DadosCadastroPet> }) =>
       petService.atualizar(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
@@ -54,7 +54,7 @@ export function useRemoverPet() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => petService.remover(id),
+    mutationFn: (id: string) => petService.remover(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },

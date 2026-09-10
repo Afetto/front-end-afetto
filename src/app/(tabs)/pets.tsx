@@ -14,19 +14,43 @@ import {
 } from "react-native";
 
 const ICONE_ESPECIE: Record<string, string> = {
-  Cachorro: "🐶",
-  Gato: "🐱",
-  Coelho: "🐰",
-  Pássaro: "🐦",
-  Réptil: "🦎",
-  Outro: "🐾",
+  CACHORRO: "🐶",
+  GATO: "🐱",
+  COELHO: "🐰",
+  AVE: "🐦",
+  REPTIL: "🦎",
+  ROEDOR: "🐹",
+  PORCO: "🐷",
+  MACACO: "🐵",
+  CAVALO: "🐴",
+  PEIXE: "🐟",
+  INSETO: "🐛",
+  OUTRO: "🐾",
 };
 
-function calcularIdade(dataNascimento: string): string {
-  const [dia, mes, ano] = dataNascimento.split("/").map(Number);
-  const nascimento = new Date(ano, mes - 1, dia);
+const LABEL_ESPECIE: Record<string, string> = {
+  CACHORRO: "Cachorro",
+  GATO: "Gato",
+  COELHO: "Coelho",
+  AVE: "Ave",
+  REPTIL: "Réptil",
+  ROEDOR: "Roedor",
+  PORCO: "Porco",
+  MACACO: "Macaco",
+  CAVALO: "Cavalo",
+  PEIXE: "Peixe",
+  INSETO: "Inseto",
+  OUTRO: "Outro",
+};
+
+function calcularIdade(dataNasc: string): string {
+  if (!dataNasc) return "—";
+  const nascimento = new Date(dataNasc); // formato ISO YYYY-MM-DD
+  if (Number.isNaN(nascimento.getTime())) return "—";
   const hoje = new Date();
-  const anos = hoje.getFullYear() - nascimento.getFullYear();
+  let anos = hoje.getFullYear() - nascimento.getFullYear();
+  const m = hoje.getMonth() - nascimento.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate())) anos--;
   return anos <= 0 ? "< 1 ano" : `${anos} ${anos === 1 ? "ano" : "anos"}`;
 }
 
@@ -91,7 +115,7 @@ export default function TelaPets() {
             <View className="flex-row items-center gap-2">
               <Text className="text-base font-bold text-primary">{item.nome}</Text>
               <Text className="text-xs text-muted">
-                {item.sexo === "M" ? "♂" : "♀"}
+                {item.sexo === "MACHO" ? "♂" : "♀"}
               </Text>
               {/* TODO: status de saúde ainda não vem da API — placeholder fixo */}
               <View
@@ -105,20 +129,23 @@ export default function TelaPets() {
             </View>
 
             <Text className="text-xs text-muted mt-0.5">
-              {item.especie} • {item.raca}
+              {LABEL_ESPECIE[item.especie] ?? item.especie}
+              {item.raca ? ` • ${item.raca}` : ""}
             </Text>
 
             <View className="flex-row gap-3 mt-2">
               <View className="flex-row items-center gap-1">
                 <Ionicons name="calendar-outline" size={12} color="#9A9585" />
                 <Text className="text-xs text-muted">
-                  {calcularIdade(item.dataNascimento)}
+                  {calcularIdade(item.dataNasc)}
                 </Text>
               </View>
-              <View className="flex-row items-center gap-1">
-                <Ionicons name="barbell-outline" size={12} color="#9A9585" />
-                <Text className="text-xs text-muted">{item.peso}</Text>
-              </View>
+              {item.peso != null && (
+                <View className="flex-row items-center gap-1">
+                  <Ionicons name="barbell-outline" size={12} color="#9A9585" />
+                  <Text className="text-xs text-muted">{item.peso} kg</Text>
+                </View>
+              )}
             </View>
           </View>
 
