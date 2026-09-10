@@ -1,13 +1,6 @@
 import { api } from "@/api/api";
+import { extrairLista } from "@/api/paginacao";
 import { DadosCadastroPet, Pet } from "@/schemas/pet.schema";
-
-// A API pagina as listagens no formato Spring Page: { content: [...], ... }.
-// Alguns endpoints podem devolver um array puro — então tratamos os dois casos.
-function extrairLista<T>(data: unknown): T[] {
-    if (Array.isArray(data)) return data as T[];
-    const pagina = data as { content?: T[] } | null;
-    return pagina?.content ?? [];
-}
 
 export const petService = {
     listar: async (): Promise<Pet[]> => {

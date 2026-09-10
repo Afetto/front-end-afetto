@@ -17,26 +17,24 @@ export type ResultadoCadastro =
   | { ok: false; error: "email_taken" | "unknown" };
 
 export type UsuarioArmazenado = {
-  id: number;
+  id: string;
   nome: string;
   email: string;
   cpf: string;
-  codigoDDI: string;
   telefone: string;
   dataNascimento: string;
 };
 
 // A API autentica por cookie de sessão (JSESSIONID) — não há token no corpo da
-// resposta. O login também não devolve id/nome; virão de GET /usuario/me quando
-// o backend expuser esse endpoint.
+// resposta. O login também não devolve id/nome: resolvemos varrendo GET /usuario
+// pelo e-mail (não existe GET /usuario/me).
 export type ResultadoAutenticacao =
-  | { ok: true; usuario: { id: number; nome: string; email: string } }
+  | { ok: true; usuario: { id: string; nome: string; email: string } }
   | { ok: false };
 
 export type DadosAtualizacaoUsuario = {
   nome?: string;
   email?: string;
-  codigoDDI?: string;
   telefone?: string;
 };
 

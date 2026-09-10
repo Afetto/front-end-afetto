@@ -10,7 +10,7 @@ type ProgressoOnboarding = {
 };
 
 type Sessao = {
-  id: number;
+  id: string;
   email: string;
   nome: string;
   progresso: ProgressoOnboarding;
@@ -19,7 +19,7 @@ type Sessao = {
 type DadosSessaoContexto = {
   sessao: Sessao | null;
   carregando: boolean;
-  entrar: (usuario: { id: number; email: string; nome: string }) => Promise<void>;
+  entrar: (usuario: { id: string; email: string; nome: string }) => Promise<void>;
   entrarComoDev: () => Promise<void>;
   sair: () => Promise<void>;
   concluirEtapa: (etapa: keyof ProgressoOnboarding) => Promise<void>;
@@ -47,7 +47,7 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function entrar(usuario: {
-    id: number;
+    id: string;
     email: string;
     nome: string;
   }): Promise<void> {
@@ -65,7 +65,7 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
 
   async function entrarComoDev() {
     const sessaoDev: Sessao = {
-      id: 0,
+      id: "dev",
       nome: "Dev User",
       email: "dev@afetto.com",
       progresso: {

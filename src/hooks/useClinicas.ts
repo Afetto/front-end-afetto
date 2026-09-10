@@ -32,7 +32,7 @@ export function useDesvincularClinica() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (clinicaId: number) => clinicaService.desvincular(clinicaId),
+        mutationFn: (clinicaId: string) => clinicaService.desvincular(clinicaId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEY });
         },

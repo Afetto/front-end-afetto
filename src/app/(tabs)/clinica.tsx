@@ -34,7 +34,7 @@ export default function TelaClinica() {
     c.nome.toLowerCase().includes(busca.toLowerCase())
   );
 
-  function aoVincular(clinicaId: number) {
+  function aoVincular(clinicaId: string) {
     if (!sessao?.id) return;
 
     vincular(

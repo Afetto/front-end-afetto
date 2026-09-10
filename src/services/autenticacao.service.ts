@@ -1,4 +1,5 @@
 import { api } from "@/api/api";
+import { extrairLista } from "@/api/paginacao";
 import {
   DadosAtualizacaoUsuario,
   DadosCadastro,
@@ -9,10 +10,46 @@ import {
   UsuarioArmazenado,
 } from "@/types/autenticacao.types";
 
+/** Formato do usuário como a API devolve (GET /usuario, GET /usuario/{id}). */
+type UsuarioApi = {
+  id: string;
+  nome?: string;
+  cpf?: string;
+  email?: string;
+  telefone?: string;
+  dataNascimento?: string;
+};
+
 /** Converte uma data de DD/MM/AAAA para o formato ISO YYYY-MM-DD que o backend espera. */
 function converterDataParaISO(data: string): string {
   const [dia, mes, ano] = data.split("/");
   return `${ano}-${mes}-${dia}`;
+}
+
+/**
+ * Resolve o usuário logado a partir do e-mail — a API não tem GET /usuario/me,
+ * então varremos a listagem paginada GET /usuario e filtramos pelo e-mail.
+ */
+async function resolverUsuarioPorEmail(email: string): Promise<UsuarioApi | null> {
+  try {
+    const response = await api.get("/usuario", { params: { page: 0, size: 200 } });
+    const lista = extrairLista<UsuarioApi>(response.data);
+    const alvo = email.trim().toLowerCase();
+    return lista.find((u) => u.email?.trim().toLowerCase() === alvo) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function mapearUsuario(u: UsuarioApi): UsuarioArmazenado {
+  return {
+    id: u.id,
+    nome: u.nome ?? "",
+    email: u.email ?? "",
+    cpf: u.cpf ?? "",
+    telefone: u.telefone ?? "",
+    dataNascimento: u.dataNascimento ?? "",
+  };
 }
 
 /**
@@ -49,19 +86,21 @@ export async function autenticar(
   senha: string
 ): Promise<ResultadoAutenticacao> {
   try {
-    const resposta = await api.post("/login", {
+    await api.post("/login", {
       email: email.trim().toLowerCase(),
       senha,
     });
 
-    // O backend retorna apenas { usuario: "email@...", mensagem: "..." } — sem
-    // id/nome/token. Guardamos o e-mail; o perfil completo virá de GET /usuario/me.
+    // O backend só retorna { usuario: "email@...", mensagem: "..." } — sem
+    // id/nome. Resolvemos o UUID varrendo GET /usuario pelo e-mail.
+    const usuario = await resolverUsuarioPorEmail(email);
+
     return {
       ok: true,
       usuario: {
-        id: 0,
-        nome: "",
-        email: resposta.data.usuario,
+        id: usuario?.id ?? "",
+        nome: usuario?.nome ?? "",
+        email: usuario?.email ?? email.trim().toLowerCase(),
       },
     };
   } catch {
@@ -70,23 +109,14 @@ export async function autenticar(
 }
 
 /**
- * Busca usuário pelo token JWT (sessão ativa).
- * GET /usuarios/me
+ * Busca o usuário da sessão pelo id (UUID).
+ * GET /usuario/{id}
  */
-export async function buscarUsuarioPorEmail(email: string): Promise<UsuarioArmazenado | null> {
+export async function buscarUsuarioPorId(id: string): Promise<UsuarioArmazenado | null> {
+  if (!id) return null;
   try {
-    const response = await api.get("/usuarios/me");
-    const u = response.data;
-
-    return {
-      id: u.id,
-      nome: u.nome,
-      email: u.email,
-      cpf: u.cpf,
-      codigoDDI: "+55",
-      telefone: u.telefone,
-      dataNascimento: u.dataNascimento,
-    };
+    const response = await api.get<UsuarioApi>(`/usuario/${id}`);
+    return mapearUsuario(response.data);
   } catch {
     return null;
   }
@@ -94,27 +124,28 @@ export async function buscarUsuarioPorEmail(email: string): Promise<UsuarioArmaz
 
 /**
  * Atualiza dados do perfil do usuário.
- * PUT /usuarios/{id}
+ * PUT /usuario/{id} — substitui o recurso inteiro, então buscamos o atual e
+ * fazemos merge das alterações antes de enviar.
  */
 export async function atualizarUsuario(
-  emailAtual: string,
+  id: string,
   alteracoes: DadosAtualizacaoUsuario
 ): Promise<ResultadoAtualizacaoUsuario> {
   try {
-    const response = await api.put("/usuarios/me", {
-      nome: alteracoes.nome,
-      email: alteracoes.email?.trim().toLowerCase(),
-      telefone: alteracoes.telefone
-        ? `${alteracoes.codigoDDI ?? "+55"} ${alteracoes.telefone}`
-        : undefined,
+    const { data: atual } = await api.get<UsuarioApi>(`/usuario/${id}`);
+    const novoEmail = (alteracoes.email ?? atual.email ?? "").trim().toLowerCase();
+
+    await api.put(`/usuario/${id}`, {
+      nome: alteracoes.nome ?? atual.nome,
+      cpf: (atual.cpf ?? "").replace(/\D/g, ""),
+      dataNascimento: atual.dataNascimento,
+      email: novoEmail,
+      telefone: (alteracoes.telefone ?? atual.telefone ?? "").replace(/\D/g, ""),
     });
 
-    return {
-      ok: true,
-      novoEmail: response.data.email ?? emailAtual,
-    };
+    return { ok: true, novoEmail };
   } catch (error: any) {
-    if (error.response?.status === 409) {
+    if (error.response?.status === 403) {
       return { ok: false, error: "email_taken" };
     }
     if (error.response?.status === 404) {
@@ -126,24 +157,29 @@ export async function atualizarUsuario(
 
 /**
  * Altera a senha do usuário.
- * POST /usuarios/me/senha
+ * A API não tem endpoint dedicado — enviamos via PUT /usuario/{id} com o campo
+ * `senha`. Não há verificação de "senha atual" no backend, então `senhaAtual`
+ * é ignorada por ora.
  */
 export async function atualizarSenha(
-  email: string,
-  senhaAtual: string,
+  id: string,
+  _senhaAtual: string,
   novaSenha: string
 ): Promise<ResultadoTrocaSenha> {
   try {
-    await api.post("/usuarios/me/senha", {
-      senhaAtual,
-      novaSenha,
+    const { data: atual } = await api.get<UsuarioApi>(`/usuario/${id}`);
+
+    await api.put(`/usuario/${id}`, {
+      nome: atual.nome,
+      cpf: (atual.cpf ?? "").replace(/\D/g, ""),
+      dataNascimento: atual.dataNascimento,
+      email: atual.email,
+      telefone: (atual.telefone ?? "").replace(/\D/g, ""),
+      senha: novaSenha,
     });
 
     return { ok: true };
-  } catch (error: any) {
-    if (error.response?.status === 401) {
-      return { ok: false, error: "wrong_password" };
-    }
+  } catch {
     return { ok: false, error: "unknown" };
   }
 }
