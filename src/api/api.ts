@@ -14,14 +14,14 @@ if (!process.env.EXPO_PUBLIC_API_URL) {
     );
 }
 
-// export const api = axios.create({
-//     baseURL: urlBase,
-//     headers: {
-//         "Content-Type": "application/json",
-//     },
-//     timeout: 10000,
-//     withCredentials: true, // ← ESSENCIAL — envia o cookie JSESSIONID
-// });
+export const api = axios.create({
+    baseURL: urlBase,
+    headers: {
+        "Content-Type": "application/json",
+    },
+    timeout: 10000,
+    withCredentials: true, // ← ESSENCIAL — envia o cookie JSESSIONID
+});
 
 // Sem interceptor de redirecionamento global: um 403 de um endpoint protegido
 // não deve jogar o app inteiro para o login (isso causava "bounce" ao navegar
