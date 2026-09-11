@@ -1,3 +1,5 @@
+import { definirTratadorSessaoExpirada } from "@/api/api";
+import { sair as sairService } from "@/services/autenticacao.service";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -57,6 +59,16 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setCarregando(false));
   }, []);
 
+  // Quando qualquer chamada à API responder 401, a sessão local deixa de ser
+  // válida — limpamos aqui para que o <RotaProtegida> redirecione ao login.
+  useEffect(() => {
+    definirTratadorSessaoExpirada(() => {
+      AsyncStorage.removeItem(CHAVE_SESSAO);
+      setSessao(null);
+    });
+    return () => definirTratadorSessaoExpirada(null);
+  }, []);
+
   async function entrar(usuario: {
     id: string;
     email: string;
@@ -75,6 +87,12 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function sair() {
+    try {
+      await sairService();
+    } catch {
+      // Mesmo se o backend falhar (ou não tiver /logout ainda), garantimos
+      // que a sessão local seja limpa.
+    }
     await AsyncStorage.removeItem(CHAVE_SESSAO);
     setSessao(null);
   }

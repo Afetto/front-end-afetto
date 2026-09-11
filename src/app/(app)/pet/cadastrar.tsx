@@ -7,12 +7,10 @@ import {
   FormCadastroPet,
   FormCadastroPetSchema,
 } from "@/schemas/pet.schema";
-import { buscarUsuarioLogado } from "@/services/autenticacao.service";
 import { mascararData } from "@/utils/mascaras";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   ActivityIndicator,
@@ -48,17 +46,7 @@ function dataBrParaIso(dataBr: string): string {
 export default function TelaCadastrarPet() {
   const { sessao } = useSessao();
   const { mutate: criarPet, isPending: enviando } = useCriarPet();
-
-  // A sessão nem sempre tem o id (login no navegador não consegue resolver o
-  // UUID). Tentamos completar aqui pelo e-mail antes de enviar.
-  const [idUsuario, setIdUsuario] = useState(sessao?.id ?? "");
-
-  useEffect(() => {
-    if (idUsuario || !sessao?.email) return;
-    buscarUsuarioLogado("", sessao.email).then((u) => {
-      if (u?.id) setIdUsuario(u.id);
-    });
-  }, [idUsuario, sessao?.email]);
+  const idUsuario = sessao?.id ?? "";
 
   const {
     control,
@@ -80,8 +68,7 @@ export default function TelaCadastrarPet() {
   });
 
   function aoEnviar(form: FormCadastroPet) {
-    const id = idUsuario || sessao?.id;
-    if (!id) {
+    if (!idUsuario) {
       setError("root", {
         message:
           "Não foi possível identificar seu usuário. Verifique a conexão com a API e entre novamente.",
@@ -98,7 +85,7 @@ export default function TelaCadastrarPet() {
         peso: form.peso ? Number(form.peso.replace(",", ".")) : undefined,
         dataNasc: form.dataNasc ? dataBrParaIso(form.dataNasc) : "",
         descricao: form.descricao?.trim() || "",
-        idUsuario: id,
+        idUsuario,
       },
       {
         onSuccess: () => router.back(),

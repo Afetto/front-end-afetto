@@ -1,3 +1,4 @@
+import { mensagemPorTipo } from "@/api/erros";
 import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 import CampoTexto from "@/components/ui/CampoTexto";
 import { useSessao } from "@/context/SessaoContext";
@@ -37,13 +38,16 @@ export default function TelaLogin() {
       autenticar(email, password),
     onSuccess: async (resultado) => {
       if (!resultado.ok) {
-        setError("root", { message: "E-mail ou senha incorretos" });
+        setError("root", {
+          message:
+            resultado.motivo === "credenciais_invalidas"
+              ? "E-mail ou senha incorretos"
+              : mensagemPorTipo(resultado.motivo),
+        });
         return;
       }
 
       // Login OK — o cookie de sessão já foi salvo automaticamente.
-      // A API não devolve id/nome; guardamos o e-mail como nome provisório
-      // até existir GET /usuario/me para buscar o perfil completo.
       await entrar({
         id: resultado.usuario.id,
         email: resultado.usuario.email,

@@ -1,36 +1,16 @@
-import { LoginInput } from "@/schemas/login.schema";
 import { CadastroInput } from "@/schemas/cadastro.schema";
-import { autenticar, cadastrar, sair } from "@/services/autenticacao.service";
+import { cadastrar } from "@/services/autenticacao.service";
 import { useMutation } from "@tanstack/react-query";
-import { router } from "expo-router";
 
-// ─── ENTRAR ──────────────────────────────────────────────────────────────────
-
-export function useEntrar() {
-    return useMutation({
-        mutationFn: ({ email, password }: LoginInput) =>
-            autenticar(email, password),
-        onSuccess: () => {
-            router.replace("/(tabs)");
-        },
-    });
-}
+// O login usa um `useMutation` inline em `login.tsx` (precisa chamar
+// `setError` do react-hook-form e `entrar()` do SessaoContext) e o logout usa
+// `sair()` do SessaoContext diretamente em `perfil.tsx` — não há necessidade
+// de hooks genéricos para esses dois casos.
 
 // ─── CADASTRO ────────────────────────────────────────────────────────────────
 
 export function useCadastrar() {
     return useMutation({
         mutationFn: (data: CadastroInput) => cadastrar(data),
-    });
-}
-
-// ─── SAIR ────────────────────────────────────────────────────────────────────
-
-export function useSair() {
-    return useMutation({
-        mutationFn: sair,
-        onSuccess: () => {
-            router.replace("/login");
-        },
     });
 }

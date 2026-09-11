@@ -1,4 +1,5 @@
 import { api } from "@/api/api";
+import { classificarErro } from "@/api/erros";
 import { extrairLista } from "@/api/paginacao";
 import {
   DadosAtualizacaoUsuario,
@@ -9,6 +10,7 @@ import {
   ResultadoTrocaSenha,
   UsuarioArmazenado,
 } from "@/types/autenticacao.types";
+import axios from "axios";
 
 /** Formato do usuário como a API devolve (GET /usuario, GET /usuario/{id}). */
 type UsuarioApi = {
@@ -38,7 +40,13 @@ function idDoHref(href: string | undefined): string | null {
   return partes[partes.length - 1] || null;
 }
 
-async function resolverUsuarioPorEmail(email: string): Promise<UsuarioArmazenado | null> {
+/**
+ * A API não devolve id/nome no /login nem tem GET /usuario/me — a única forma
+ * de descobrir quem acabou de logar é varrer GET /usuario até achar o e-mail.
+ * Isso só precisa rodar uma vez, logo após o login: a partir daí o id fica
+ * guardado na sessão e todo o resto da app usa `buscarUsuarioPorId`.
+ */
+async function bootstrapUsuarioAposLogin(email: string): Promise<UsuarioArmazenado | null> {
   const alvo = email.trim().toLowerCase();
   try {
     let pageNumber = 0;
@@ -69,20 +77,6 @@ async function resolverUsuarioPorEmail(email: string): Promise<UsuarioArmazenado
   return null;
 }
 
-/**
- * Busca o usuário logado: usa o id quando já temos; senão cai no crawl por e-mail.
- */
-export async function buscarUsuarioLogado(
-  id: string,
-  email: string
-): Promise<UsuarioArmazenado | null> {
-  if (id) {
-    const porId = await buscarUsuarioPorId(id);
-    if (porId) return porId;
-  }
-  return email ? resolverUsuarioPorEmail(email) : null;
-}
-
 function mapearUsuario(u: UsuarioApi): UsuarioArmazenado {
   return {
     id: u.id,
@@ -110,8 +104,8 @@ export async function cadastrar(dados: DadosCadastro): Promise<ResultadoCadastro
     });
 
     return { ok: true };
-  } catch (error: any) {
-    if (error.response?.status === 403) {
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
       return { ok: false, error: "email_taken" };
     }
     return { ok: false, error: "unknown" };
@@ -127,23 +121,23 @@ export async function autenticar(
   email: string,
   senha: string
 ): Promise<ResultadoAutenticacao> {
-  try {
-    await api.post("/login", {
-      email: email.trim().toLowerCase(),
-      senha,
-    });
+  const emailNormalizado = email.trim().toLowerCase();
 
-    return {
-      ok: true,
-      usuario: {
-        id: "",
-        nome: "",
-        email: email.trim().toLowerCase(),
-      },
-    };
-  } catch {
-    return { ok: false };
+  try {
+    await api.post("/login", { email: emailNormalizado, senha });
+  } catch (error) {
+    if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 400)) {
+      return { ok: false, motivo: "credenciais_invalidas" };
+    }
+    return { ok: false, motivo: classificarErro(error) };
   }
+
+  const usuario = await bootstrapUsuarioAposLogin(emailNormalizado);
+
+  return {
+    ok: true,
+    usuario: usuario ?? { id: "", nome: "", email: emailNormalizado, cpf: "", telefone: "", dataNascimento: "" },
+  };
 }
 
 /**
@@ -182,11 +176,11 @@ export async function atualizarUsuario(
     });
 
     return { ok: true, novoEmail };
-  } catch (error: any) {
-    if (error.response?.status === 403) {
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
       return { ok: false, error: "email_taken" };
     }
-    if (error.response?.status === 404) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
       return { ok: false, error: "not_found" };
     }
     return { ok: false, error: "unknown" };
@@ -223,12 +217,19 @@ export async function atualizarSenha(
 }
 
 /**
- * Encerra a sessão do usuário.
- * A sessão é por cookie — não há token no cliente para remover. A limpeza da
- * sessão local (AsyncStorage) fica a cargo do SessaoContext.
+ * Encerra a sessão do usuário no servidor.
+ * A sessão é por cookie — não há token no cliente para remover, só o cookie
+ * (que o navegador/WebView já descarta ao expirar). Tentamos invalidar no
+ * backend via POST /logout; se o endpoint não existir ou falhar, o
+ * SessaoContext garante a limpeza local mesmo assim.
  */
 export async function sair(): Promise<void> {
-  // Sem operação no cliente por enquanto — placeholder para um POST /logout futuro.
+  try {
+    await api.post("/logout");
+  } catch {
+    // Backend pode não ter /logout implementado ainda, ou a sessão já
+    // estava inválida — a limpeza local acontece de qualquer forma.
+  }
 }
 
 /**

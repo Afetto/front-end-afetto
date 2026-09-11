@@ -1,15 +1,16 @@
 import { api } from "@/api/api";
 import { extrairLista } from "@/api/paginacao";
 import { DadosCadastroPet, Pet } from "@/schemas/pet.schema";
+import axios from "axios";
 
 export const petService = {
     listar: async (): Promise<Pet[]> => {
         try {
             const response = await api.get("/pet", { params: { page: 0, size: 100 } });
             return extrairLista<Pet>(response.data);
-        } catch (error: any) {
+        } catch (error) {
             // Alguns endpoints da API respondem 404 quando a coleção está vazia
-            if (error?.response?.status === 404) return [];
+            if (axios.isAxiosError(error) && error.response?.status === 404) return [];
             throw error;
         }
     },

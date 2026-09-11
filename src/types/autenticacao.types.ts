@@ -2,6 +2,8 @@
 // Obs.: os campos de `DadosCadastro` espelham os identificadores do formulário
 // (react-hook-form + CadastroSchema) e por isso permanecem em inglês.
 
+import { TipoErroApi } from "@/api/erros";
+
 export type DadosCadastro = {
   name: string;
   email: string;
@@ -29,8 +31,8 @@ export type UsuarioArmazenado = {
 // resposta. O login também não devolve id/nome: resolvemos varrendo GET /usuario
 // pelo e-mail (não existe GET /usuario/me).
 export type ResultadoAutenticacao =
-  | { ok: true; usuario: { id: string; nome: string; email: string } }
-  | { ok: false };
+  | { ok: true; usuario: UsuarioArmazenado }
+  | { ok: false; motivo: "credenciais_invalidas" | TipoErroApi };
 
 export type DadosAtualizacaoUsuario = {
   nome?: string;

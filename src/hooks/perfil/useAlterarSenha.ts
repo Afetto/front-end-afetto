@@ -1,5 +1,7 @@
+import { mensagemErroApi } from "@/api/erros";
 import { useSessao } from "@/context/SessaoContext";
 import { atualizarSenha } from "@/services/autenticacao.service";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 export function useAlterarSenha() {
@@ -12,7 +14,6 @@ export function useAlterarSenha() {
   const [confirmarSenha, setConfirmarSenha] = useState("");
 
   const [erroSenha, setErroSenha] = useState("");
-  const [salvandoSenha, setSalvandoSenha] = useState(false);
 
   const abrirModal = () => {
     setErroSenha("");
@@ -26,6 +27,16 @@ export function useAlterarSenha() {
     setConfirmarSenha("");
     setErroSenha("");
   };
+
+  const { mutateAsync: enviarNovaSenha, isPending: salvandoSenha } = useMutation({
+    mutationFn: async () => {
+      const id = sessao?.id;
+      if (!id) throw new Error("sem_id");
+
+      const resultado = await atualizarSenha(id, senhaAtual, novaSenha);
+      if (!resultado.ok) throw resultado;
+    },
+  });
 
   const alterarSenha = async () => {
     setErroSenha("");
@@ -45,42 +56,17 @@ export function useAlterarSenha() {
       return false;
     }
 
-    const id = sessao?.id;
-
-    if (!id) {
-      setErroSenha(
-        "Não foi possível identificar seu usuário. Tente sair e entrar de novo.",
-      );
-      return false;
-    }
-
-    setSalvandoSenha(true);
-
     try {
-      const resultado = await atualizarSenha(
-        id,
-        senhaAtual,
-        novaSenha,
-      );
-
-      if (!resultado.ok) {
-        setErroSenha(
-          resultado.error === "wrong_password"
-            ? "Senha atual incorreta."
-            : "Erro ao alterar senha. Tente novamente.",
-        );
-
-        return false;
-      }
-
+      await enviarNovaSenha();
       fecharModal();
-
       return true;
-    } catch {
-      setErroSenha("Erro ao alterar senha. Tente novamente.");
+    } catch (erro) {
+      if (erro instanceof Error && erro.message === "sem_id") {
+        setErroSenha("Não foi possível identificar seu usuário. Tente sair e entrar de novo.");
+      } else {
+        setErroSenha(mensagemErroApi(erro));
+      }
       return false;
-    } finally {
-      setSalvandoSenha(false);
     }
   };
 
