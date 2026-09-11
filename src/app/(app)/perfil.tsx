@@ -22,6 +22,7 @@ import Animated, {
 import { BotaoSalvar } from "@/components/ui/BotaoSalvar";
 import { ToastSucesso } from "@/components/ui/ToastSucesso";
 import { SegurancaCard } from "@/components/perfil/SegurancaCard";
+import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 
 export default function TelaPerfil() {
   const { sair } = useSessao();
@@ -60,7 +61,6 @@ export default function TelaPerfil() {
 
   const toastOpacity = useSharedValue(0);
 
-  
   const estiloToast = useAnimatedStyle(() => ({
     opacity: toastOpacity.value,
   }));
@@ -84,7 +84,7 @@ export default function TelaPerfil() {
       exibirToast();
     }
   };
-  
+
   const handleAlterarSenha = async () => {
     const sucesso = await alterarSenha();
 
@@ -110,7 +110,6 @@ export default function TelaPerfil() {
     ]);
   };
 
-  
   return (
     <View className="flex-1 bg-surface">
       <KeyboardAvoidingView
@@ -149,7 +148,12 @@ export default function TelaPerfil() {
       </KeyboardAvoidingView>
 
       {temAlteracoes && (
-        <BotaoSalvar salvando={salvando} onPress={handleSalvarPerfil} />
+        <BotaoEnviar
+          enviando={salvando}
+          onPress={handleSalvarPerfil}
+          texto="Salvar alterações"
+          textoLoading="Salvando..."
+        />
       )}
 
       <ToastSucesso estilo={estiloToast} />

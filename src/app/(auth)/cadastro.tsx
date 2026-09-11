@@ -1,3 +1,4 @@
+import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 import CampoTexto from "@/components/ui/CampoTexto";
 import { CadastroInput, CadastroSchema } from "@/schemas/cadastro.schema";
 import { cadastrar as servicoCadastrar } from "@/services/autenticacao.service"; // ← alias
@@ -9,21 +10,21 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-    withTiming,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 
 export default function TelaCadastro() {
@@ -78,7 +79,9 @@ export default function TelaCadastro() {
         if (resultado.error === "email_taken") {
           setError("email", { message: "Este e-mail já está cadastrado" });
         } else {
-          setError("root", { message: "Erro ao criar conta. Tente novamente." });
+          setError("root", {
+            message: "Erro ao criar conta. Tente novamente.",
+          });
         }
         return;
       }
@@ -197,21 +200,13 @@ export default function TelaCadastro() {
 
           <View className="flex-1" />
 
-          <TouchableOpacity
+          
+          <BotaoEnviar
+            enviando={enviando}
             onPress={handleSubmit(fazerCadastro)}
-            disabled={enviando}
-            activeOpacity={0.85}
-            className={`items-center justify-center py-4 rounded-2xl ${enviando ? "bg-primary/70" : "bg-primary"
-              }`}
-          >
-            {enviando ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-white text-lg font-semibold">
-                Criar Conta
-              </Text>
-            )}
-          </TouchableOpacity>
+            texto="Fazer cadastro"
+            textoLoading="Criando..."
+          />
         </View>
       </ScrollView>
 

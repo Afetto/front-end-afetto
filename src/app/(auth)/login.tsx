@@ -1,3 +1,4 @@
+import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 import CampoTexto from "@/components/ui/CampoTexto";
 import { useSessao } from "@/context/SessaoContext";
 import { LoginInput, LoginSchema } from "@/schemas/login.schema";
@@ -120,21 +121,13 @@ export default function TelaLogin() {
 
           <View className="flex-1" />
 
-          {/* Botão entrar — enviando substitui isSubmitting */}
-          <TouchableOpacity
+          <BotaoEnviar
+            enviando={enviando}
             onPress={handleSubmit(fazerLogin)}
-            disabled={enviando}
-            activeOpacity={0.85}
-            className={`items-center justify-center py-4 rounded-2xl ${
-              enviando ? "bg-primary/70" : "bg-primary"
-            }`}
-          >
-            {enviando ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-white text-lg font-semibold">Entrar</Text>
-            )}
-          </TouchableOpacity>
+            texto="Entrar"
+            textoLoading="Entrando..."
+          />
+          
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
