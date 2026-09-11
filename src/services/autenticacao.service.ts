@@ -38,15 +38,6 @@ function idDoHref(href: string | undefined): string | null {
   return partes[partes.length - 1] || null;
 }
 
-/**
- * Resolve o usuário logado pelo e-mail. A API não tem GET /usuario/me e a
- * listagem GET /usuario não expõe e-mail/id — só um link HATEOAS. Então
- * varremos as páginas, extraímos o id de cada link e buscamos o detalhe
- * (GET /usuario/{id}) até casar o e-mail.
- *
- * ⚠️ O(n) em número de usuários — stopgap aceitável enquanto a base é pequena.
- * O ideal é o backend expor GET /usuario/me (ou e-mail/filtro na listagem).
- */
 async function resolverUsuarioPorEmail(email: string): Promise<UsuarioArmazenado | null> {
   const alvo = email.trim().toLowerCase();
   try {
@@ -142,16 +133,12 @@ export async function autenticar(
       senha,
     });
 
-    // O backend só retorna { usuario: "email@...", mensagem: "..." } — sem
-    // id/nome. Resolvemos o UUID varrendo GET /usuario pelo e-mail.
-    const usuario = await resolverUsuarioPorEmail(email);
-
     return {
       ok: true,
       usuario: {
-        id: usuario?.id ?? "",
-        nome: usuario?.nome ?? "",
-        email: usuario?.email ?? email.trim().toLowerCase(),
+        id: "",
+        nome: "",
+        email: email.trim().toLowerCase(),
       },
     };
   } catch {

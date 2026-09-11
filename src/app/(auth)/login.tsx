@@ -1,19 +1,19 @@
-import CampoTexto from "@/components/CampoTexto";
+import CampoTexto from "@/components/ui/CampoTexto";
+import { useSessao } from "@/context/SessaoContext";
 import { LoginInput, LoginSchema } from "@/schemas/login.schema";
 import { autenticar } from "@/services/autenticacao.service";
-import { useSessao } from "@/context/SessaoContext";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useForm } from "react-hook-form";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function TelaLogin() {

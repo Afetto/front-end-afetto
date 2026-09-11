@@ -1,26 +1,26 @@
-import CampoTexto from "@/components/CampoTexto";
-import { CampoSelecao } from "@/components/CampoSelecao";
+import { CampoSelecao } from "@/components/ui/CampoSelecao";
+import CampoTexto from "@/components/ui/CampoTexto";
 import { useSessao } from "@/context/SessaoContext";
 import {
-  CompletarPerfilInput,
-  CompletarPerfilSchema,
+    CompletarPerfilInput,
+    CompletarPerfilSchema,
 } from "@/schemas/completar-perfil.schema";
 import { completarPerfil as servicoCompletarPerfil } from "@/services/autenticacao.service";
+import { mascararCEP, mascararData } from "@/utils/mascaras";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { mascararCEP, mascararData } from "@/utils/mascaras";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function TelaCompletarPerfil() {

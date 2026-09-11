@@ -1,5 +1,5 @@
-import { CampoSelecao } from "@/components/CampoSelecao";
-import CampoTexto from "@/components/CampoTexto";
+import { CampoSelecao } from "@/components/ui/CampoSelecao";
+import CampoTexto from "@/components/ui/CampoTexto";
 import { useSessao } from "@/context/SessaoContext";
 import { useCriarPet } from "@/hooks/usePets";
 import {

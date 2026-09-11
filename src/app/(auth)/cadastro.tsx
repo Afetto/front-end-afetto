@@ -1,7 +1,7 @@
-import CampoTexto from "@/components/CampoTexto";
+import CampoTexto from "@/components/ui/CampoTexto";
 import { CadastroInput, CadastroSchema } from "@/schemas/cadastro.schema";
 import { cadastrar as servicoCadastrar } from "@/services/autenticacao.service"; // ← alias
-import { mascararCPF, mascararData, mascararCelular } from "@/utils/mascaras";
+import { mascararCelular, mascararCPF, mascararData } from "@/utils/mascaras";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -9,21 +9,21 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
+    withTiming,
 } from "react-native-reanimated";
 
 export default function TelaCadastro() {
