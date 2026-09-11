@@ -1,6 +1,8 @@
+import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 import { CampoSelecao } from "@/components/ui/CampoSelecao";
 import CampoTexto from "@/components/ui/CampoTexto";
 import { useSessao } from "@/context/SessaoContext";
+import { useBuscarCep } from "@/hooks/useBuscarCep";
 import {
     CompletarPerfilInput,
     CompletarPerfilSchema,
@@ -11,7 +13,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
     ActivityIndicator,
@@ -19,13 +20,12 @@ import {
     Platform,
     ScrollView,
     Text,
-    TouchableOpacity,
     View,
 } from "react-native";
 
 export default function TelaCompletarPerfil() {
   const { concluirEtapa } = useSessao();
-  const [cepCarregando, setCepCarregando] = useState(false);
+  const { buscando: cepCarregando, buscarCep: buscarEnderecoPorCep } = useBuscarCep();
 
   const {
     control,
@@ -54,28 +54,23 @@ export default function TelaCompletarPerfil() {
 
   // ─── Busca CEP ───────────────────────────────────────────────────────────
   async function buscarCep(cep: string) {
-    const raw = cep.replace(/\D/g, "");
-    if (raw.length !== 8) return;
+    const resultado = await buscarEnderecoPorCep(cep);
+    if (!resultado) return;
 
-    setCepCarregando(true);
-    try {
-      const res = await fetch(`https://viacep.com.br/ws/${raw}/json/`);
-      const data = await res.json();
-
-      if (data.erro) {
-        setError("cep", { message: "CEP não encontrado" });
-        return;
-      }
-
-      setValue("logradouro", data.logradouro ?? "", { shouldValidate: true });
-      setValue("bairro", data.bairro ?? "", { shouldValidate: true });
-      setValue("cidade", data.localidade ?? "", { shouldValidate: true });
-      setValue("estado", data.uf ?? "", { shouldValidate: true });
-    } catch {
-      setError("cep", { message: "Erro ao buscar CEP" });
-    } finally {
-      setCepCarregando(false);
+    if (!resultado.ok) {
+      setError("cep", {
+        message:
+          resultado.motivo === "nao_encontrado"
+            ? "CEP não encontrado"
+            : "Erro ao buscar CEP",
+      });
+      return;
     }
+
+    setValue("logradouro", resultado.endereco.logradouro, { shouldValidate: true });
+    setValue("bairro", resultado.endereco.bairro, { shouldValidate: true });
+    setValue("cidade", resultado.endereco.cidade, { shouldValidate: true });
+    setValue("estado", resultado.endereco.estado, { shouldValidate: true });
   }
 
   // ─── useMutation ─────────────────────────────────────────────────────────
@@ -313,21 +308,12 @@ export default function TelaCompletarPerfil() {
 
           <View className="flex-1" />
 
-          {/* Botão concluir */}
-          <TouchableOpacity
+          <BotaoEnviar
+            enviando={enviando}
             onPress={handleSubmit(aoEnviar)}
-            disabled={enviando}
-            activeOpacity={0.85}
-            className={`items-center justify-center py-4 rounded-2xl mb-10 ${enviando ? "bg-primary/70" : "bg-primary"
-              }`}
-          >
-            {enviando ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-white text-lg font-semibold">Concluir</Text>
-            )}
-          </TouchableOpacity>
-
+            texto="Concluir"
+            textoLoading="Salvando..."
+          />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

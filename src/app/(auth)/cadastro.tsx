@@ -15,7 +15,6 @@ import {
   Modal,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -216,8 +215,11 @@ export default function TelaCadastro() {
         animationType="fade"
         statusBarTranslucent
       >
-        <View style={styles.overlay}>
-          <Animated.View style={[styles.card, estiloCartao]}>
+        <View className="flex-1 bg-black/60 items-center justify-center px-8">
+          <Animated.View
+            style={estiloCartao}
+            className="bg-white rounded-3xl p-8 items-center gap-5 w-full"
+          >
             <View className="w-20 h-20 rounded-full bg-green-medium items-center justify-center">
               <Ionicons name="checkmark" size={44} color="#fff" />
             </View>
@@ -238,21 +240,3 @@ export default function TelaCadastro() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 24,
-    padding: 32,
-    alignItems: "center",
-    gap: 20,
-    width: "100%",
-  },
-});

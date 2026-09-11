@@ -3,10 +3,17 @@ import { Text, View } from "react-native";
 
 export default function TelaAssistente() {
   return (
-    <View className="flex-1 bg-surface items-center justify-center gap-3">
-      <Ionicons name="chatbubble-ellipses" size={48} color="#E8A838" />
-      <Text className="text-xl font-bold text-primary">Assistente</Text>
-      <Text className="text-sm text-muted">Em breve você poderá conversar com o assistente aqui.</Text>
+    <View className="flex-1 bg-surface">
+      <View className="px-5 pt-14 pb-5 bg-primary">
+        <Text className="text-xl font-bold text-white">Assistente</Text>
+      </View>
+
+      <View className="flex-1 items-center justify-center gap-3 px-8">
+        <Ionicons name="chatbubble-ellipses" size={48} color="#E8A838" />
+        <Text className="text-sm text-muted text-center">
+          Em breve você poderá conversar com o assistente aqui.
+        </Text>
+      </View>
     </View>
   );
 }

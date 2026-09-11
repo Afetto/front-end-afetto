@@ -1,6 +1,7 @@
 import { api } from "@/api/api";
 import { classificarErro } from "@/api/erros";
 import { extrairLista } from "@/api/paginacao";
+import { converterDataParaISO } from "@/utils/data";
 import {
   DadosAtualizacaoUsuario,
   DadosCadastro,
@@ -21,12 +22,6 @@ type UsuarioApi = {
   telefone?: string;
   dataNascimento?: string;
 };
-
-/** Converte uma data de DD/MM/AAAA para o formato ISO YYYY-MM-DD que o backend espera. */
-function converterDataParaISO(data: string): string {
-  const [dia, mes, ano] = data.split("/");
-  return `${ano}-${mes}-${dia}`;
-}
 
 // Item da listagem GET /usuario — NÃO traz id nem email: só o nome e um link
 // HATEOAS com o id embutido no href.

@@ -14,12 +14,11 @@ import {
   ScrollView,
   View,
 } from "react-native";
-import Animated, {
+import {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { BotaoSalvar } from "@/components/ui/BotaoSalvar";
 import { ToastSucesso } from "@/components/ui/ToastSucesso";
 import { SegurancaCard } from "@/components/perfil/SegurancaCard";
 import { BotaoEnviar } from "@/components/ui/BotaoEnviar";

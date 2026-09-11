@@ -16,6 +16,7 @@ module.exports = {
         "golden-light": "#E8B96A",
         "golden-pale": "#F2D9A0",
         amber: "#E8A838",
+        "amber-dark": "#B07A0A",
         "green-medium": "#A8C5A0",
       },
     },

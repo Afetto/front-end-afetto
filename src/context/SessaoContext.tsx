@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 const CHAVE_SESSAO = "@afetto:session";
 
-type ProgressoOnboarding = {
+export type ProgressoOnboarding = {
   perfilCompleto: boolean;
   petCadastrado: boolean;
   clinicaVinculada: boolean;

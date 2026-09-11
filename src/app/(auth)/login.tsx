@@ -123,6 +123,17 @@ export default function TelaLogin() {
             )}
           </View>
 
+          <TouchableOpacity
+            onPress={() => router.push("/cadastro")}
+            activeOpacity={0.7}
+            className="self-center"
+          >
+            <Text className="text-sm text-gray-700">
+              Ainda não tem conta?{" "}
+              <Text className="text-amber font-semibold">Criar conta</Text>
+            </Text>
+          </TouchableOpacity>
+
           <View className="flex-1" />
 
           <BotaoEnviar

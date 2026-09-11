@@ -1,3 +1,6 @@
+import { CardClinica } from "@/components/CardClinica";
+import { EstadoErro } from "@/components/EstadoErro";
+import { EstadoVazio } from "@/components/EstadoVazio";
 import { useSessao } from "@/context/SessaoContext";
 import { useClinicas, useVincularClinica } from "@/hooks/useClinicas";
 import { Clinica } from "@/schemas/clinica.schema";
@@ -8,16 +11,8 @@ import {
   FlatList,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
-
-const CORES_ESPECIALIDADE: Record<string, string> = {
-  "Clínica Geral": "#A8C5A0",
-  "24h": "#E8A838",
-  "Exóticos": "#9A9585",
-  "Cirurgia": "#2D4A3E",
-};
 
 export default function TelaClinica() {
   const { sessao, concluirEtapa } = useSessao();
@@ -48,61 +43,8 @@ export default function TelaClinica() {
   }
 
   function renderizarCartao({ item }: { item: Clinica }) {
-    const inicial = item.nome.charAt(0).toUpperCase();
-    const corEspecialidade = CORES_ESPECIALIDADE[item.especialidade] ?? "#9A9585";
-
     return (
-      <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
-        <View className="flex-row items-center gap-3">
-          <View
-            style={{ backgroundColor: "#E8A838" }}
-            className="w-12 h-12 rounded-full items-center justify-center"
-          >
-            <Text className="text-white font-bold text-lg">{inicial}</Text>
-          </View>
-
-          <View className="flex-1">
-            <Text className="text-base font-bold text-primary">{item.nome}</Text>
-            <Text className="text-xs text-muted mt-0.5">
-              {item.bairro}, {item.cidade}
-            </Text>
-            <View
-              style={{ backgroundColor: corEspecialidade + "22", borderColor: corEspecialidade }}
-              className="self-start mt-1 px-2 py-0.5 rounded-full border"
-            >
-              <Text style={{ color: corEspecialidade }} className="text-xs font-medium">
-                {item.especialidade}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View className="mt-3">
-          {item.vinculada ? (
-            <View className="flex-row items-center justify-center gap-1 py-2 rounded-xl bg-green-50 border border-green-300">
-              <Ionicons name="checkmark-circle" size={16} color="#A8C5A0" />
-              <Text className="text-sm font-medium" style={{ color: "#2D4A3E" }}>
-                Vinculada
-              </Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              onPress={() => aoVincular(item.id)}
-              disabled={vinculando}
-              style={{ borderColor: "#E8A838" }}
-              className="py-2 rounded-xl border items-center"
-            >
-              {vinculando ? (
-                <ActivityIndicator size="small" color="#E8A838" />
-              ) : (
-                <Text style={{ color: "#B07A0A" }} className="text-sm font-medium">
-                  Vincular
-                </Text>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+      <CardClinica clinica={item} vinculando={vinculando} onVincular={aoVincular} />
     );
   }
 
@@ -116,25 +58,18 @@ export default function TelaClinica() {
 
   if (temErro) {
     return (
-      <View className="flex-1 items-center justify-center bg-surface gap-3 px-8">
-        <Ionicons name="cloud-offline-outline" size={48} color="#9A9585" />
-        <Text className="text-muted text-sm text-center">
-          Erro ao carregar clínicas. Tente novamente.
-        </Text>
-        <TouchableOpacity onPress={() => refetch()}>
-          <Text className="text-amber font-semibold">Tentar novamente</Text>
-        </TouchableOpacity>
-      </View>
+      <EstadoErro
+        mensagem="Erro ao carregar clínicas. Tente novamente."
+        onTentarNovamente={() => refetch()}
+      />
     );
   }
 
   return (
     <View className="flex-1 bg-surface">
-      <View style={{ backgroundColor: "#1F3B30" }} className="px-5 pt-14 pb-5">
-        <Text className="text-xl font-bold text-white" style={{ fontFamily: "Fraunces" }}>
-          Clínicas Parceiras
-        </Text>
-        <Text className="text-sm mt-1" style={{ color: "#A8C5A0" }}>
+      <View className="px-5 pt-14 pb-5 bg-primary">
+        <Text className="text-xl font-bold text-white">Clínicas Parceiras</Text>
+        <Text className="text-sm mt-1 text-green-medium">
           Vincule seu pet a uma clínica
         </Text>
 
@@ -156,9 +91,8 @@ export default function TelaClinica() {
         renderItem={renderizarCartao}
         contentContainerStyle={{ padding: 16 }}
         ListEmptyComponent={
-          <View className="items-center justify-center mt-16 gap-2">
-            <Ionicons name="search-outline" size={40} color="#9A9585" />
-            <Text className="text-muted text-sm">Nenhuma clínica encontrada</Text>
+          <View className="mt-16">
+            <EstadoVazio icone="search-outline" titulo="Nenhuma clínica encontrada" tamanhoIcone={40} />
           </View>
         }
       />

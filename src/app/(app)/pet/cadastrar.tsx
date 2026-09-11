@@ -7,7 +7,9 @@ import {
   FormCadastroPet,
   FormCadastroPetSchema,
 } from "@/schemas/pet.schema";
+import { converterDataParaISO } from "@/utils/data";
 import { mascararData } from "@/utils/mascaras";
+import { LABEL_ESPECIE } from "@/utils/pet";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
@@ -21,27 +23,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-const LABEL_ESPECIE: Record<string, string> = {
-  CACHORRO: "Cachorro",
-  GATO: "Gato",
-  COELHO: "Coelho",
-  AVE: "Ave",
-  REPTIL: "Réptil",
-  ROEDOR: "Roedor",
-  PORCO: "Porco",
-  MACACO: "Macaco",
-  CAVALO: "Cavalo",
-  PEIXE: "Peixe",
-  INSETO: "Inseto",
-  OUTRO: "Outro",
-};
-
-/** DD/MM/AAAA → YYYY-MM-DD (formato que a API espera). */
-function dataBrParaIso(dataBr: string): string {
-  const [dia, mes, ano] = dataBr.split("/");
-  return `${ano}-${mes}-${dia}`;
-}
 
 export default function TelaCadastrarPet() {
   const { sessao } = useSessao();
@@ -83,7 +64,7 @@ export default function TelaCadastrarPet() {
         sexo: form.sexo,
         raca: form.raca?.trim() || "",
         peso: form.peso ? Number(form.peso.replace(",", ".")) : undefined,
-        dataNasc: form.dataNasc ? dataBrParaIso(form.dataNasc) : "",
+        dataNasc: form.dataNasc ? converterDataParaISO(form.dataNasc) : "",
         descricao: form.descricao?.trim() || "",
         idUsuario,
       },

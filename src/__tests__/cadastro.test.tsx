@@ -87,7 +87,7 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
 
     render(<TelaCadastro />, { wrapper });
     preencherFormulario();
-    fireEvent.press(screen.getByText("Criar Conta"));
+    fireEvent.press(screen.getByText("Fazer cadastro"));
 
     await waitFor(() => {
       expect(mockPost).toHaveBeenCalledWith("/usuario", PAYLOAD_ESPERADO);
@@ -97,11 +97,14 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
   });
 
   it("mostra erro no campo e-mail quando a API responde 403", async () => {
-    mockPost.mockRejectedValueOnce({ response: { status: 403 } });
+    mockPost.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { status: 403 },
+    });
 
     render(<TelaCadastro />, { wrapper });
     preencherFormulario();
-    fireEvent.press(screen.getByText("Criar Conta"));
+    fireEvent.press(screen.getByText("Fazer cadastro"));
 
     expect(
       await screen.findByText("Este e-mail já está cadastrado")
@@ -112,7 +115,7 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
   it("não chama a API quando o formulário é inválido", async () => {
     render(<TelaCadastro />, { wrapper });
 
-    fireEvent.press(screen.getByText("Criar Conta"));
+    fireEvent.press(screen.getByText("Fazer cadastro"));
 
     expect(await screen.findByText("Nome é obrigatório")).toBeTruthy();
     expect(mockPost).not.toHaveBeenCalled();
@@ -125,7 +128,7 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
       screen.getByPlaceholderText("000.000.000-00"),
       "11111111111"
     );
-    fireEvent.press(screen.getByText("Criar Conta"));
+    fireEvent.press(screen.getByText("Fazer cadastro"));
 
     expect(await screen.findByText("CPF inválido")).toBeTruthy();
     expect(mockPost).not.toHaveBeenCalled();

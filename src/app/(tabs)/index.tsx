@@ -1,62 +1,25 @@
-import { Ionicons } from "@expo/vector-icons";
+import { BarraProgresso } from "@/components/BarraProgresso";
+import { BotaoSeusPets } from "@/components/BotaoSeusPets";
+import { ItemChecklist } from "@/components/ItemChecklist";
 import { useSessao } from "@/context/SessaoContext";
+import { calcularProgressoOnboarding } from "@/utils/onboarding";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-  ScrollView,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+
+const PROGRESSO_PADRAO = {
+  perfilCompleto: false,
+  petCadastrado: false,
+  clinicaVinculada: false,
+};
 
 export default function TelaInicio() {
   const { sessao } = useSessao();
   const [temPets, setTemPets] = useState(false);
 
-  const progresso = sessao?.progresso ?? {
-    perfilCompleto: false,
-    petCadastrado: false,
-    clinicaVinculada: false,
-  };
-
-  const checklist = [
-    {
-      id: "cadastro",
-      titulo: "Finalize seu cadastro!",
-      subtitulo: "Coloque suas infos adicionais!",
-      concluido: progresso.perfilCompleto,
-      opcional: false,
-      rota: "/completar-perfil",
-    },
-    {
-      id: "pet",
-      titulo: "Cadastrar seu Pet",
-      subtitulo: "Nome, raça, idade e histórico",
-      concluido: progresso.petCadastrado,
-      opcional: false,
-      rota: "/(tabs)/pets",
-    },
-    {
-      id: "clinica",
-      titulo: "Vincular sua clínica",
-      subtitulo: "Nunca perca uma vacina",
-      concluido: progresso.clinicaVinculada,
-      opcional: true,
-      rota: "/(tabs)/clinica",
-    },
-  ];
-
-  const total = checklist.length;
-  const concluidos = checklist.filter((i) => i.concluido).length;
-  const etapaAtual = Math.min(concluidos + 1, total);
-  const percentual = etapaAtual / total;
-  const proximoPendente = checklist.find((i) => !i.concluido);
-  const rotuloEtapa = `Etapa ${etapaAtual} de ${total} — ${proximoPendente?.titulo}`;
-
-  const obrigatoriosConcluidos = checklist
-    .filter((i) => !i.opcional)
-    .every((i) => i.concluido);
+  const { checklist, percentual, rotuloEtapa, obrigatoriosConcluidos } =
+    calcularProgressoOnboarding(sessao?.progresso ?? PROGRESSO_PADRAO);
 
   return (
     <ScrollView
@@ -95,98 +58,39 @@ export default function TelaInicio() {
 
         {/* Barra de progresso */}
         {!obrigatoriosConcluidos && (
-          <View className="mt-5">
-            <Text className="text-xs text-white/70 mb-2">{rotuloEtapa}</Text>
-            <View className="h-2 bg-white/20 rounded-full overflow-hidden">
-              <View
-                className="h-2 bg-amber rounded-full"
-                style={{ width: `${percentual * 100}%` }}
-              />
-            </View>
-          </View>
+          <BarraProgresso rotulo={rotuloEtapa} percentual={percentual} />
         )}
       </View>
 
       {/* Body */}
       <View className="px-6 pt-6 pb-10 gap-6">
         {/* Botão Seus Pets */}
-        <TouchableOpacity
-          activeOpacity={0.85}
-          className="bg-primary flex-row items-center px-5 py-4 rounded-2xl"
+        <BotaoSeusPets
+          ativo={temPets}
+          onAtivoChange={setTemPets}
           onPress={() => router.push("/(tabs)/pets")}
-        >
-          <Ionicons name="paw" size={22} color="#E8A838" />
-          <Text className="flex-1 text-white text-base font-semibold ml-3">
-            Seus <Text className="text-amber">Pets</Text>
-          </Text>
-          <Switch
-            value={temPets}
-            onValueChange={setTemPets}
-            trackColor={{ false: "rgba(255,255,255,0.25)", true: "#E8A838" }}
-            thumbColor="#fff"
-          />
-        </TouchableOpacity>
+        />
 
         {/* Checklist — some apenas enquanto os passos obrigatórios não estiverem completos */}
         {!obrigatoriosConcluidos && (
-        <View className="gap-3">
-          <Text className="text-base font-semibold text-gray-800">
-            Sua configuração
-          </Text>
+          <View className="gap-3">
+            <Text className="text-base font-semibold text-gray-800">
+              Sua configuração
+            </Text>
 
-          {checklist.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              activeOpacity={item.concluido ? 1 : 0.7}
-              onPress={() => {
-                if (!item.concluido && item.rota) {
-                  router.push(item.rota as any);
-                }
-              }}
-              className="bg-white rounded-2xl px-4 py-4 flex-row items-center gap-4"
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.08,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
-              {/* Ícone de status */}
-              {item.concluido ? (
-                <View className="w-8 h-8 rounded-full bg-green-medium items-center justify-center">
-                  <Ionicons name="checkmark" size={16} color="#fff" />
-                </View>
-              ) : (
-                <View className="w-8 h-8 rounded-full bg-amber/10 items-center justify-center">
-                  <Ionicons name="time-outline" size={18} color="#E8A838" />
-                </View>
-              )}
-
-              {/* Texto */}
-              <View className="flex-1">
-                <View className="flex-row items-center gap-2 flex-wrap">
-                  <Text className="text-sm font-semibold text-gray-900">
-                    {item.titulo}
-                  </Text>
-                  {item.opcional && (
-                    <View className="bg-golden-pale px-2 py-0.5 rounded-full">
-                      <Text className="text-xs text-golden">opcional</Text>
-                    </View>
-                  )}
-                </View>
-                <Text className="text-xs text-muted mt-0.5">
-                  {item.subtitulo}
-                </Text>
-              </View>
-
-              {/* Seta */}
-              {!item.concluido && (
-                <Ionicons name="chevron-forward" size={16} color="#9E9589" />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
+            {checklist.map((item) => (
+              <ItemChecklist
+                key={item.id}
+                titulo={item.titulo}
+                subtitulo={item.subtitulo}
+                concluido={item.concluido}
+                opcional={item.opcional}
+                onPress={() => {
+                  if (!item.concluido) router.push(item.rota as any);
+                }}
+              />
+            ))}
+          </View>
         )}
       </View>
     </ScrollView>
