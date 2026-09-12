@@ -1,15 +1,11 @@
+import { SeletorEspecie } from "@/components/SeletorEspecie";
 import { CampoSelecao } from "@/components/ui/CampoSelecao";
 import CampoTexto from "@/components/ui/CampoTexto";
 import { useSessao } from "@/context/SessaoContext";
 import { useCriarPet } from "@/hooks/usePets";
-import {
-  ESPECIES_PET,
-  FormCadastroPet,
-  FormCadastroPetSchema,
-} from "@/schemas/pet.schema";
+import { FormCadastroPet, FormCadastroPetSchema } from "@/schemas/pet.schema";
 import { converterDataParaISO } from "@/utils/data";
 import { mascararData } from "@/utils/mascaras";
-import { LABEL_ESPECIE } from "@/utils/pet";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
@@ -112,39 +108,7 @@ export default function TelaCadastrarPet() {
               name="especie"
               control={control}
               render={({ field: { value, onChange }, fieldState: { error } }) => (
-                <View className="gap-1">
-                  <Text className="text-sm text-gray-700 font-medium">Espécie</Text>
-                  <View className="flex-row flex-wrap gap-2">
-                    {ESPECIES_PET.map((esp) => {
-                      const selecionado = value === esp;
-                      return (
-                        <TouchableOpacity
-                          key={esp}
-                          onPress={() => onChange(esp)}
-                          activeOpacity={0.8}
-                          className={`px-3 py-2 rounded-full border ${
-                            selecionado
-                              ? "bg-primary border-primary"
-                              : "bg-white border-gray-200"
-                          }`}
-                        >
-                          <Text
-                            className={`text-xs font-medium ${
-                              selecionado ? "text-white" : "text-gray-600"
-                            }`}
-                          >
-                            {LABEL_ESPECIE[esp]}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                  {error && (
-                    <Text className="text-red-500 text-xs mt-0.5">
-                      {error.message}
-                    </Text>
-                  )}
-                </View>
+                <SeletorEspecie value={value} onChange={onChange} error={error?.message} />
               )}
             />
 

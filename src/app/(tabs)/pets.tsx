@@ -43,7 +43,9 @@ export default function TelaPets() {
   }
 
   function renderizarCartao({ item }: { item: Pet }) {
-    return <CardPet pet={item} />;
+    return (
+      <CardPet pet={item} onPress={() => router.push(`/pet/${item.id}` as any)} />
+    );
   }
 
   return (

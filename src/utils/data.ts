@@ -4,6 +4,12 @@ export function converterDataParaISO(dataBr: string): string {
   return `${ano}-${mes}-${dia}`;
 }
 
+/** Converte YYYY-MM-DD (formato da API) → DD/MM/AAAA (formato de exibição/formulário). */
+export function converterDataParaBR(dataIso: string): string {
+  const [ano, mes, dia] = dataIso.split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
 /** Calcula a idade em anos a partir de uma data de nascimento ISO (YYYY-MM-DD). */
 export function calcularIdade(dataNasc: string): string {
   if (!dataNasc) return "—";
