@@ -152,7 +152,23 @@ export async function buscarUsuarioPorId(id: string): Promise<UsuarioArmazenado 
 /**
  * Atualiza dados do perfil do usuário.
  * PUT /usuario/{id} — substitui o recurso inteiro, então buscamos o atual e
- * fazemos merge das alterações antes de enviar.
+ * fazemos merge das alterações antes de enviar. A API também exige `senha`
+ * em toda chamada (mesmo quando não é troca de senha).
+ *
+ * ⚠️ Esse `senha` NÃO é validado contra a senha atual — o backend simplesmente
+ * define esse valor como a nova senha (mesmo comportamento de `atualizarSenha`
+ * abaixo). Ou seja, não existe como "confirmar" a senha atual sem risco de
+ * alterá-la: se o valor enviado não for a senha real, a senha da conta muda
+ * para esse valor sem aviso.
+ *
+ * NÃO tente "verificar" a senha chamando POST /login antes deste PUT: login
+ * (sucesso OU falha) sempre devolve um `Set-Cookie` novo, e no app o cliente
+ * HTTP persiste esse cookie automaticamente — isso substitui silenciosamente
+ * o cookie de sessão válido do usuário por um outro (inválido, se a senha
+ * verificada estiver errada), derrubando a sessão inteira. Esse bug já
+ * aconteceu aqui: uma função `verificarSenha` chegou a existir e quebrou o
+ * app inteiro (perfil, pets, tudo que depende de sessão) na primeira vez que
+ * alguém errou a senha de confirmação. Foi removida.
  */
 export async function atualizarUsuario(
   id: string,
@@ -165,9 +181,10 @@ export async function atualizarUsuario(
     await api.put(`/usuario/${id}`, {
       nome: alteracoes.nome ?? atual.nome,
       cpf: (atual.cpf ?? "").replace(/\D/g, ""),
-      dataNascimento: atual.dataNascimento,
+      dataNascimento: alteracoes.dataNascimento ?? atual.dataNascimento,
       email: novoEmail,
       telefone: (alteracoes.telefone ?? atual.telefone ?? "").replace(/\D/g, ""),
+      senha: alteracoes.senha,
     });
 
     return { ok: true, novoEmail };

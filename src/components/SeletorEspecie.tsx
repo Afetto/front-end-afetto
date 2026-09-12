@@ -1,5 +1,5 @@
 import { ESPECIES_PET, EspeciePet } from "@/schemas/pet.schema";
-import { LABEL_ESPECIE } from "@/utils/pet";
+import { ICONE_ESPECIE, LABEL_ESPECIE } from "@/utils/pet";
 import { Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
@@ -20,22 +20,19 @@ export function SeletorEspecie({ value, onChange, error }: Props) {
               key={esp}
               onPress={() => onChange(esp)}
               activeOpacity={0.8}
-              className={`px-3 py-2 rounded-full border ${
-                selecionado ? "bg-primary border-primary" : "bg-white border-gray-200"
+              className={`w-[23%] items-center justify-center gap-1 rounded-2xl border py-3 px-1 ${
+                selecionado ? "border-2 border-amber bg-amber/10" : "border-border bg-white"
               }`}
             >
-              <Text
-                className={`text-xs font-medium ${
-                  selecionado ? "text-white" : "text-gray-600"
-                }`}
-              >
+              <Text className="text-2xl">{ICONE_ESPECIE[esp]}</Text>
+              <Text className="text-center text-xs font-medium text-primary">
                 {LABEL_ESPECIE[esp]}
               </Text>
             </TouchableOpacity>
           );
         })}
       </View>
-      {error && <Text className="text-red-500 text-xs mt-0.5">{error}</Text>}
+      {error && <Text className="mt-1 text-xs text-red-500">{error}</Text>}
     </View>
   );
 }

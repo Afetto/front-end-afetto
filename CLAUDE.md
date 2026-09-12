@@ -76,8 +76,9 @@ src/
 │   │   ├── BotaoSalvar.tsx          ← ⚠️ duplica BotaoEnviar; importado em perfil.tsx mas não usado — ver seção 5
 │   │   └── ToastSucesso.tsx         ← toast animado de sucesso (usa classe Tailwind inválida — ver seção 4)
 │   ├── perfil/                    ← componentes específicos da tela /perfil (não reutilizados fora dela)
-│   │   ├── PerfilHeader.tsx
-│   │   ├── DadosPessoaisCard.tsx
+│   │   ├── PerfilHeader.tsx         ← header com toggle visualização/edição (pencil ↔ "Cancelar")
+│   │   ├── DadosPessoaisCard.tsx    ← modo visualização (somente leitura, com ícones)
+│   │   ├── FormDadosPessoais.tsx    ← modo edição (CampoTexto + react-hook-form)
 │   │   ├── SegurancaCard.tsx
 │   │   ├── ContaCard.tsx
 │   │   └── AlterarSenhaModal.tsx
@@ -95,7 +96,7 @@ src/
 │   ├── useClinicas.ts         ← useClinicas, useVincularClinica, useDesvincularClinica
 │   ├── useAutenticacao.ts     ← useCadastrar (login/logout ficam inline — ver seção 8)
 │   └── perfil/
-│       ├── usePerfil.ts        ← estado + validação + mutation da tela /perfil (edição de dados pessoais)
+│       ├── usePerfil.ts        ← hook de dados: useQuery(usuario) + useMutation(salvarPerfil)
 │       └── useAlterarSenha.ts  ← estado + validação + mutation do modal de troca de senha
 ├── schemas/
 │   ├── login.schema.ts
@@ -103,6 +104,7 @@ src/
 │   ├── completar-perfil.schema.ts
 │   ├── pet.schema.ts
 │   ├── clinica.schema.ts
+│   ├── editar-perfil.schema.ts ← edição de dados pessoais em /perfil (nome, email, telefone, dataNascimento)
 │   └── usuario.schema.ts      ← ⚠️ não é importado por nenhuma tela/hook/service — ver seção 5
 ├── services/
 │   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, sair, completarPerfil (funções nomeadas)
@@ -199,7 +201,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 **Hooks (`src/hooks/`):**
 - Duas categorias reais no projeto, ambas válidas — documente qual está sendo usada em cada novo hook:
   1. **Hooks de dados** (`usePets.ts`, `useClinicas.ts`, `useAutenticacao.ts`): só `useQuery`/`useMutation` chamando o service, sem estado local próprio. Retornam o objeto do TanStack Query como está (`data`, `isLoading`, `isError`, `refetch`, `mutate`, `isPending`).
-  2. **Hooks de tela** (`hooks/perfil/usePerfil.ts`, `hooks/perfil/useAlterarSenha.ts`): concentram estado local (`useState`), validação manual e a `useMutation` de uma tela de edição inline (sem `react-hook-form`), expondo um objeto próprio (`{ nome, setNome, salvando, erroSalvar, salvarPerfil, ... }`) em vez do formato padrão do React Query. Use esse padrão para telas de edição "sempre visível" (like `/perfil`), não para formulários de criação — esses continuam com `react-hook-form` + Zod (seção 8).
+  2. **Hooks de tela** (`hooks/perfil/useAlterarSenha.ts`): concentram estado local (`useState`), validação manual e a `useMutation` de um fluxo de UI específico (ex.: o modal de troca de senha), expondo um objeto próprio (`{ senhaAtual, setSenhaAtual, salvandoSenha, alterarSenha, ... }`) em vez do formato padrão do React Query. `hooks/perfil/usePerfil.ts` **não é mais desse tipo** — desde que `/perfil` ganhou modo visualização/edição, ele voltou a ser um hook de dados: expõe `usuario`/`carregando`/`temErro`/`refazer` do `useQuery` e `salvarPerfil`/`salvando` de um `useMutation` padrão (a tela usa `react-hook-form` para o estado dos campos em edição).
 - Login e logout **não** têm hook de mutation dedicado: login fica inline em `login.tsx` (precisa chamar `setError` do formulário e `entrar()` do `SessaoContext` no `onSuccess`) e logout chama `sair()` do `SessaoContext` direto em `perfil.tsx`. Isso é intencional e está documentado em `useAutenticacao.ts` — não crie `useLogin`/`useLogout` só para "completar a simetria".
 - Invalidação de cache sempre via `useQueryClient()` dentro do hook — nunca `import { queryClient } from "@/api/queryClient"`.
 - Não contêm JSX e não navegam (sem `router.push` dentro de um hook — isso fica na tela, no `onSuccess` do `useMutation`).
@@ -290,7 +292,8 @@ Replicado (com pequenas variações de cor inline) em `pets.tsx` e `clinica.tsx`
 - Validação acontece no schema Zod — nunca inline na tela.
 - Botão de submit usa `isPending` do `useMutation` (nunca `isSubmitting` do `react-hook-form`) e, sempre que possível, o componente `BotaoEnviar`.
 - Erros de API aparecem via `setError("root", { message })` do `react-hook-form`, renderizado como texto na tela — nunca silenciados.
-- **Exceção documentada:** a tela `/perfil` (edição de dados pessoais e troca de senha) **não** usa `react-hook-form`/Zod. Usa inputs controlados manualmente (`useState` dentro de `usePerfil`/`useAlterarSenha`) com validação imperativa (`if (!nomeLimpo) ...`). Isso é aceitável para telas de "editar em linha" sem um botão de submit tradicional visível o tempo todo, mas não é o padrão para formulários novos de criação/cadastro — esses continuam exigindo Zod.
+- `/perfil` (edição de dados pessoais) segue o padrão padrão desde que ganhou modo visualização/edição: `react-hook-form` + `zodResolver(EditarPerfilSchema)`, com `CampoTexto` nos campos e alternância entre `DadosPessoaisCard` (leitura) e `FormDadosPessoais` (edição) controlada por um `editando` local — mesmo padrão de toggle usado em `pet/[id]/index.tsx` → `pet/[id]/editar.tsx`.
+- **Exceção que continua real:** o modal de troca de senha (`AlterarSenhaModal` + `useAlterarSenha`) usa inputs controlados manualmente, sem Zod — validação imperativa de senha (tamanho mínimo, confirmação igual). Isso é aceitável por ser um fluxo pequeno e isolado (3 campos, sem máscara, sem reuso de schema).
 - Ao adicionar um campo, use as máscaras de `utils/mascaras.ts` via a prop `transformarTexto` do `CampoTexto` (não crie uma máscara nova inline).
 
 ---

@@ -38,6 +38,11 @@ export type DadosAtualizacaoUsuario = {
   nome?: string;
   email?: string;
   telefone?: string;
+  dataNascimento?: string; // YYYY-MM-DD
+  // PUT /usuario/{id} substitui o recurso inteiro e a API exige `senha` em
+  // toda requisição (mesmo quando não é uma troca de senha) — por isso é
+  // obrigatório aqui, não opcional como os outros campos.
+  senha: string;
 };
 
 export type ResultadoAtualizacaoUsuario =

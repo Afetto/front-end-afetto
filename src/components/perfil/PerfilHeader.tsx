@@ -5,9 +5,12 @@ import { Text, TouchableOpacity, View } from "react-native";
 type Props = {
   nome: string;
   inicial: string;
+  editando: boolean;
+  onEditar: () => void;
+  onCancelar: () => void;
 };
 
-export function PerfilHeader({ nome, inicial }: Props) {
+export function PerfilHeader({ nome, inicial, editando, onEditar, onCancelar }: Props) {
   return (
     <View className="items-center bg-primary px-6 pb-8 pt-14">
       <View className="mb-5 w-full flex-row items-center justify-between">
@@ -24,10 +27,23 @@ export function PerfilHeader({ nome, inicial }: Props) {
         </TouchableOpacity>
 
         <Text className="text-base font-semibold text-white">
-          Meu Perfil
+          {editando ? "Editar perfil" : "Meu Perfil"}
         </Text>
 
-        <View className="w-[38px]" />
+        {editando ? (
+          <TouchableOpacity onPress={onCancelar} activeOpacity={0.7} hitSlop={8}>
+            <Text className="text-sm font-semibold text-white">Cancelar</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={onEditar}
+            activeOpacity={0.7}
+            hitSlop={8}
+            className="h-[38px] w-[38px] items-center justify-center rounded-full bg-white/15"
+          >
+            <Ionicons name="pencil" size={16} color="#ffffff" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View className="relative self-center">

@@ -14,18 +14,18 @@ export const LABEL_ESPECIE: Record<string, string> = {
   OUTRO: "Outro",
 };
 
-/** Emoji de cada espécie — usado no avatar do card de pet. */
+/** Emoji de cada espécie — usado no avatar do card de pet e no SeletorEspecie. */
 export const ICONE_ESPECIE: Record<string, string> = {
-  CACHORRO: "🐶",
-  GATO: "🐱",
-  COELHO: "🐰",
+  CACHORRO: "🐕",
+  GATO: "🐈",
+  COELHO: "🐇",
   AVE: "🐦",
   REPTIL: "🦎",
-  ROEDOR: "🐹",
+  ROEDOR: "🐀",
   PORCO: "🐷",
-  MACACO: "🐵",
+  MACACO: "🐒",
   CAVALO: "🐴",
   PEIXE: "🐟",
-  INSETO: "🐛",
+  INSETO: "🦗",
   OUTRO: "🐾",
 };
