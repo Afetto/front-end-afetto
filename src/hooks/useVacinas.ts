@@ -1,62 +1,63 @@
-import { DadosCadastroPet } from "@/schemas/pet.schema";
-import { petService } from "@/services/pet.service";
+import { DadosVacina } from "@/schemas/vacina.schema";
+import { vacinaService } from "@/services/vacina.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-const QUERY_KEY = ["pets"];
+const QUERY_KEY = ["vacinas"];
 
 // ─── LEITURA ─────────────────────────────────────────────────────────────────
 
-export function usePets() {
+export function useVacinasPet(idPet: string) {
   return useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: petService.listar,
+    queryKey: [...QUERY_KEY, idPet],
+    queryFn: () => vacinaService.listarPorPet(idPet),
+    enabled: !!idPet,
   });
 }
 
-export function usePet(id: string) {
+export function useVacina(id: string) {
   return useQuery({
-    queryKey: [...QUERY_KEY, id],
-    queryFn: () => petService.buscarPorId(id),
+    queryKey: [...QUERY_KEY, "detalhe", id],
+    queryFn: () => vacinaService.buscarPorId(id),
     enabled: !!id,
   });
 }
 
 // ─── CRIAÇÃO ─────────────────────────────────────────────────────────────────
 
-export function useCriarPet() {
+export function useCriarVacina(idPet: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: DadosCadastroPet) => petService.criar(data),
+    mutationFn: (data: DadosVacina) => vacinaService.criar(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, idPet] });
     },
   });
 }
 
 // ─── ATUALIZAÇÃO ─────────────────────────────────────────────────────────────
 
-export function useAtualizarPet() {
+export function useAtualizarVacina(idPet: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: DadosCadastroPet }) =>
-      petService.atualizar(id, data),
+    mutationFn: ({ id, data }: { id: string; data: DadosVacina }) =>
+      vacinaService.atualizar(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, idPet] });
     },
   });
 }
 
 // ─── REMOÇÃO ─────────────────────────────────────────────────────────────────
 
-export function useRemoverPet() {
+export function useDeletarVacina(idPet: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => petService.remover(id),
+    mutationFn: (id: string) => vacinaService.remover(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, idPet] });
     },
   });
 }

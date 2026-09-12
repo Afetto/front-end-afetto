@@ -25,7 +25,11 @@ export const petService = {
         return response.data;
     },
 
-    atualizar: async (id: string, dados: Partial<DadosCadastroPet>): Promise<Pet> => {
+    // A API exige `especie`, `idUsuario`, `nome` e `sexo` no corpo do PUT
+    // (mesmo schema PetRequest do POST — confirmado em GET /v3/api-docs).
+    // Antes o front enviava só os campos editados sem `idUsuario`, o que
+    // violava a validação obrigatória do backend e fazia o PUT falhar.
+    atualizar: async (id: string, dados: DadosCadastroPet): Promise<Pet> => {
         const response = await api.put<Pet>(`/pet/${id}`, dados);
         return response.data;
     },
