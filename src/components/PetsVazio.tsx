@@ -1,3 +1,4 @@
+import { CabecalhoOla } from "@/components/CabecalhoOla";
 import { EstadoVazio } from "@/components/EstadoVazio";
 import { router } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
@@ -10,11 +11,12 @@ type PetsVazioProps = {
 export function PetsVazio({ erro, aoTentarNovamente }: PetsVazioProps = {}) {
   return (
     <View className="flex-1 bg-surface">
-      {/* Header */}
-      <View className="px-5 pt-14 pb-5 bg-primary">
-        <Text className="text-xl font-bold text-white">Meus Pets</Text>
-        <Text className="text-sm mt-1 text-green-medium">
-          Nenhum pet cadastrado
+      <CabecalhoOla />
+
+      <View className="px-6 pt-6 pb-2">
+        <Text className="text-xl font-bold text-gray-900">Meus Pets</Text>
+        <Text className="text-sm text-muted mt-0.5">
+          {erro ? "Não foi possível carregar" : "Nenhum pet cadastrado"}
         </Text>
       </View>
 

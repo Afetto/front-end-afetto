@@ -1,12 +1,17 @@
+import { CabecalhoOla } from "@/components/CabecalhoOla";
+import { CardPetResumo } from "@/components/CardPetResumo";
 import { EstadoErro } from "@/components/EstadoErro";
 import { usePet } from "@/hooks/usePets";
 import { useVacinasPet } from "@/hooks/useVacinas";
 import { Vacina } from "@/schemas/vacina.schema";
-import { calcularIdade } from "@/utils/data";
-import { ICONE_ESPECIE, LABEL_ESPECIE } from "@/utils/pet";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+
+// Cuidados que vencem em até este número de dias entram como "Urgente"
+// (destaque visual) — não existe campo de urgência na API, é derivado da
+// própria data de aplicação, que é o único dado real disponível.
+const LIMITE_DIAS_URGENTE = 25;
 
 function diasRestantes(dataIso: string): number {
   const hoje = new Date();
@@ -59,9 +64,6 @@ export default function TelaPrincipalPet() {
     );
   }
 
-  const icone = ICONE_ESPECIE[pet.especie] ?? "🐾";
-  const idade = calcularIdade(pet.dataNasc ?? "");
-
   const proximosCuidados: (Vacina & { dias: number })[] = (vacinas ?? [])
     .map((vacina) => ({ ...vacina, dias: diasRestantes(vacina.dataAplicacao) }))
     .filter((vacina) => vacina.dias > 0)
@@ -70,51 +72,32 @@ export default function TelaPrincipalPet() {
 
   return (
     <View className="flex-1 bg-surface">
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-6 pt-14 pb-4">
-        <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={24} color="#1E3A2F" />
-        </TouchableOpacity>
-        <Text className="flex-1 text-center text-lg font-bold text-gray-900" numberOfLines={1}>
-          {pet.nome}
-        </Text>
-        <TouchableOpacity onPress={() => router.push(`/pet/${id}/editar`)} hitSlop={8}>
-          <Ionicons name="pencil" size={20} color="#1E3A2F" />
-        </TouchableOpacity>
-      </View>
+      <CabecalhoOla mostrarVoltar />
 
-      <View className="flex-1 px-6 gap-6">
-        {/* Card do pet */}
-        <View className="bg-white rounded-2xl p-5 items-center gap-2 shadow-sm">
-          <View className="w-20 h-20 rounded-full items-center justify-center bg-primary">
-            <Text className="text-[36px]">{icone}</Text>
-          </View>
-          <Text className="text-xl font-bold text-gray-900 mt-1">{pet.nome}</Text>
-          <Text className="text-sm text-muted">
-            {(pet.raca || LABEL_ESPECIE[pet.especie]) ?? pet.especie} • {idade}
-          </Text>
-          <View className="bg-green-medium rounded-full px-3 py-1 mt-1">
-            <Text className="text-xs font-semibold text-primary-dark">Saúde em dia!</Text>
-          </View>
-        </View>
+      <View className="flex-1 px-6 gap-6 -mt-8">
+        {/* Card do pet — sobrepõe o header, como no Figma */}
+        <CardPetResumo pet={pet} onEditar={() => router.push(`/pet/${id}/editar`)} />
 
         {/* Acesso rápido */}
-        <View className="flex-row gap-3">
-          <BotaoAcessoRapido
-            icone="heart-outline"
-            texto="Cuidados"
-            onPress={() => router.push(`/pet/${id}/cuidados`)}
-          />
-          <BotaoAcessoRapido
-            icone="document-text-outline"
-            texto="Histórico"
-            onPress={() => router.push(`/pet/${id}/historico`)}
-          />
-          <BotaoAcessoRapido
-            icone="calendar-outline"
-            texto="Calendário"
-            onPress={() => router.push(`/pet/${id}/calendario`)}
-          />
+        <View className="gap-3">
+          <Text className="text-sm font-semibold text-muted">Acesso rápido</Text>
+          <View className="flex-row gap-3">
+            <BotaoAcessoRapido
+              icone="heart-outline"
+              texto="Cuidados"
+              onPress={() => router.push(`/pet/${id}/cuidados`)}
+            />
+            <BotaoAcessoRapido
+              icone="document-text-outline"
+              texto="Histórico"
+              onPress={() => router.push(`/pet/${id}/historico`)}
+            />
+            <BotaoAcessoRapido
+              icone="calendar-outline"
+              texto="Calendário"
+              onPress={() => router.push(`/pet/${id}/calendario`)}
+            />
+          </View>
         </View>
 
         {/* Próximos cuidados */}
@@ -129,29 +112,58 @@ export default function TelaPrincipalPet() {
             </View>
           ) : (
             <View className="gap-2">
-              {proximosCuidados.map((vacina) => (
-                <View
-                  key={vacina.id}
-                  className="flex-row items-center gap-3 bg-white rounded-2xl p-4 shadow-sm"
-                >
-                  <View className="w-10 h-10 rounded-full items-center justify-center bg-golden-pale">
-                    <Ionicons name="medkit-outline" size={18} color="#D4921E" />
+              {proximosCuidados.map((vacina) => {
+                const urgente = vacina.dias <= LIMITE_DIAS_URGENTE;
+                return (
+                  <View
+                    key={vacina.id}
+                    className="flex-row items-center gap-3 bg-white rounded-2xl p-3 shadow-sm"
+                  >
+                    <View
+                      className={`w-11 h-11 rounded-xl items-center justify-center ${
+                        urgente ? "bg-golden-pale" : "bg-green-medium"
+                      }`}
+                    >
+                      <Ionicons
+                        name="medkit-outline"
+                        size={18}
+                        color={urgente ? "#D4921E" : "#1E3A2F"}
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-sm font-semibold text-gray-900">
+                        {vacina.nomeVacina}
+                      </Text>
+                      <Text className="text-xs text-muted">
+                        Daqui {vacina.dias} {vacina.dias === 1 ? "dia" : "dias"}.
+                      </Text>
+                    </View>
+                    <View
+                      className={`rounded-full px-2 py-1 ${
+                        urgente ? "bg-golden-pale" : "bg-green-medium"
+                      }`}
+                    >
+                      <Text
+                        className={`text-[10px] font-bold ${
+                          urgente ? "text-golden" : "text-primary-dark"
+                        }`}
+                      >
+                        {urgente ? "URGENTE" : "VACINA"}
+                      </Text>
+                    </View>
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-sm font-semibold text-gray-900">
-                      {vacina.nomeVacina}
-                    </Text>
-                    <Text className="text-xs text-muted">
-                      Daqui {vacina.dias} {vacina.dias === 1 ? "dia" : "dias"}
-                    </Text>
-                  </View>
-                  <View className="bg-golden-pale rounded-full px-2 py-1">
-                    <Text className="text-[10px] font-semibold text-golden">Vacina</Text>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
+
+          <TouchableOpacity
+            onPress={() => router.push(`/pet/${id}/cuidados`)}
+            activeOpacity={0.85}
+            className="self-center items-center justify-center w-11 h-11 rounded-2xl bg-white border border-border mt-1"
+          >
+            <Ionicons name="add" size={22} color="#1E3A2F" />
+          </TouchableOpacity>
         </View>
 
         {/* Sugestões */}

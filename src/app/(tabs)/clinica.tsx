@@ -1,5 +1,4 @@
 import { CardClinica } from "@/components/CardClinica";
-import { EstadoErro } from "@/components/EstadoErro";
 import { EstadoVazio } from "@/components/EstadoVazio";
 import { useSessao } from "@/context/SessaoContext";
 import { useClinicas, useVincularClinica } from "@/hooks/useClinicas";
@@ -20,7 +19,6 @@ export default function TelaClinica() {
     data: clinicas = [],
     isLoading: carregando,
     isError: temErro,
-    refetch,
   } = useClinicas();
   const { mutate: vincular, isPending: vinculando } = useVincularClinica();
   const [busca, setBusca] = useState("");
@@ -56,12 +54,29 @@ export default function TelaClinica() {
     );
   }
 
+  // A API real (confirmada em GET /v3/api-docs) ainda não expõe nenhum
+  // endpoint de clínica — não é uma falha temporária de rede, então mostramos
+  // um estado permanente de "em breve" em vez de um botão "tentar novamente"
+  // que nunca vai funcionar (ver clinica.service.ts).
   if (temErro) {
     return (
-      <EstadoErro
-        mensagem="Erro ao carregar clínicas. Tente novamente."
-        onTentarNovamente={() => refetch()}
-      />
+      <View className="flex-1 bg-surface">
+        <View className="px-5 pt-14 pb-5 bg-primary">
+          <Text className="text-xl font-bold text-white">Clínicas Parceiras</Text>
+          <Text className="text-sm mt-1 text-green-medium">
+            Vincule seu pet a uma clínica
+          </Text>
+        </View>
+
+        <View className="flex-1 items-center justify-center">
+          <EstadoVazio
+            icone="business-outline"
+            tamanhoIcone={48}
+            titulo="Em breve"
+            subtitulo="A vinculação com clínicas parceiras estará disponível em uma próxima versão do Afetto."
+          />
+        </View>
+      </View>
     );
   }
 

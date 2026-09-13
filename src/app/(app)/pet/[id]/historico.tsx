@@ -1,3 +1,5 @@
+import { CabecalhoOla } from "@/components/CabecalhoOla";
+import { CardPetResumo } from "@/components/CardPetResumo";
 import { EstadoErro } from "@/components/EstadoErro";
 import { usePet } from "@/hooks/usePets";
 import { useDeletarVacina, useVacinasPet } from "@/hooks/useVacinas";
@@ -5,7 +7,20 @@ import { Vacina } from "@/schemas/vacina.schema";
 import { converterDataParaBR } from "@/utils/data";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+
+// A API só expõe o recurso "vacina" hoje — "Consultas" e "Remédios" ficam
+// desabilitados na UI (sem dado real para mostrar) em vez de exibir algo
+// fictício. Ver vacina.service.ts.
+const FILTROS = [
+  { chave: "todos", label: "Todos", disponivel: true },
+  { chave: "vacinas", label: "Vacinas", disponivel: true },
+  { chave: "consultas", label: "Consultas", disponivel: false },
+  { chave: "remedios", label: "Remédios", disponivel: false },
+] as const;
+
+type ChaveFiltro = (typeof FILTROS)[number]["chave"];
 
 function ehFutura(dataIso: string): boolean {
   const hoje = new Date();
@@ -32,6 +47,7 @@ export default function TelaHistoricoVacinas() {
   const { data: pet } = usePet(id);
   const { data: vacinas, isLoading, isError, refetch } = useVacinasPet(id);
   const { mutate: deletarVacina } = useDeletarVacina(id);
+  const [filtro, setFiltro] = useState<ChaveFiltro>("todos");
 
   function aoExcluir(vacina: Vacina) {
     Alert.alert(
@@ -39,26 +55,48 @@ export default function TelaHistoricoVacinas() {
       `Tem certeza que deseja excluir "${vacina.nomeVacina}"? Esta ação não pode ser desfeita.`,
       [
         { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: () => deletarVacina(vacina.id),
-        },
+        { text: "Excluir", style: "destructive", onPress: () => deletarVacina(vacina.id) },
       ]
     );
   }
 
-  const vacinasOrdenadas = ordenar(vacinas ?? []);
+  const todasVacinas = vacinas ?? [];
+  const vacinasOrdenadas = ordenar(todasVacinas);
+  const totalAplicadas = todasVacinas.filter((v) => !ehFutura(v.dataAplicacao)).length;
+  const totalProximas = todasVacinas.filter((v) => ehFutura(v.dataAplicacao)).length;
 
   return (
     <View className="flex-1 bg-surface">
-      <View className="flex-row items-center gap-3 px-6 pt-14 pb-4">
-        <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={24} color="#1E3A2F" />
-        </TouchableOpacity>
-        <Text className="flex-1 text-lg font-bold text-gray-900" numberOfLines={1}>
-          Histórico de {pet?.nome ?? "pet"}
-        </Text>
+      <CabecalhoOla mostrarVoltar />
+
+      <View className="px-6 -mt-8">{pet && <CardPetResumo pet={pet} />}</View>
+
+      {/* Filtros — só "Todos"/"Vacinas" têm dado real por trás */}
+      <View className="flex-row gap-2 px-6 pt-5">
+        {FILTROS.map((item) => {
+          const ativo = filtro === item.chave;
+          return (
+            <TouchableOpacity
+              key={item.chave}
+              disabled={!item.disponivel}
+              onPress={() => setFiltro(item.chave)}
+              activeOpacity={0.8}
+              className={`px-3 py-2 rounded-full border ${
+                ativo
+                  ? "bg-amber border-amber"
+                  : item.disponivel
+                    ? "bg-white border-border"
+                    : "bg-white border-border opacity-40"
+              }`}
+            >
+              <Text
+                className={`text-xs font-semibold ${ativo ? "text-white" : "text-muted"}`}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {isLoading ? (
@@ -72,6 +110,27 @@ export default function TelaHistoricoVacinas() {
         />
       ) : (
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+          {/* Estatísticas — derivadas só de dado real (vacinas do pet) */}
+          <View className="flex-row gap-3 mt-4">
+            <View className="flex-1 bg-white rounded-2xl p-3 items-center shadow-sm">
+              <Text className="text-xl font-bold text-gray-900">{todasVacinas.length}</Text>
+              <Text className="text-[10px] text-muted text-center mt-0.5">
+                eventos registrados
+              </Text>
+            </View>
+            <View className="flex-1 bg-white rounded-2xl p-3 items-center shadow-sm">
+              <Text className="text-xl font-bold text-gray-900">{totalAplicadas}</Text>
+              <Text className="text-[10px] text-muted text-center mt-0.5">aplicadas</Text>
+            </View>
+            <View className="flex-1 bg-white rounded-2xl p-3 items-center shadow-sm">
+              <Text className="text-xl font-bold text-gray-900">{totalProximas}</Text>
+              <Text className="text-[10px] text-muted text-center mt-0.5">
+                eventos próximos
+              </Text>
+            </View>
+          </View>
+
+          {/* Linha do tempo */}
           {vacinasOrdenadas.length === 0 ? (
             <View className="items-center justify-center py-16 gap-2 px-8">
               <Ionicons name="medkit-outline" size={40} color="#9E9589" />
@@ -80,62 +139,83 @@ export default function TelaHistoricoVacinas() {
               </Text>
             </View>
           ) : (
-            <View className="gap-3 pb-24">
-              {vacinasOrdenadas.map((vacina) => {
+            <View className="mt-5 pb-24">
+              {vacinasOrdenadas.map((vacina, indice) => {
                 const futura = ehFutura(vacina.dataAplicacao);
+                const ultimo = indice === vacinasOrdenadas.length - 1;
                 return (
-                  <View key={vacina.id} className="bg-white rounded-2xl p-4 gap-2 shadow-sm">
-                    <View className="flex-row items-start justify-between gap-2">
-                      <View className="flex-1">
-                        <Text className="text-base font-semibold text-gray-900">
-                          {vacina.nomeVacina}
-                        </Text>
-                        <Text className="text-xs text-muted mt-0.5">
-                          {converterDataParaBR(vacina.dataAplicacao)}
-                        </Text>
-                      </View>
+                  <View key={vacina.id} className="flex-row gap-3">
+                    {/* Linha do tempo (dot + trilho) */}
+                    <View className="items-center w-16">
+                      <Text className="text-[10px] text-muted text-center">
+                        {converterDataParaBR(vacina.dataAplicacao)}
+                      </Text>
                       <View
-                        className={`rounded-full px-2 py-1 ${
+                        className={`w-3 h-3 rounded-full mt-1 ${
+                          futura ? "bg-blue-400" : "bg-green-medium"
+                        }`}
+                      />
+                      {!ultimo && <View className="flex-1 w-px bg-border mt-1" />}
+                    </View>
+
+                    {/* Card do evento */}
+                    <View className="flex-1 bg-white rounded-2xl p-4 gap-1.5 shadow-sm mb-4">
+                      <View
+                        className={`self-start rounded-full px-2 py-0.5 ${
                           futura ? "bg-blue-100" : "bg-green-medium"
                         }`}
                       >
                         <Text
-                          className={`text-[10px] font-semibold ${
+                          className={`text-[10px] font-bold ${
                             futura ? "text-blue-700" : "text-primary-dark"
                           }`}
                         >
-                          {futura ? "Futura" : "Aplicada"}
+                          VACINA
                         </Text>
                       </View>
-                    </View>
 
-                    {vacina.lote && (
-                      <Text className="text-xs text-gray-600">Lote: {vacina.lote}</Text>
-                    )}
-                    {vacina.observacoes && (
-                      <Text className="text-xs text-gray-600">{vacina.observacoes}</Text>
-                    )}
+                      <Text className="text-base font-bold text-gray-900">
+                        {vacina.nomeVacina}
+                      </Text>
+                      <Text className="text-xs text-muted">
+                        {vacina.observacoes ||
+                          (futura
+                            ? "Próxima aplicação agendada."
+                            : "Aplicada — sem observações registradas.")}
+                      </Text>
 
-                    <View className="flex-row gap-4 mt-1">
-                      <TouchableOpacity
-                        onPress={() =>
-                          // `as any`: expo-router typedRoutes não tipa querystring dinâmica.
-                          router.push(`/pet/${id}/cuidados?vacinaId=${vacina.id}` as any)
-                        }
-                        className="flex-row items-center gap-1"
-                        hitSlop={8}
-                      >
-                        <Ionicons name="pencil-outline" size={16} color="#1E3A2F" />
-                        <Text className="text-xs font-medium text-primary">Editar</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => aoExcluir(vacina)}
-                        className="flex-row items-center gap-1"
-                        hitSlop={8}
-                      >
-                        <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                        <Text className="text-xs font-medium text-red-500">Excluir</Text>
-                      </TouchableOpacity>
+                      {(vacina.fabricante || vacina.lote) && (
+                        <Text className="text-[11px] text-muted mt-1">
+                          {[
+                            vacina.fabricante && `Fabricante: ${vacina.fabricante}`,
+                            vacina.lote && `Lote: ${vacina.lote}`,
+                          ]
+                            .filter(Boolean)
+                            .join(" • ")}
+                        </Text>
+                      )}
+
+                      <View className="flex-row gap-4 mt-2">
+                        <TouchableOpacity
+                          onPress={() =>
+                            // `as any`: expo-router typedRoutes não tipa querystring dinâmica.
+                            router.push(`/pet/${id}/cuidados?vacinaId=${vacina.id}` as any)
+                          }
+                          className="flex-row items-center gap-1"
+                          hitSlop={8}
+                        >
+                          <Ionicons name="pencil-outline" size={14} color="#1E3A2F" />
+                          <Text className="text-xs font-medium text-primary">Editar</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => aoExcluir(vacina)}
+                          className="flex-row items-center gap-1"
+                          hitSlop={8}
+                        >
+                          <Ionicons name="trash-outline" size={14} color="#ef4444" />
+                          <Text className="text-xs font-medium text-red-500">Excluir</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
                 );

@@ -1,3 +1,4 @@
+import { CabecalhoOla } from "@/components/CabecalhoOla";
 import { CardPet } from "@/components/CardPet";
 import { PetsVazio } from "@/components/PetsVazio";
 import { useSessao } from "@/context/SessaoContext";
@@ -50,12 +51,18 @@ export default function TelaPets() {
 
   return (
     <View className="flex-1 bg-surface">
-      {/* Header */}
-      <View className="px-5 pt-14 pb-5 bg-primary">
-        <Text className="text-xl font-bold text-white">Meus Pets</Text>
-        <Text className="text-sm mt-1 text-green-medium">
-          {pets.length} {pets.length === 1 ? "pet cadastrado" : "pets cadastrados"}
-        </Text>
+      <CabecalhoOla />
+
+      {/* Título + ação de adicionar */}
+      <View className="flex-row items-center justify-between px-6 pt-6 pb-2">
+        <Text className="text-xl font-bold text-gray-900">Meus Pets</Text>
+        <TouchableOpacity
+          onPress={() => router.push("/pet/cadastrar" as any)}
+          activeOpacity={0.85}
+          className="w-10 h-10 rounded-full bg-amber items-center justify-center"
+        >
+          <Ionicons name="add" size={22} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
       {/* Lista */}

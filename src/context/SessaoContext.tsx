@@ -1,5 +1,5 @@
 import { definirTratadorSessaoExpirada } from "@/api/api";
-import { sair as sairService } from "@/services/autenticacao.service";
+import { buscarUsuarioPorId, sair as sairService } from "@/services/autenticacao.service";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -41,20 +41,42 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     AsyncStorage.getItem(CHAVE_SESSAO)
-      .then((sessaoBruta) => {
+      .then(async (sessaoBruta) => {
         if (!sessaoBruta) return;
+        let salva: Sessao | null = null;
         try {
-          const salva = JSON.parse(sessaoBruta);
+          const parsed = JSON.parse(sessaoBruta);
           // Só aceita se tiver o formato atual — descarta sessões de versões
           // antigas do app (que usavam `name`/`setup` em vez de `nome`/`progresso`).
-          if (salva && typeof salva.nome === "string" && salva.progresso) {
-            setSessao(salva);
-          } else {
-            AsyncStorage.removeItem(CHAVE_SESSAO);
+          if (parsed && typeof parsed.nome === "string" && parsed.progresso) {
+            salva = parsed;
           }
         } catch {
-          AsyncStorage.removeItem(CHAVE_SESSAO);
+          // JSON inválido — trata como sessão inexistente abaixo.
         }
+
+        if (!salva) {
+          await AsyncStorage.removeItem(CHAVE_SESSAO);
+          return;
+        }
+
+        // ⚠️ O cookie de sessão (JSESSIONID) é uma HttpSession em memória no
+        // backend: some quando o servidor reinicia (ex.: instância free do
+        // Render "dormindo"), e a API responde 403 (não 401) tanto para
+        // sessão inválida quanto para regra de negócio — por isso o
+        // interceptor global não consegue distinguir os dois casos (ver
+        // api.ts). Sem essa revalidação, um `id` de usuário salvo no
+        // AsyncStorage de uma sessão anterior ficava "fantasma": o app
+        // continuava mostrando as abas normalmente, mas toda chamada que
+        // dependia desse id (ex.: POST /pet com `idUsuario`) quebrava com
+        // 500 do backend. Revalidamos aqui, uma vez, no boot do app.
+        const usuario = await buscarUsuarioPorId(salva.id);
+        if (!usuario) {
+          await AsyncStorage.removeItem(CHAVE_SESSAO);
+          return;
+        }
+
+        setSessao(salva);
       })
       .finally(() => setCarregando(false));
   }, []);

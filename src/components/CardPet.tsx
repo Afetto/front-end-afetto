@@ -13,6 +13,8 @@ export function CardPet({ pet, onPress }: Props) {
   const icone = ICONE_ESPECIE[pet.especie] ?? "🐾";
   const idade = calcularIdade(pet.dataNasc);
 
+  const racaOuEspecie = pet.raca || LABEL_ESPECIE[pet.especie] || pet.especie;
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -20,45 +22,22 @@ export function CardPet({ pet, onPress }: Props) {
       className="bg-white rounded-2xl p-4 mb-3 shadow-sm"
     >
       <View className="flex-row items-center gap-3">
-        <View className="w-14 h-14 rounded-full items-center justify-center bg-primary">
-          <Text className="text-[26px]">{icone}</Text>
+        <View className="w-16 h-16 rounded-2xl items-center justify-center bg-amber">
+          <Text className="text-[30px]">{icone}</Text>
         </View>
 
         <View className="flex-1">
-          <View className="flex-row items-center gap-2">
-            <Text className="text-base font-bold text-primary">{pet.nome}</Text>
-            {pet.sexo && (
-              <Text className="text-xs text-muted">
-                {pet.sexo === "MACHO" ? "♂" : "♀"}
-              </Text>
-            )}
-            {/* TODO: status de saúde ainda não vem da API — placeholder fixo */}
-            <View className="px-2 py-0.5 rounded-full border bg-green-medium/10 border-green-medium">
-              <Text className="text-xs font-medium text-primary">Em dia ✓</Text>
-            </View>
-          </View>
-
+          <Text className="text-base font-bold text-gray-900">{pet.nome}</Text>
           <Text className="text-xs text-muted mt-0.5">
-            {LABEL_ESPECIE[pet.especie] ?? pet.especie}
-            {pet.raca ? ` • ${pet.raca}` : ""}
+            {racaOuEspecie}
+            {idade !== "—" ? ` • ${idade}` : ""}
           </Text>
 
-          {(idade !== "—" || pet.peso != null) && (
-            <View className="flex-row gap-3 mt-2">
-              {idade !== "—" && (
-                <View className="flex-row items-center gap-1">
-                  <Ionicons name="calendar-outline" size={12} color="#9E9589" />
-                  <Text className="text-xs text-muted">{idade}</Text>
-                </View>
-              )}
-              {pet.peso != null && (
-                <View className="flex-row items-center gap-1">
-                  <Ionicons name="barbell-outline" size={12} color="#9E9589" />
-                  <Text className="text-xs text-muted">{pet.peso} kg</Text>
-                </View>
-              )}
-            </View>
-          )}
+          {/* ⚠️ A API não expõe status de saúde do pet — badge fixo, sem
+              lógica real (mesmo placeholder já usado em pet/[id]/index.tsx). */}
+          <View className="self-start bg-green-medium rounded-full px-3 py-1 mt-2">
+            <Text className="text-xs font-semibold text-primary-dark">✓ Saúde em dia!</Text>
+          </View>
         </View>
 
         <Ionicons name="chevron-forward" size={18} color="#9E9589" />
