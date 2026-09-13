@@ -120,8 +120,7 @@ npm run ios
 ## 🔗 Links
 
 - 🌐 API em produção: [https://java-afetto-fork.onrender.com](https://java-afetto-fork.onrender.com)
-- 🎥 Vídeo de apresentação: [YouTube](https://youtu.be/https://youtu.be/nsuwSvvMlI0?is=-BOCcaCA9bKhVoib)
-
+- 🎥 Vídeo de apresentação: [YouTube](https://youtu.be/KR2jA5o1Qxk?is=KUvByIYq8Iwi6upV)
 ---
 
 ## 📄 Licença
