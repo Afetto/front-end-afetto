@@ -21,11 +21,6 @@ Desenvolvido como parte do **Challenge FIAP 2026** em parceria com a **CLYVO VET
 
 ---
 
-## 🎥 Vídeo de Apresentação
-
-▶️ [Assistir no YouTube](https://youtu.be/LINK_AQUI)
-
----
 
 ## 🚀 Tecnologias Utilizadas
 
