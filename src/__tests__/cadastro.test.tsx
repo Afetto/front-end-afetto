@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 
 import { api } from "@/api/api";
 import TelaCadastro from "@/app/(auth)/cadastro";
+import { router } from "expo-router";
 
 // Mocka o boundary HTTP: tudo abaixo de `api.post` continua rodando de verdade
 // (schema -> react-hook-form -> useMutation -> autenticacao.service -> mapeamento do payload).
@@ -82,7 +83,7 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
     jest.clearAllMocks();
   });
 
-  it("faz POST /usuario com o payload mapeado e exibe o sucesso", async () => {
+  it("faz POST /usuario com o payload mapeado e navega para a tela de sucesso", async () => {
     mockPost.mockResolvedValueOnce({ data: {} });
 
     render(<TelaCadastro />, { wrapper });
@@ -93,7 +94,9 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
       expect(mockPost).toHaveBeenCalledWith("/usuario", PAYLOAD_ESPERADO);
     });
 
-    expect(await screen.findByText("Conta criada!")).toBeTruthy();
+    await waitFor(() => {
+      expect(router.replace).toHaveBeenCalledWith("/cadastro-sucesso");
+    });
   });
 
   it("mostra erro no campo e-mail quando a API responde 403", async () => {
@@ -109,7 +112,7 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
     expect(
       await screen.findByText("Este e-mail já está cadastrado")
     ).toBeTruthy();
-    expect(screen.queryByText("Conta criada!")).toBeNull();
+    expect(router.replace).not.toHaveBeenCalled();
   });
 
   it("não chama a API quando o formulário é inválido", async () => {

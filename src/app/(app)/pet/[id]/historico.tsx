@@ -4,7 +4,7 @@ import { EstadoErro } from "@/components/EstadoErro";
 import { usePet } from "@/hooks/usePets";
 import { useDeletarVacina, useVacinasPet } from "@/hooks/useVacinas";
 import { Vacina } from "@/schemas/vacina.schema";
-import { converterDataParaBR } from "@/utils/data";
+import { converterDataParaBR, normalizarData } from "@/utils/data";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -23,11 +23,7 @@ const FILTROS = [
 type ChaveFiltro = (typeof FILTROS)[number]["chave"];
 
 function ehFutura(dataIso: string): boolean {
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const data = new Date(dataIso);
-  data.setHours(0, 0, 0, 0);
-  return data.getTime() >= hoje.getTime();
+  return normalizarData(dataIso).getTime() >= normalizarData(new Date()).getTime();
 }
 
 function ordenar(vacinas: Vacina[]): Vacina[] {
@@ -66,7 +62,7 @@ export default function TelaHistoricoVacinas() {
   const totalProximas = todasVacinas.filter((v) => ehFutura(v.dataAplicacao)).length;
 
   return (
-    <View className="flex-1 bg-surface">
+    <View className="flex-1 bg-surface dark:bg-gray-900">
       <CabecalhoOla mostrarVoltar />
 
       <View className="px-6 -mt-8">{pet && <CardPetResumo pet={pet} />}</View>
@@ -85,12 +81,12 @@ export default function TelaHistoricoVacinas() {
                 ativo
                   ? "bg-amber border-amber"
                   : item.disponivel
-                    ? "bg-white border-border"
-                    : "bg-white border-border opacity-40"
+                    ? "bg-white dark:bg-gray-800 border-border dark:border-gray-700"
+                    : "bg-white dark:bg-gray-800 border-border dark:border-gray-700 opacity-40"
               }`}
             >
               <Text
-                className={`text-xs font-semibold ${ativo ? "text-white" : "text-muted"}`}
+                className={`text-xs font-semibold ${ativo ? "text-white" : "text-muted dark:text-gray-400"}`}
               >
                 {item.label}
               </Text>
@@ -112,19 +108,19 @@ export default function TelaHistoricoVacinas() {
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           {/* Estatísticas — derivadas só de dado real (vacinas do pet) */}
           <View className="flex-row gap-3 mt-4">
-            <View className="flex-1 bg-white rounded-2xl p-3 items-center shadow-sm">
-              <Text className="text-xl font-bold text-gray-900">{todasVacinas.length}</Text>
-              <Text className="text-[10px] text-muted text-center mt-0.5">
+            <View className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-3 items-center shadow-sm">
+              <Text className="text-xl font-bold text-gray-900 dark:text-white">{todasVacinas.length}</Text>
+              <Text className="text-[10px] text-muted dark:text-gray-400 text-center mt-0.5">
                 eventos registrados
               </Text>
             </View>
-            <View className="flex-1 bg-white rounded-2xl p-3 items-center shadow-sm">
-              <Text className="text-xl font-bold text-gray-900">{totalAplicadas}</Text>
-              <Text className="text-[10px] text-muted text-center mt-0.5">aplicadas</Text>
+            <View className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-3 items-center shadow-sm">
+              <Text className="text-xl font-bold text-gray-900 dark:text-white">{totalAplicadas}</Text>
+              <Text className="text-[10px] text-muted dark:text-gray-400 text-center mt-0.5">aplicadas</Text>
             </View>
-            <View className="flex-1 bg-white rounded-2xl p-3 items-center shadow-sm">
-              <Text className="text-xl font-bold text-gray-900">{totalProximas}</Text>
-              <Text className="text-[10px] text-muted text-center mt-0.5">
+            <View className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-3 items-center shadow-sm">
+              <Text className="text-xl font-bold text-gray-900 dark:text-white">{totalProximas}</Text>
+              <Text className="text-[10px] text-muted dark:text-gray-400 text-center mt-0.5">
                 eventos próximos
               </Text>
             </View>
@@ -134,7 +130,7 @@ export default function TelaHistoricoVacinas() {
           {vacinasOrdenadas.length === 0 ? (
             <View className="items-center justify-center py-16 gap-2 px-8">
               <Ionicons name="medkit-outline" size={40} color="#9E9589" />
-              <Text className="text-muted text-sm text-center">
+              <Text className="text-muted dark:text-gray-400 text-sm text-center">
                 Nenhuma vacina cadastrada. Adicione a primeira na aba Cuidados.
               </Text>
             </View>
@@ -147,7 +143,7 @@ export default function TelaHistoricoVacinas() {
                   <View key={vacina.id} className="flex-row gap-3">
                     {/* Linha do tempo (dot + trilho) */}
                     <View className="items-center w-16">
-                      <Text className="text-[10px] text-muted text-center">
+                      <Text className="text-[10px] text-muted dark:text-gray-400 text-center">
                         {converterDataParaBR(vacina.dataAplicacao)}
                       </Text>
                       <View
@@ -155,11 +151,11 @@ export default function TelaHistoricoVacinas() {
                           futura ? "bg-blue-400" : "bg-green-medium"
                         }`}
                       />
-                      {!ultimo && <View className="flex-1 w-px bg-border mt-1" />}
+                      {!ultimo && <View className="flex-1 w-px bg-border dark:bg-gray-700 mt-1" />}
                     </View>
 
                     {/* Card do evento */}
-                    <View className="flex-1 bg-white rounded-2xl p-4 gap-1.5 shadow-sm mb-4">
+                    <View className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-4 gap-1.5 shadow-sm mb-4">
                       <View
                         className={`self-start rounded-full px-2 py-0.5 ${
                           futura ? "bg-blue-100" : "bg-green-medium"
@@ -174,10 +170,10 @@ export default function TelaHistoricoVacinas() {
                         </Text>
                       </View>
 
-                      <Text className="text-base font-bold text-gray-900">
+                      <Text className="text-base font-bold text-gray-900 dark:text-white">
                         {vacina.nomeVacina}
                       </Text>
-                      <Text className="text-xs text-muted">
+                      <Text className="text-xs text-muted dark:text-gray-400">
                         {vacina.observacoes ||
                           (futura
                             ? "Próxima aplicação agendada."
@@ -185,7 +181,7 @@ export default function TelaHistoricoVacinas() {
                       </Text>
 
                       {(vacina.fabricante || vacina.lote) && (
-                        <Text className="text-[11px] text-muted mt-1">
+                        <Text className="text-[11px] text-muted dark:text-gray-400 mt-1">
                           {[
                             vacina.fabricante && `Fabricante: ${vacina.fabricante}`,
                             vacina.lote && `Lote: ${vacina.lote}`,
@@ -205,7 +201,7 @@ export default function TelaHistoricoVacinas() {
                           hitSlop={8}
                         >
                           <Ionicons name="pencil-outline" size={14} color="#1E3A2F" />
-                          <Text className="text-xs font-medium text-primary">Editar</Text>
+                          <Text className="text-xs font-medium text-primary dark:text-amber">Editar</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => aoExcluir(vacina)}

@@ -11,7 +11,7 @@ export function RotaProtegida({ children }: RotaProtegidaProps) {
 
   if (carregando) {
     return (
-      <View className="flex-1 items-center justify-center bg-surface">
+      <View className="flex-1 items-center justify-center bg-surface dark:bg-gray-900">
         <ActivityIndicator color="#E8A838" size="large" />
       </View>
     );

@@ -2,18 +2,18 @@ import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 import { CampoSelecao } from "@/components/ui/CampoSelecao";
 import CampoTexto from "@/components/ui/CampoTexto";
 import { useSessao } from "@/context/SessaoContext";
+import { useCompletarPerfil } from "@/hooks/useAutenticacao";
 import { useBuscarCep } from "@/hooks/useBuscarCep";
 import {
     CompletarPerfilInput,
     CompletarPerfilSchema,
 } from "@/schemas/completar-perfil.schema";
-import { completarPerfil as servicoCompletarPerfil } from "@/services/autenticacao.service";
 import { mascararCEP, mascararData } from "@/utils/mascaras";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Controller, useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -25,13 +25,11 @@ import {
 
 export default function TelaCompletarPerfil() {
   const { concluirEtapa } = useSessao();
-  const { buscando: cepCarregando, buscarCep: buscarEnderecoPorCep } = useBuscarCep();
 
   const {
     control,
     handleSubmit,
     setValue,
-    getValues,
     setError,
     formState: { errors },
   } = useForm<CompletarPerfilInput>({
@@ -52,31 +50,34 @@ export default function TelaCompletarPerfil() {
     mode: "onTouched",
   });
 
-  // ─── Busca CEP ───────────────────────────────────────────────────────────
-  async function buscarCep(cep: string) {
-    const resultado = await buscarEnderecoPorCep(cep);
-    if (!resultado) return;
+  // ─── Busca CEP — dispara sozinha quando o campo completa 8 dígitos ────────
+  const cepDigitado = useWatch({ control, name: "cep" });
+  const { data: enderecoCep, isFetching: cepCarregando, isError: cepComErro, error: erroCep } =
+    useBuscarCep(cepDigitado);
 
-    if (!resultado.ok) {
-      setError("cep", {
-        message:
-          resultado.motivo === "nao_encontrado"
-            ? "CEP não encontrado"
-            : "Erro ao buscar CEP",
-      });
-      return;
-    }
+  useEffect(() => {
+    if (!enderecoCep) return;
+    setValue("logradouro", enderecoCep.logradouro, { shouldValidate: true });
+    setValue("bairro", enderecoCep.bairro, { shouldValidate: true });
+    setValue("cidade", enderecoCep.cidade, { shouldValidate: true });
+    setValue("estado", enderecoCep.estado, { shouldValidate: true });
+  }, [enderecoCep, setValue]);
 
-    setValue("logradouro", resultado.endereco.logradouro, { shouldValidate: true });
-    setValue("bairro", resultado.endereco.bairro, { shouldValidate: true });
-    setValue("cidade", resultado.endereco.cidade, { shouldValidate: true });
-    setValue("estado", resultado.endereco.estado, { shouldValidate: true });
-  }
+  useEffect(() => {
+    if (!cepComErro) return;
+    setError("cep", {
+      message:
+        erroCep instanceof Error && erroCep.message === "nao_encontrado"
+          ? "CEP não encontrado"
+          : "Erro ao buscar CEP",
+    });
+  }, [cepComErro, erroCep, setError]);
 
-  // ─── useMutation ─────────────────────────────────────────────────────────
-  const { mutate: enviarPerfil, isPending: enviando } = useMutation({
-    mutationFn: (data: CompletarPerfilInput) =>
-      servicoCompletarPerfil({
+  const { mutate: enviarPerfil, isPending: enviando } = useCompletarPerfil();
+
+  function aoEnviar(data: CompletarPerfilInput) {
+    enviarPerfil(
+      {
         tipoMoradia: data.tipoMoradia,
         telaProtecao: data.telaProtecao,
         quantidadePets: Number(data.quantidadePets),
@@ -89,28 +90,27 @@ export default function TelaCompletarPerfil() {
           cidade: data.cidade,
           estado: data.estado,
         },
-      }),
-    onSuccess: async (resultado) => {
-      if (!resultado.ok) {
-        setError("root", { message: "Erro ao salvar perfil. Tente novamente." });
-        return;
+      },
+      {
+        onSuccess: async (resultado) => {
+          if (!resultado.ok) {
+            setError("root", { message: "Erro ao salvar perfil. Tente novamente." });
+            return;
+          }
+          await concluirEtapa("perfilCompleto");
+          router.back();
+        },
+        onError: () => {
+          setError("root", { message: "Erro de conexão. Tente novamente." });
+        },
       }
-      await concluirEtapa("perfilCompleto");
-      router.back();
-    },
-    onError: () => {
-      setError("root", { message: "Erro de conexão. Tente novamente." });
-    },
-  });
-
-  function aoEnviar(data: CompletarPerfilInput) {
-    enviarPerfil(data);
+    );
   }
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-surface"
+      className="flex-1 bg-surface dark:bg-gray-900"
     >
       <ScrollView
         className="flex-1"
@@ -122,10 +122,10 @@ export default function TelaCompletarPerfil() {
 
           {/* Título */}
           <View className="gap-1">
-            <Text className="text-4xl font-bold text-gray-900 leading-tight">
+            <Text className="text-4xl font-bold text-gray-900 dark:text-white leading-tight">
               Complete seu{"\n"}Cadastro!
             </Text>
-            <Text className="text-sm text-muted mt-1">
+            <Text className="text-sm text-muted dark:text-gray-400 mt-1">
               Essas informações nos ajudam a personalizar sua experiência.
             </Text>
           </View>
@@ -134,7 +134,7 @@ export default function TelaCompletarPerfil() {
           <View className="gap-4">
             <View className="flex-row items-center gap-2">
               <Ionicons name="person-outline" size={16} color="#E8A838" />
-              <Text className="text-sm font-semibold text-primary">
+              <Text className="text-sm font-semibold text-primary dark:text-white">
                 Informações pessoais
               </Text>
             </View>
@@ -156,7 +156,7 @@ export default function TelaCompletarPerfil() {
           <View className="gap-4">
             <View className="flex-row items-center gap-2">
               <Ionicons name="home-outline" size={16} color="#E8A838" />
-              <Text className="text-sm font-semibold text-primary">
+              <Text className="text-sm font-semibold text-primary dark:text-white">
                 Sobre seu lar
               </Text>
             </View>
@@ -214,7 +214,7 @@ export default function TelaCompletarPerfil() {
           <View className="gap-4">
             <View className="flex-row items-center gap-2">
               <Ionicons name="location-outline" size={16} color="#E8A838" />
-              <Text className="text-sm font-semibold text-primary">
+              <Text className="text-sm font-semibold text-primary dark:text-white">
                 Endereço
               </Text>
             </View>
@@ -232,7 +232,6 @@ export default function TelaCompletarPerfil() {
                   ? <ActivityIndicator size="small" color="#E8A838" />
                   : <Ionicons name="search-outline" size={18} color="#9E9589" />
               }
-              onBlur={() => buscarCep(getValues("cep"))}
             />
 
             {/* Logradouro + Número */}

@@ -19,17 +19,17 @@ export function SegurancaCard({
 }: Props) {
   return (
     <View className="gap-2">
-      <Text className="px-1 text-[11px] font-semibold uppercase tracking-[0.8px] text-muted">
+      <Text className="px-1 text-[11px] font-semibold uppercase tracking-[0.8px] text-muted dark:text-gray-400">
         Segurança
       </Text>
 
-      <View className="rounded-2xl bg-white px-4 shadow-sm">
+      <View className="rounded-2xl bg-white dark:bg-gray-800 px-4 shadow-sm">
         <TouchableOpacity
           onPress={onAlterarSenha}
           activeOpacity={0.7}
-          className="flex-row items-center border-b border-border py-3.5"
+          className="flex-row items-center border-b border-border dark:border-gray-700 py-3.5"
         >
-          <Text className="flex-1 text-[15px] text-gray-900">
+          <Text className="flex-1 text-[15px] text-gray-900 dark:text-white">
             Alterar senha
           </Text>
 
@@ -41,7 +41,7 @@ export function SegurancaCard({
         </TouchableOpacity>
 
         <View className="flex-row items-center py-3.5">
-          <Text className="flex-1 text-[15px] text-gray-900">
+          <Text className="flex-1 text-[15px] text-gray-900 dark:text-white">
             Notificações WhatsApp
           </Text>
 

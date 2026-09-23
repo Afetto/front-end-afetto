@@ -1,9 +1,10 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { AppState } from "react-native";
+import { AppState, useColorScheme } from "react-native";
 import { useReactQueryDevTools } from "@dev-plugins/react-query";
 import { focusManager, QueryClientProvider } from "@tanstack/react-query";
 import "react-native-reanimated";
@@ -49,10 +50,12 @@ export default function LayoutRaiz() {
 
 function LayoutRaizNav() {
   useReactQueryDevTools(queryClient);
+  const esquema = useColorScheme();
 
   return (
     <QueryClientProvider client={queryClient}>
       <SessaoProvider>
+        <StatusBar style={esquema === "dark" ? "light" : "dark"} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />

@@ -1,6 +1,7 @@
 import { RotaProtegida } from "@/components/RotaProtegida";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { useColorScheme } from "react-native";
 
 type NomeIcone = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -9,16 +10,18 @@ function IconeAba({ name, color }: { name: NomeIcone; color: string }) {
 }
 
 export default function LayoutAbas() {
+  const escuro = useColorScheme() === "dark";
+
   return (
     <RotaProtegida>
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: "#1E3A2F",
-          tabBarInactiveTintColor: "#9E9589",
+          tabBarActiveTintColor: escuro ? "#E8A838" : "#1E3A2F",
+          tabBarInactiveTintColor: escuro ? "#6B6B6B" : "#9E9589",
           tabBarStyle: {
-            backgroundColor: "#fff",
-            borderTopColor: "#D8D1C7",
+            backgroundColor: escuro ? "#1A1A1A" : "#fff",
+            borderTopColor: escuro ? "#2A2A2A" : "#D8D1C7",
             borderTopWidth: 1,
           },
           tabBarLabelStyle: { fontSize: 11, fontWeight: "500" },

@@ -10,6 +10,13 @@ export function converterDataParaBR(dataIso: string): string {
   return `${dia}/${mes}/${ano}`;
 }
 
+/** Zera a hora de uma data (string ISO ou `Date`) — para comparar datas só pelo dia. */
+export function normalizarData(data: string | Date): Date {
+  const d = new Date(data);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 /** Calcula a idade em anos a partir de uma data de nascimento ISO (YYYY-MM-DD). */
 export function calcularIdade(dataNasc: string): string {
   if (!dataNasc) return "—";

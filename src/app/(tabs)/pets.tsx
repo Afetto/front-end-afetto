@@ -32,7 +32,7 @@ export default function TelaPets() {
 
   if (carregando) {
     return (
-      <View className="flex-1 items-center justify-center bg-surface">
+      <View className="flex-1 items-center justify-center bg-surface dark:bg-gray-900">
         <ActivityIndicator color="#E8A838" size="large" />
       </View>
     );
@@ -50,12 +50,12 @@ export default function TelaPets() {
   }
 
   return (
-    <View className="flex-1 bg-surface">
+    <View className="flex-1 bg-surface dark:bg-gray-900">
       <CabecalhoOla />
 
       {/* Título + ação de adicionar */}
       <View className="flex-row items-center justify-between px-6 pt-6 pb-2">
-        <Text className="text-xl font-bold text-gray-900">Meus Pets</Text>
+        <Text className="text-xl font-bold text-gray-900 dark:text-white">Meus Pets</Text>
         <TouchableOpacity
           onPress={() => router.push("/pet/cadastrar" as any)}
           activeOpacity={0.85}
@@ -74,7 +74,7 @@ export default function TelaPets() {
       />
 
       {/* Footer — só aparece quando tem pets */}
-      <View className="absolute bottom-0 left-0 right-0 px-6 pb-10 pt-3 gap-3 bg-surface border-t border-border">
+      <View className="absolute bottom-0 left-0 right-0 px-6 pb-10 pt-3 gap-3 bg-surface dark:bg-gray-900 border-t border-border dark:border-gray-700">
         <TouchableOpacity
           onPress={() => router.push("/pet/cadastrar" as any)}
           activeOpacity={0.85}

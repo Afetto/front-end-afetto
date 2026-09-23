@@ -88,7 +88,7 @@ export default function TelaCuidados() {
 
   if (editando && carregandoVacina) {
     return (
-      <View className="flex-1 items-center justify-center bg-surface">
+      <View className="flex-1 items-center justify-center bg-surface dark:bg-gray-900">
         <ActivityIndicator color="#E8A838" size="large" />
       </View>
     );
@@ -97,7 +97,7 @@ export default function TelaCuidados() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-surface"
+      className="flex-1 bg-surface dark:bg-gray-900"
     >
       <ScrollView
         className="flex-1"
@@ -110,7 +110,7 @@ export default function TelaCuidados() {
             <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
               <Ionicons name="chevron-back" size={24} color="#1E3A2F" />
             </TouchableOpacity>
-            <Text className="text-2xl font-bold text-gray-900">
+            <Text className="text-2xl font-bold text-gray-900 dark:text-white">
               {editando ? "Editar cuidado" : "Adicionar cuidado"}
             </Text>
           </View>

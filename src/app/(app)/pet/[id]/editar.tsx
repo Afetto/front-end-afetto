@@ -1,17 +1,14 @@
 import { EstadoErro } from "@/components/EstadoErro";
-import { SeletorEspecie } from "@/components/SeletorEspecie";
-import { CampoSelecao } from "@/components/ui/CampoSelecao";
-import CampoTexto from "@/components/ui/CampoTexto";
+import { FormPet } from "@/components/FormPet";
 import { useSessao } from "@/context/SessaoContext";
 import { useAtualizarPet, usePet } from "@/hooks/usePets";
 import { FormCadastroPet, FormCadastroPetSchema } from "@/schemas/pet.schema";
 import { converterDataParaBR, converterDataParaISO } from "@/utils/data";
-import { mascararData } from "@/utils/mascaras";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -95,7 +92,7 @@ export default function TelaEditarPet() {
 
   if (carregando) {
     return (
-      <View className="flex-1 items-center justify-center bg-surface">
+      <View className="flex-1 items-center justify-center bg-surface dark:bg-gray-900">
         <ActivityIndicator color="#E8A838" size="large" />
       </View>
     );
@@ -113,7 +110,7 @@ export default function TelaEditarPet() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-surface"
+      className="flex-1 bg-surface dark:bg-gray-900"
     >
       <ScrollView
         className="flex-1"
@@ -123,82 +120,20 @@ export default function TelaEditarPet() {
       >
         <View className="flex-1 px-6 pt-14 pb-10 gap-6">
           {/* Header */}
-          <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-3">
             <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
-              <Ionicons name="close" size={24} color="#1E3A2F" />
+              <Ionicons name="chevron-back" size={24} color="#1E3A2F" />
             </TouchableOpacity>
-            <Text className="text-lg font-bold text-gray-900">Editar pet</Text>
-            <TouchableOpacity onPress={handleSubmit(aoSalvar)} disabled={salvando} hitSlop={8}>
-              {salvando ? (
-                <ActivityIndicator color="#1E3A2F" size="small" />
-              ) : (
-                <Ionicons name="checkmark" size={24} color="#1E3A2F" />
-              )}
-            </TouchableOpacity>
+            <Text className="text-2xl font-bold text-gray-900 dark:text-white">Editar pet</Text>
           </View>
 
-          <View className="gap-5">
-            <CampoTexto name="nome" control={control} label="Nome" autoCapitalize="words" />
-
-            <Controller
-              name="especie"
-              control={control}
-              render={({ field: { value, onChange }, fieldState: { error } }) => (
-                <SeletorEspecie value={value} onChange={onChange} error={error?.message} />
-              )}
-            />
-
-            <Controller
-              name="sexo"
-              control={control}
-              render={({ field: { value, onChange }, fieldState: { error } }) => (
-                <CampoSelecao
-                  label="Sexo"
-                  value={value ?? ""}
-                  onChange={onChange}
-                  error={error?.message}
-                  opcoes={[
-                    { label: "Macho", value: "MACHO" },
-                    { label: "Fêmea", value: "FEMEA" },
-                  ]}
-                />
-              )}
-            />
-
-            <CampoTexto name="raca" control={control} label="Raça (opcional)" autoCapitalize="words" />
-
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <CampoTexto
-                  name="peso"
-                  control={control}
-                  label="Peso em kg (opcional)"
-                  keyboardType="decimal-pad"
-                />
-              </View>
-              <View className="flex-1">
-                <CampoTexto
-                  name="dataNasc"
-                  control={control}
-                  label="Nascimento (opcional)"
-                  placeholder="DD/MM/AAAA"
-                  keyboardType="numeric"
-                  transformarTexto={mascararData}
-                />
-              </View>
-            </View>
-
-            <CampoTexto
-              name="descricao"
-              control={control}
-              label="Descrição (opcional)"
-              autoCapitalize="sentences"
-            />
-
-            {errors.root && (
-              <Text className="text-red-500 text-sm text-center">{errors.root.message}</Text>
-            )}
-          </View>
+          <FormPet
+            control={control}
+            errors={errors}
+            isPending={salvando}
+            textoBotao="Salvar alterações"
+            onSubmit={handleSubmit(aoSalvar)}
+          />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

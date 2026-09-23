@@ -19,7 +19,7 @@ export function BotaoEnviar({
   textoLoading = "Enviando...",
 }: Props) {
   return (
-    <View className="absolute bottom-0 left-0 right-0 bg-surface/95 px-5 pb-[34px] pt-3">
+    <View className="absolute bottom-0 left-0 right-0 bg-surface/95 dark:bg-gray-900/95 px-5 pb-[34px] pt-3">
       <TouchableOpacity
         onPress={onPress}
         disabled={enviando}

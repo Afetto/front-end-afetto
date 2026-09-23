@@ -13,11 +13,11 @@ type Props = {
 export function FormDadosPessoais({ control, cpf }: Props) {
   return (
     <View className="gap-2">
-      <Text className="px-1 text-[11px] font-semibold uppercase tracking-[0.8px] text-muted">
+      <Text className="px-1 text-[11px] font-semibold uppercase tracking-[0.8px] text-muted dark:text-gray-400">
         Dados pessoais
       </Text>
 
-      <View className="gap-4 rounded-2xl bg-white p-4 shadow-sm">
+      <View className="gap-4 rounded-2xl bg-white dark:bg-gray-800 p-4 shadow-sm">
         <CampoTexto
           name="nome"
           control={control}
@@ -50,19 +50,19 @@ export function FormDadosPessoais({ control, cpf }: Props) {
           transformarTexto={mascararData}
         />
 
-        <View className="flex-row items-center gap-3 rounded-xl border border-border px-4 py-3.5 opacity-60">
+        <View className="flex-row items-center gap-3 rounded-xl border border-border dark:border-gray-700 px-4 py-3.5 opacity-60">
           <Ionicons name="lock-closed" size={16} color="#9E9589" />
           <View className="flex-1">
-            <Text className="mb-0.5 text-[11px] font-medium text-muted">
+            <Text className="mb-0.5 text-[11px] font-medium text-muted dark:text-gray-400">
               CPF não pode ser alterado
             </Text>
-            <Text className="text-[15px] text-gray-900">{cpf}</Text>
+            <Text className="text-[15px] text-gray-900 dark:text-white">{cpf}</Text>
           </View>
         </View>
       </View>
 
       <View className="gap-1 px-1">
-        <Text className="text-[11px] text-muted">
+        <Text className="text-[11px] text-muted dark:text-gray-400">
           Digite sua senha atual para confirmar — atenção: se digitar errado,
           sua senha de acesso será alterada para o que for digitado aqui.
         </Text>

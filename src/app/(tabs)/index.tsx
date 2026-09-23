@@ -23,7 +23,7 @@ export default function TelaInicio() {
 
   return (
     <ScrollView
-      className="flex-1 bg-surface"
+      className="flex-1 bg-surface dark:bg-gray-900"
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -74,7 +74,7 @@ export default function TelaInicio() {
         {/* Checklist — some apenas enquanto os passos obrigatórios não estiverem completos */}
         {!obrigatoriosConcluidos && (
           <View className="gap-3">
-            <Text className="text-base font-semibold text-gray-800">
+            <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
               Sua configuração
             </Text>
 

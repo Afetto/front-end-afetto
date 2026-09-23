@@ -42,13 +42,13 @@ function PasswordField({
   onSubmitEditing,
 }: PasswordFieldProps) {
   return (
-    <View className="rounded-xl border border-border bg-white px-3.5 pb-1 pt-2">
-      <Text className="mb-1 text-[11px] font-medium text-muted">
+    <View className="rounded-xl border border-border dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 pb-1 pt-2">
+      <Text className="mb-1 text-[11px] font-medium text-muted dark:text-gray-400">
         {label}
       </Text>
 
       <TextInput
-        className="p-0 py-2 text-[15px] text-gray-900"
+        className="p-0 py-2 text-[15px] text-gray-900 dark:text-white"
         value={value}
         onChangeText={onChangeText}
         secureTextEntry
@@ -83,9 +83,9 @@ export function AlterarSenhaModal({
       onRequestClose={onClose}
     >
       <View className="flex-1 justify-end bg-black/50">
-        <View className="rounded-t-[24px] bg-white px-6 pb-10 pt-6">
+        <View className="rounded-t-[24px] bg-white dark:bg-gray-800 px-6 pb-10 pt-6">
           <View className="mb-5 flex-row items-center justify-between">
-            <Text className="text-lg font-bold text-primary">
+            <Text className="text-lg font-bold text-primary dark:text-white">
               Alterar senha
             </Text>
 
@@ -125,7 +125,7 @@ export function AlterarSenhaModal({
             />
 
             {erro !== "" && (
-              <Text className="text-center text-xs text-red">
+              <Text className="text-center text-xs text-red-500">
                 {erro}
               </Text>
             )}

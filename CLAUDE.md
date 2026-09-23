@@ -51,17 +51,25 @@ src/
 ├── app/
 │   ├── _layout.tsx            ← raiz: fontes, QueryClientProvider + SessaoProvider + Stack de grupos
 │   ├── index.tsx               ← onboarding + gate (sessão → tabs; sem sessão → onboarding)
+│   ├── +not-found.tsx          ← tela de erro 404 do Expo Router (rota inexistente) — nome de arquivo reservado, não renomear
 │   ├── (auth)/                 ← telas PRÉ-login (grupo não aparece na URL)
 │   │   ├── _layout.tsx
 │   │   ├── login.tsx                → /login
 │   │   ├── cadastro.tsx              → /cadastro
-│   │   └── cadastro-sucesso.tsx      → /cadastro-sucesso (modal transparente)
-│   ├── (app)/                  ← telas PÓS-login fora das tabs (Stack)
+│   │   ├── cadastro-sucesso.tsx      → /cadastro-sucesso (modal transparente — cadastro.tsx navega pra cá no sucesso)
+│   │   └── esqueci-senha.tsx         → /esqueci-senha (formulário só valida e-mail; API ainda não tem endpoint de recuperação)
+│   ├── (app)/                  ← telas PÓS-login fora das tabs (Stack, protegido por <RotaProtegida>)
 │   │   ├── _layout.tsx
 │   │   ├── completar-perfil.tsx     → /completar-perfil
 │   │   ├── perfil.tsx                → /perfil
 │   │   └── pet/
-│   │       └── cadastrar.tsx          → /pet/cadastrar
+│   │       ├── cadastrar.tsx          → /pet/cadastrar
+│   │       └── [id]/                  ← hub de detalhe do pet
+│   │           ├── index.tsx           → /pet/{id} (resumo, acesso rápido, próximos cuidados, excluir)
+│   │           ├── editar.tsx          → /pet/{id}/editar
+│   │           ├── historico.tsx       → /pet/{id}/historico (linha do tempo de vacinas)
+│   │           ├── cuidados.tsx        → /pet/{id}/cuidados (criar/editar vacina)
+│   │           └── calendario.tsx      → /pet/{id}/calendario (placeholder "Em breve")
 │   └── (tabs)/                 ← app principal (protegido por <RotaProtegida>)
 │       ├── _layout.tsx  ← abas: Início, Pets, Assistente, Clínica
 │       ├── index.tsx    ← Início (Home / checklist de onboarding)
@@ -73,8 +81,13 @@ src/
 │   │   ├── CampoTexto.tsx           ← input padrão com react-hook-form (Controller)
 │   │   ├── CampoSelecao.tsx         ← seletor de opções em botões
 │   │   ├── BotaoEnviar.tsx          ← botão fixo no rodapé com estado de envio (isPending)
-│   │   ├── BotaoSalvar.tsx          ← ⚠️ duplica BotaoEnviar; importado em perfil.tsx mas não usado — ver seção 5
 │   │   └── ToastSucesso.tsx         ← toast animado de sucesso (usa classe Tailwind inválida — ver seção 4)
+│   ├── FormPet.tsx                ← campos + botão de submit do formulário de pet — usado em pet/cadastrar.tsx e pet/[id]/editar.tsx
+│   ├── SeletorEspecie.tsx         ← grid de cards (emoji + nome) para escolher a espécie do pet — usado dentro de FormPet
+│   ├── CardPet.tsx                ← card de pet na listagem (pets.tsx)
+│   ├── CardPetResumo.tsx          ← card de pet que sobrepõe o header verde — usado em pet/[id]/index.tsx e historico.tsx
+│   ├── CardClinica.tsx            ← ⚠️ não usado hoje — clinica.tsx virou tela estática "Em breve" (ver seção 5)
+│   ├── EstadoVazio.tsx / EstadoErro.tsx ← estados genéricos reutilizáveis (lista vazia / erro de carregamento)
 │   ├── perfil/                    ← componentes específicos da tela /perfil (não reutilizados fora dela)
 │   │   ├── PerfilHeader.tsx         ← header com toggle visualização/edição (pencil ↔ "Cancelar")
 │   │   ├── DadosPessoaisCard.tsx    ← modo visualização (somente leitura, com ícones)
@@ -86,15 +99,17 @@ src/
 │   ├── PetsVazio.tsx              ← estado vazio/erro da lista de pets
 │   ├── CirculosConcentricos.tsx   ← decoração da tela de onboarding
 │   ├── ExternalLink.tsx           ← ⚠️ boilerplate do template Expo Router, não usado
-│   ├── useColorScheme.ts(.web.ts) ← ⚠️ boilerplate do template, não usado (app não tem dark mode)
+│   ├── useColorScheme.ts(.web.ts) ← ⚠️ boilerplate do template, não usado — o dark mode real usa `useColorScheme` de `"react-native"` direto (ver seção 4), não este hook
 │   └── useClientOnlyValue.ts(.web.ts) ← ⚠️ boilerplate do template, não usado
 ├── context/
 │   ├── SessaoContext.tsx          ← ÚNICA fonte de verdade de sessão (ver seção 9)
 │   └── AutenticacaoContext.tsx    ← ⚠️ código morto — importa `@/lib/firebase`, que NÃO EXISTE no projeto. Nunca importe este arquivo.
 ├── hooks/
 │   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet
-│   ├── useClinicas.ts         ← useClinicas, useVincularClinica, useDesvincularClinica
-│   ├── useAutenticacao.ts     ← useCadastrar (login/logout ficam inline — ver seção 8)
+│   ├── useVacinas.ts          ← useVacinasPet, useVacina, useCriarVacina, useAtualizarVacina, useDeletarVacina
+│   ├── useClinicas.ts         ← useClinicas, useVincularClinica, useDesvincularClinica — ⚠️ nenhum é chamado por tela hoje (clinica.tsx é estática, ver seção 5)
+│   ├── useAutenticacao.ts     ← useCadastrar, useEntrar, useCompletarPerfil (logout fica inline — ver seção 8)
+│   ├── useBuscarCep.ts        ← useQuery reativo, chama `cepService.buscarPorCep`
 │   └── perfil/
 │       ├── usePerfil.ts        ← hook de dados: useQuery(usuario) + useMutation(salvarPerfil)
 │       └── useAlterarSenha.ts  ← estado + validação + mutation do modal de troca de senha
@@ -108,8 +123,10 @@ src/
 │   └── usuario.schema.ts      ← ⚠️ não é importado por nenhuma tela/hook/service — ver seção 5
 ├── services/
 │   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, sair, completarPerfil (funções nomeadas)
+│   ├── cep.service.ts           ← cepService.buscarPorCep (objeto) — API pública do ViaCEP, usa `fetch` direto (não é a API do Afetto, não passa pelo cliente Axios)
 │   ├── pet.service.ts           ← petService.{listar,buscarPorId,criar,atualizar,remover} (objeto)
-│   └── clinica.service.ts       ← clinicaService.{listar,buscarPorId,vincular,desvincular} (objeto) — endpoints ainda não existem na API real, ver comentário no arquivo
+│   ├── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
+│   └── clinica.service.ts       ← ⚠️ stub — todo método lança erro ("A API ainda não expõe endpoints de clínica"), confirmado em GET /v3/api-docs. Não faz nenhuma chamada HTTP hoje.
 ├── types/
 │   └── autenticacao.types.ts   ← tipos globais de autenticação/usuário
 ├── utils/
@@ -125,8 +142,8 @@ src/
 
 **Regras absolutas:**
 - Use **sempre** `className` com NativeWind.
-- Nunca use `StyleSheet.create` — exceção documentada hoje: animações com `react-native-reanimated` (`useAnimatedStyle` exige objeto de estilo, não `className`). Fora isso, `StyleSheet.create` não deve aparecer em código novo (`cadastro.tsx` ainda tem um `StyleSheet.create` para o modal de sucesso — é dívida técnica a remover, não um padrão a seguir).
-- Nunca passe cor via `style={{ backgroundColor: "#hex" }}` / `style={{ color: "#hex" }}`. **Isso já aconteceu no projeto** (`pets.tsx`, `clinica.tsx`, `PetsVazio.tsx` usam `style={{ backgroundColor: "#1F3B30" }}` em vez de `className="bg-primary"`) e criou um bug visual real: `#1F3B30` é ligeiramente diferente do token `primary` (`#1E3A2F`) — duas cores "verde escuro" quase iguais convivendo na mesma UI. Ao tocar em qualquer tela com esse padrão, migre para a classe Tailwind equivalente.
+- Nunca use `StyleSheet.create` — exceção documentada hoje: animações com `react-native-reanimated` (`useAnimatedStyle` exige objeto de estilo, não `className`).
+- Nunca passe cor via `style={{ backgroundColor: "#hex" }}` / `style={{ color: "#hex" }}`. O projeto já teve esse bug (`pets.tsx`, `clinica.tsx`, `PetsVazio.tsx` usavam `style={{ backgroundColor: "#1F3B30" }}` em vez de `className="bg-primary"`, criando duas cores "verde escuro" quase iguais na mesma UI) — já foi corrigido (essas telas hoje usam `CabecalhoOla`/`className="bg-primary"`), mas a regra continua valendo para código novo.
 - **Antes de usar uma classe de cor, confirme que ela existe** no `tailwind.config.js` ou na paleta padrão do Tailwind. O projeto já tem duas classes inválidas em produção que não renderizam a cor pretendida:
   - `bg-greenMedium` (`ToastSucesso.tsx`) — o token real é `green-medium` (kebab-case). Deveria ser `bg-green-medium`.
   - `text-red` (`DadosPessoaisCard.tsx`, `ContaCard.tsx`, `AlterarSenhaModal.tsx`) — não existe token `red` no config nem na paleta padrão do Tailwind (que exige um shade, ex. `red-500`). O restante do app usa corretamente `text-red-500` (`login.tsx`, `cadastro.tsx`, `pet/cadastrar.tsx`). Ao corrigir, alinhe para `text-red-500` ou adicione um token `red` no `tailwind.config.js`.
@@ -151,8 +168,15 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 **Tipografia — estado real (⚠️ diferente do que a documentação antiga descrevia):**
 - O `tailwind.config.js` **não define nenhum `fontFamily`** customizado.
 - O `_layout.tsx` raiz carrega via `useFonts` apenas `SpaceMono` (não usada em nenhuma tela) e os ícones do `FontAwesome`. **Fraunces e DM Sans não estão configuradas nem carregadas no projeto** — hoje o app renderiza com a fonte padrão do sistema.
-- `clinica.tsx` tem um `style={{ fontFamily: "Fraunces" }}` isolado que não tem efeito nenhum, pois a fonte nunca foi registrada.
 - Se/quando Fraunces (títulos) e DM Sans (interface) forem adicionadas ao design, isso exige: baixar os `.ttf`, registrar em `useFonts` no `_layout.tsx`, e estender `theme.fontFamily` no `tailwind.config.js` — só então usar `className="font-fraunces"` / `font-dmsans`. Não escreva `style={{ fontFamily: ... }}` solto em telas.
+
+**Dark mode:**
+- `tailwind.config.js` tem `darkMode: "media"` — o tema responde automaticamente à preferência do sistema operacional (`prefers-color-scheme`), sem toggle manual nem estado de tema salvo em lugar nenhum.
+- Cobertura: fundos de tela (`bg-surface` → `dark:bg-gray-900`), cards (`bg-white` → `dark:bg-gray-800`), texto (`text-gray-900`/`text-primary` → `dark:text-white`, `text-muted`/`text-gray-700`/`text-gray-600` → `dark:text-gray-400`/`dark:text-gray-300`) e bordas (`border-border`/`border-gray-200` → `dark:border-gray-700`) têm variante `dark:` em todos os componentes reutilizáveis e telas.
+- `bg-primary` (headers verdes) e `text-amber`/`bg-amber` (cor de marca) **não** ganham variante `dark:` — são identidade visual e continuam iguais nos dois temas, igual à tela de onboarding (`app/index.tsx`), que é toda `bg-primary` e não precisa de ajuste.
+- Badges com fundo próprio e estático (ex. `bg-golden-pale`/`bg-green-medium` nos cartões de vacina, `bg-blue-100` na linha do tempo) não recebem `dark:` — o texto dentro deles (`text-golden`, `text-primary-dark`, `text-blue-700`) só precisa ter contraste com o fundo do próprio badge, que não muda com o tema.
+- ⚠️ Limitação conhecida: `className` do NativeWind não alcança a prop `color` de `Ionicons` nem `placeholderTextColor` de `TextInput` — são props nativas, não estilo via `style`/`className`. Ícones e placeholders continuam com a cor de modo claro (ex. `color="#1E3A2F"`) mesmo no dark mode; o contraste é aceitável na maioria dos casos (tons de cinza médio como `#9E9589`), mas alguns ícones verde-escuro sobre fundo escuro ficam com contraste baixo. Resolver isso exigiria `useColorScheme()` em cada tela/componente para trocar a cor manualmente — não foi feito por enquanto. Ao tocar num ícone com esse problema, aplique o mesmo padrão usado em `(tabs)/_layout.tsx` (tab bar) e `_layout.tsx` raiz (StatusBar): ler `useColorScheme()` do `react-native` e escolher a cor via JS, já que não dá pra usar `dark:` numa prop nativa.
+- `StatusBar` (`app/_layout.tsx`) e a tab bar (`(tabs)/_layout.tsx`) usam `useColorScheme()` do `react-native` para trocar de estilo/cores em JS, pelo mesmo motivo acima — são componentes nativos, não `View`/`Text` estilizáveis via `className`.
 
 ---
 
@@ -175,17 +199,18 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 | `CampoTexto` | Todo campo de texto controlado por `react-hook-form` |
 | `CampoSelecao` | Todo campo de seleção em botões (opções mutuamente exclusivas) |
 | `BotaoEnviar` | Todo botão de submit fixo no rodapé de um formulário (`isPending` + textos customizáveis) |
+| `FormPet` | Campos + botão de qualquer formulário de pet (criar/editar) |
+| `SeletorEspecie` | Seleção de espécie do pet (grid de cards com emoji) |
+| `EstadoVazio` / `EstadoErro` | Estado vazio / erro genérico em telas com dados remotos |
 | `RotaProtegida` | Toda rota que requer sessão ativa |
 | `PetsVazio` | Estado vazio/erro da listagem de pets |
 | `ToastSucesso` | Feedback de sucesso animado após uma ação (⚠️ corrigir classe `bg-greenMedium` antes de reusar) |
 | `CirculosConcentricos` | Decoração exclusiva da tela de onboarding |
 
 **Inconsistências reais encontradas na auditoria (corrigir ao tocar no código, não replicar):**
-- `BotaoSalvar` duplica `BotaoEnviar` (mesmo layout, texto fixo em vez de props) e está **importado em `perfil.tsx` mas nunca renderizado** — a tela usa `BotaoEnviar` no lugar. É código morto. Ao encontrar esse tipo de duplicação, delete o componente redundante em vez de manter os dois.
-- `completar-perfil.tsx` e `pet/cadastrar.tsx` **não usam `BotaoEnviar`** — reimplementam o mesmo `TouchableOpacity` + `ActivityIndicator` manualmente. Novos formulários devem usar `BotaoEnviar`; ao editar essas duas telas, migre para o componente.
-- `cadastro.tsx` duplica inteiramente a UI de sucesso que já existe como rota própria (`cadastro-sucesso.tsx`): mostra um `Modal` com o mesmo cartão, mesmo texto, mesma animação, em vez de navegar para `/cadastro-sucesso`. Isso também é a origem do único `StyleSheet.create` "novo" do projeto. Ao tocar em `cadastro.tsx`, prefira `router.replace("/cadastro-sucesso")` e remova o modal local.
-- `pets.tsx` e `clinica.tsx` cada um define sua própria função local `renderizarCartao` para o item da lista, com JSX quase idêntico em estrutura (avatar circular + nome + badges). Não há `CardPet`/`CardClinica` extraídos ainda — se uma terceira listagem desse tipo aparecer (ex. vacinas, consultas), extraia o padrão em vez de copiar a função de novo.
-- Não existe um componente `EstadoErro`/`EstadoVazio` genérico: `PetsVazio` cobre só a tela de pets, e `clinica.tsx` tem sua própria UI de erro inline (ícone + texto + "tentar novamente"), com estrutura quase igual à de `PetsVazio`. Se uma terceira tela precisar de estado de erro/vazio, extraia um componente genérico em vez de copiar o padrão.
+- `pets.tsx` define sua própria função local `renderizarCartao` para o item da lista (usa `CardPet`). Se uma nova listagem desse tipo aparecer, extraia um `Card*` dedicado em vez de repetir a função — já existe o precedente (`CardPet`, `CardPetResumo`, `CardClinica`).
+- `CardClinica.tsx` existe mas **não é usado por nenhuma tela hoje** — `clinica.tsx` virou uma tela estática de "Em breve" porque a API não tem endpoint de clínica (ver seção 6, `clinica.service.ts`). Não é código morto por descuido, é código à espera do backend — não delete, mas também não importe em telas novas até o recurso voltar a existir de verdade.
+- `useClinicas`, `useVincularClinica` e `useDesvincularClinica` (`useClinicas.ts`) também não são chamados por nenhuma tela pelo mesmo motivo.
 - `ExternalLink.tsx`, `useColorScheme(.web).ts` e `useClientOnlyValue(.web).ts` são sobras do template padrão do Expo Router e não são usados por nenhuma tela real. Não os importe em código novo; podem ser removidos com segurança quando alguém for limpar o projeto.
 
 ---
@@ -195,14 +220,14 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 **Páginas (`src/app/`):**
 - Organizam layout e renderizam componentes.
 - Não fazem fetch HTTP direto à **API do Afetto** — leitura via `useQuery`, escrita via `useMutation`, ambos por hooks customizados.
-- ⚠️ Exceção real hoje: `completar-perfil.tsx` faz `fetch()` direto para a API pública do ViaCEP (`buscarCep`) dentro da tela. Como não é a API do Afetto (não passa pelo cliente Axios/sessão), é tolerável como está, mas é a única chamada HTTP direta do projeto — se crescer (retry, cache, tratamento de erro mais robusto), extraia para um `services/cep.service.ts`.
+- Busca de CEP: `completar-perfil.tsx` não chama HTTP nenhum diretamente — consome `useBuscarCep(cep)`, que por sua vez chama `cepService.buscarPorCep` (`services/cep.service.ts`). O service usa `fetch` direto, não o cliente Axios (`src/api/api.ts`), porque a API pública do ViaCEP não é a API do Afetto e não deve levar `withCredentials`/interceptor de sessão do backend.
 - Gerenciam apenas estado local de UI (modais abertos, campo de busca, toggle).
 
 **Hooks (`src/hooks/`):**
 - Duas categorias reais no projeto, ambas válidas — documente qual está sendo usada em cada novo hook:
   1. **Hooks de dados** (`usePets.ts`, `useClinicas.ts`, `useAutenticacao.ts`): só `useQuery`/`useMutation` chamando o service, sem estado local próprio. Retornam o objeto do TanStack Query como está (`data`, `isLoading`, `isError`, `refetch`, `mutate`, `isPending`).
   2. **Hooks de tela** (`hooks/perfil/useAlterarSenha.ts`): concentram estado local (`useState`), validação manual e a `useMutation` de um fluxo de UI específico (ex.: o modal de troca de senha), expondo um objeto próprio (`{ senhaAtual, setSenhaAtual, salvandoSenha, alterarSenha, ... }`) em vez do formato padrão do React Query. `hooks/perfil/usePerfil.ts` **não é mais desse tipo** — desde que `/perfil` ganhou modo visualização/edição, ele voltou a ser um hook de dados: expõe `usuario`/`carregando`/`temErro`/`refazer` do `useQuery` e `salvarPerfil`/`salvando` de um `useMutation` padrão (a tela usa `react-hook-form` para o estado dos campos em edição).
-- Login e logout **não** têm hook de mutation dedicado: login fica inline em `login.tsx` (precisa chamar `setError` do formulário e `entrar()` do `SessaoContext` no `onSuccess`) e logout chama `sair()` do `SessaoContext` direto em `perfil.tsx`. Isso é intencional e está documentado em `useAutenticacao.ts` — não crie `useLogin`/`useLogout` só para "completar a simetria".
+- Login, cadastro e completar-perfil usam hooks dedicados em `useAutenticacao.ts` (`useEntrar`, `useCadastrar`, `useCompletarPerfil`) — a tela só monta o `useForm`, passa `onSuccess`/`onError` pro `mutate()` e trata o resultado (`setError`, `entrar()` do `SessaoContext`, navegação). Logout **não** tem hook dedicado: chama `sair()` do `SessaoContext` direto em `perfil.tsx` (ação única, sem payload) — isso é intencional, documentado em `useAutenticacao.ts`.
 - Invalidação de cache sempre via `useQueryClient()` dentro do hook — nunca `import { queryClient } from "@/api/queryClient"`.
 - Não contêm JSX e não navegam (sem `router.push` dentro de um hook — isso fica na tela, no `onSuccess` do `useMutation`).
 
@@ -210,6 +235,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 - Contêm as chamadas HTTP e a transformação de payload: limpeza de máscaras (`replace(/\D/g, "")`), conversão de data BR→ISO, normalização de listas paginadas (`extrairLista`).
 - ⚠️ Duas convenções de export coexistem hoje: `autenticacao.service.ts` exporta funções nomeadas soltas (`cadastrar`, `autenticar`, ...); `pet.service.ts` e `clinica.service.ts` exportam um objeto com métodos (`petService.listar`, `clinicaService.vincular`). Ambas funcionam e estão em uso — **não** refatore um para o outro "de passagem" ao editar uma feature; se for criar um service para uma **nova entidade**, prefira o padrão objeto (`nomeService.metodo`), que é o mais recente e o que melhor sinaliza autocomplete/agrupamento no editor.
 - Podem conter lógica de contorno de limitações reais da API — documente o *porquê* como em `bootstrapUsuarioAposLogin` (a API não devolve `id`/nome no login nem tem `/usuario/me`, então o service varre `GET /usuario` paginado até achar o e-mail). Esse tipo de comentário é obrigatório sempre que o código estiver compensando uma lacuna do backend, não é "só documentação bonita".
+- ⚠️ `cep.service.ts` é a única exceção ao cliente Axios: chama a API pública do ViaCEP via `fetch` direto (padrão objeto, `cepService.buscarPorCep`), porque não é a API do Afetto e não deve levar `withCredentials`/interceptor de sessão. Não migre esse service para `api.ts` nem os outros services para `fetch` "de passagem".
 
 **Schemas (`src/schemas/`):**
 - Contêm apenas schemas Zod, exportando o tipo inferido junto.
@@ -235,7 +261,7 @@ Documentando os padrões que **de fato** existem hoje, incluindo onde eles diver
   <Text className="text-white ...">...</Text>
 </View>
 ```
-⚠️ `pets.tsx`, `clinica.tsx` e `PetsVazio.tsx` usam em vez disso `style={{ backgroundColor: "#1F3B30" }} className="px-5 pt-14 pb-5"` — mesma estrutura, cor levemente diferente e via `style` em vez de `className`. Ao editar essas telas, migre para `className="bg-primary"`.
+`pets.tsx` e `PetsVazio.tsx` usam esse padrão via o componente `CabecalhoOla`; `clinica.tsx` e `assistente.tsx` escrevem o header inline (`className="px-5 pt-14 pb-5 bg-primary"`) por serem telas estáticas sem o resto do layout de `CabecalhoOla` (sem avatar/voltar). Ambas as formas são `className`, sem `style` hardcoded — o bug antigo de `style={{ backgroundColor: "#1F3B30" }}` (ver seção 4) já foi corrigido nessas três telas.
 
 **Header de tela de formulário:**
 ```tsx
@@ -251,21 +277,11 @@ Usado em `login.tsx`, `cadastro.tsx`, `completar-perfil.tsx`.
   <ActivityIndicator color="#E8A838" size="large" />
 </View>
 ```
-Consistente em `RotaProtegida`, `index.tsx` raiz, `pets.tsx`, `clinica.tsx`.
+Consistente em `RotaProtegida`, `pets.tsx`, `perfil.tsx`, `pet/[id]/*` (fundo `bg-surface`). `index.tsx` raiz (onboarding) usa o mesmo padrão mas com `bg-primary` em vez de `bg-surface`, de propósito — a tela inteira é verde. `clinica.tsx` não tem estado de loading: é uma tela estática sem nenhum hook (ver seção 6), então não há nada para carregar.
 
-**Estado de erro (lista):**
-```tsx
-<View className="flex-1 items-center justify-center bg-surface gap-3 px-8">
-  <Ionicons name="cloud-offline-outline" size={48} color="#9A9585" />
-  <Text className="text-muted text-sm text-center">Erro ao carregar ... Tente novamente.</Text>
-  <TouchableOpacity onPress={() => refetch()}>
-    <Text className="text-amber font-semibold">Tentar novamente</Text>
-  </TouchableOpacity>
-</View>
-```
-Esse padrão está hoje só em `clinica.tsx`; em `pets.tsx` o erro é tratado dentro de `PetsVazio` (prop `erro`). São dois componentes fazendo a mesma coisa de formas diferentes — ver seção 5.
+**Estado de erro (dados remotos):** use o componente `EstadoErro` (ícone + mensagem + "Tentar novamente" chamando `refetch()`) — usado em `pet/[id]/index.tsx`, `pet/[id]/editar.tsx`, `pet/[id]/historico.tsx`, `perfil.tsx`. Em `pets.tsx` o erro é tratado dentro de `PetsVazio` (prop `erro`) — é um caso legítimo à parte, porque lista vazia e erro de carregamento levam à mesma tela ali.
 
-**Estado vazio:** ver componente `PetsVazio` — header + ícone + texto + CTA de ação.
+**Estado vazio:** use o componente `EstadoVazio` (ícone + título + subtítulo + CTA opcional) para casos genéricos; `PetsVazio` é a versão específica da listagem de pets (com seu próprio header).
 
 **Card padrão (item de lista):**
 ```tsx
@@ -273,11 +289,11 @@ Esse padrão está hoje só em `clinica.tsx`; em `pets.tsx` o erro é tratado de
   <View className="flex-row items-center gap-3">
     {/* avatar circular com ícone/inicial */}
     {/* coluna: título + badges + metadados */}
-    <Ionicons name="chevron-forward" size={18} color="#9A9585" />
+    <Ionicons name="chevron-forward" size={18} color="#9E9589" />
   </View>
 </TouchableOpacity>
 ```
-Replicado (com pequenas variações de cor inline) em `pets.tsx` e `clinica.tsx`.
+Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o header). `CardClinica` existe no mesmo padrão mas está sem uso (ver seção 5).
 
 **Botão de submit fixo:** use `BotaoEnviar` (ver seção 5) — não reimplemente o `TouchableOpacity` com `ActivityIndicator` condicional.
 
@@ -287,8 +303,9 @@ Replicado (com pequenas variações de cor inline) em `pets.tsx` e `clinica.tsx`
 
 ## 8. Formulários — Regras
 
-- Formulários de **criação** (login, cadastro, completar perfil, cadastrar pet) usam `useForm` + `zodResolver` + schema Zod em `src/schemas/`.
+- Formulários de **criação** (login, cadastro, completar perfil, cadastrar/editar pet, cuidados) usam `useForm` + `zodResolver` + schema Zod em `src/schemas/`.
 - Todo campo de texto usa `CampoTexto`; todo campo de seleção em botões usa `CampoSelecao`.
+- Formulário de pet (criar e editar) usa o componente `FormPet` — não repita os campos entre `pet/cadastrar.tsx` e `pet/[id]/editar.tsx`, ambos já compartilham o mesmo `FormCadastroPetSchema`/`FormCadastroPet`.
 - Validação acontece no schema Zod — nunca inline na tela.
 - Botão de submit usa `isPending` do `useMutation` (nunca `isSubmitting` do `react-hook-form`) e, sempre que possível, o componente `BotaoEnviar`.
 - Erros de API aparecem via `setError("root", { message })` do `react-hook-form`, renderizado como texto na tela — nunca silenciados.
@@ -306,7 +323,7 @@ Replicado (com pequenas variações de cor inline) em `pets.tsx` e `clinica.tsx`
 - A API não expõe `GET /usuario/me`: o `id`/nome do usuário logado é descoberto varrendo `GET /usuario` paginado até achar o e-mail (`bootstrapUsuarioAposLogin`, roda uma vez após o login). Depois disso, todo o resto da app usa `buscarUsuarioPorId(id)`.
 - Um `401` de qualquer chamada dispara o tratador registrado por `SessaoContext` via `definirTratadorSessaoExpirada` (em `api.ts`), que limpa o AsyncStorage e zera a sessão — o `<RotaProtegida>` reage sozinho e redireciona para `/login`.
 - Um `403` **não** é tratado como sessão inválida (pode ser regra de negócio, ex. e-mail em uso) — cada tela trata seu próprio `isError`/`onError`. Não adicione um interceptor global de 403.
-- Páginas protegidas usam `<RotaProtegida>` (hoje só envolvendo o `(tabs)/_layout.tsx` — as rotas `(app)` como `/perfil` e `/completar-perfil` confiam em serem acessadas só a partir de telas já protegidas, não têm guard próprio).
+- Páginas protegidas usam `<RotaProtegida>` — envolve tanto `(tabs)/_layout.tsx` quanto `(app)/_layout.tsx` (todas as rotas de `/perfil`, `/completar-perfil` e `/pet/*` passam pelo guard e redirecionam pra `/login` sem sessão).
 - Logout chama `sair()` do `SessaoContext`, que tenta `POST /logout` (pode não existir no backend ainda) e sempre limpa o AsyncStorage local, independente do resultado.
 
 ---
@@ -316,7 +333,7 @@ Replicado (com pequenas variações de cor inline) em `pets.tsx` e `clinica.tsx`
 - Toda navegação via `expo-router` (`router.push`, `router.replace`, `router.back`, `<Redirect>`).
 - Os grupos `(auth)` e `(app)` **não** aparecem na URL — `(auth)/login.tsx` é `/login`, não `/(auth)/login`. Nunca escreva `/(auth)/...` ou `/(app)/...` num `router.push`.
 - Rotas de tabs precisam do prefixo: `/(tabs)/pets`, `/(tabs)/clinica`.
-- ⚠️ `login.tsx` navega para `/esqueci-senha` (com `as any` e um `TODO` no código) — essa rota **não existe ainda**. Crie `src/app/(auth)/esqueci-senha.tsx` antes de considerar esse link funcional, e remova o cast `as any` nesse ponto quando a rota existir.
+- `login.tsx` navega para `/esqueci-senha` (rota existe, sem cast). A tela só valida o e-mail e mostra "Em breve esta funcionalidade estará disponível" — não há endpoint de recuperação de senha na API ainda.
 
 **Onde criar uma tela nova (telas do Figma):**
 
@@ -334,6 +351,7 @@ Replicado (com pequenas variações de cor inline) em `pets.tsx` e `clinica.tsx`
 | Tipo | Convenção | Exemplo real |
 |---|---|---|
 | Arquivos de página | kebab-case português | `completar-perfil.tsx` |
+| ⚠️ Exceção | nomes reservados do Expo Router ficam em inglês/como o framework exige | `_layout.tsx`, `+not-found.tsx` |
 | Arquivos de componente | PascalCase português | `PetsVazio.tsx`, `CampoTexto.tsx` |
 | Arquivos de hook | camelCase com `use` | `usePets.ts`, `useAlterarSenha.ts` |
 | Arquivos de service | kebab-case + `.service` | `autenticacao.service.ts` |
@@ -367,7 +385,7 @@ const { mutate: enviarCadastro } = useMutation({
 - Nunca alterar o schema Zod para contornar uma validação — corrigir o dado ou a regra de negócio.
 - Nunca navegar para uma rota inexistente sem criá-la primeiro (ou deixar um `TODO` explícito, como já é feito em `login.tsx`).
 - Nunca commitar com `npx tsc --noEmit` retornando erros novos.
-- Nunca deixar um componente importado sem uso na árvore renderizada (ex.: `BotaoSalvar` em `perfil.tsx`) — se não for usado, delete o import e, se for redundante, o componente.
+- Nunca deixar um componente importado sem uso na árvore renderizada — se não for usado, delete o import e, se for redundante, o componente. (Exceção documentada: `CardClinica`, `useClinicas`, `useVincularClinica`, `useDesvincularClinica` — sem uso hoje porque a API não tem endpoint de clínica, não por descuido.)
 
 ---
 

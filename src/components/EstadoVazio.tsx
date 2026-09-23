@@ -22,9 +22,9 @@ export function EstadoVazio({
   return (
     <View className="items-center justify-center gap-2 px-8">
       <Ionicons name={icone} size={tamanhoIcone} color="#9E9589" />
-      <Text className="text-primary font-bold text-base text-center">{titulo}</Text>
+      <Text className="text-primary dark:text-white font-bold text-base text-center">{titulo}</Text>
       {subtitulo && (
-        <Text className="text-muted text-sm text-center">{subtitulo}</Text>
+        <Text className="text-muted dark:text-gray-400 text-sm text-center">{subtitulo}</Text>
       )}
       {textoAcao && onAcao && (
         <TouchableOpacity

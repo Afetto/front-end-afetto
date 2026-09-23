@@ -20,7 +20,7 @@ export function ItemChecklist({
     <TouchableOpacity
       activeOpacity={concluido ? 1 : 0.7}
       onPress={onPress}
-      className="bg-white rounded-2xl px-4 py-4 flex-row items-center gap-4 shadow-sm"
+      className="bg-white dark:bg-gray-800 rounded-2xl px-4 py-4 flex-row items-center gap-4 shadow-sm"
     >
       {concluido ? (
         <View className="w-8 h-8 rounded-full bg-green-medium items-center justify-center">
@@ -34,14 +34,14 @@ export function ItemChecklist({
 
       <View className="flex-1">
         <View className="flex-row items-center gap-2 flex-wrap">
-          <Text className="text-sm font-semibold text-gray-900">{titulo}</Text>
+          <Text className="text-sm font-semibold text-gray-900 dark:text-white">{titulo}</Text>
           {opcional && (
             <View className="bg-golden-pale px-2 py-0.5 rounded-full">
               <Text className="text-xs text-golden">opcional</Text>
             </View>
           )}
         </View>
-        <Text className="text-xs text-muted mt-0.5">{subtitulo}</Text>
+        <Text className="text-xs text-muted dark:text-gray-400 mt-0.5">{subtitulo}</Text>
       </View>
 
       {!concluido && <Ionicons name="chevron-forward" size={16} color="#9E9589" />}

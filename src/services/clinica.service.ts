@@ -1,29 +1,27 @@
-import { api } from "@/api/api";
-import { extrairLista } from "@/api/paginacao";
 import { Clinica, DadosVincularClinica } from "@/schemas/clinica.schema";
 
-// ⚠️ PROVISÓRIO — a API (https://java-afetto-fork.onrender.com) ainda NÃO expõe
-// nenhum endpoint de clínica. Estes paths (/clinica, /clinica/vincular) são um
-// palpite alinhado com o padrão dos outros recursos e vão retornar 404/403 até
-// o backend implementar. A tela trata o erro (isError) e mostra "tentar de novo".
-const BASE = "/clinica";
+// ⚠️ A API real (https://java-afetto-fork.onrender.com, confirmado em
+// GET /v3/api-docs) NÃO expõe nenhum endpoint de clínica — não é uma lacuna
+// temporária, o recurso não existe no backend hoje. Os métodos abaixo ficam
+// como stub (sem chamada HTTP) para não gerar 404 sem necessidade; quando o
+// backend implementar o recurso, reintroduzir `api.get`/`api.post`/`api.delete`
+// aqui, no mesmo padrão de `pet.service.ts`.
+const ERRO_NAO_DISPONIVEL = "A API ainda não expõe endpoints de clínica.";
 
 export const clinicaService = {
     listar: async (): Promise<Clinica[]> => {
-        const response = await api.get(BASE, { params: { page: 0, size: 100 } });
-        return extrairLista<Clinica>(response.data);
+        throw new Error(ERRO_NAO_DISPONIVEL);
     },
 
-    buscarPorId: async (id: string): Promise<Clinica> => {
-        const response = await api.get<Clinica>(`${BASE}/${id}`);
-        return response.data;
+    buscarPorId: async (_id: string): Promise<Clinica> => {
+        throw new Error(ERRO_NAO_DISPONIVEL);
     },
 
-    vincular: async (dados: DadosVincularClinica): Promise<void> => {
-        await api.post(`${BASE}/vincular`, dados);
+    vincular: async (_dados: DadosVincularClinica): Promise<void> => {
+        throw new Error(ERRO_NAO_DISPONIVEL);
     },
 
-    desvincular: async (clinicaId: string): Promise<void> => {
-        await api.delete(`${BASE}/vincular/${clinicaId}`);
+    desvincular: async (_clinicaId: string): Promise<void> => {
+        throw new Error(ERRO_NAO_DISPONIVEL);
     },
 };

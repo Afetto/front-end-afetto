@@ -17,18 +17,15 @@ export function CardPetResumo({ pet, onEditar }: Props) {
   const racaOuEspecie = pet.raca || LABEL_ESPECIE[pet.especie] || pet.especie;
 
   return (
-    <View className="bg-white rounded-2xl p-4 flex-row items-center gap-3 shadow-md">
+    <View className="bg-white dark:bg-gray-800 rounded-2xl p-4 flex-row items-center gap-3 shadow-md">
       <View className="w-16 h-16 rounded-2xl items-center justify-center bg-amber">
         <Text className="text-[30px]">{icone}</Text>
       </View>
       <View className="flex-1">
-        <Text className="text-lg font-bold text-gray-900">{pet.nome}</Text>
-        <Text className="text-xs text-muted mt-0.5">
+        <Text className="text-lg font-bold text-gray-900 dark:text-white">{pet.nome}</Text>
+        <Text className="text-xs text-muted dark:text-gray-400 mt-0.5">
           {racaOuEspecie} • {idade}
         </Text>
-        <View className="self-start bg-green-medium rounded-full px-3 py-1 mt-1.5">
-          <Text className="text-xs font-semibold text-primary-dark">✓ Saúde em dia!</Text>
-        </View>
       </View>
       {onEditar && (
         <TouchableOpacity onPress={onEditar} hitSlop={8}>

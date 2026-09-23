@@ -12,11 +12,11 @@ type Props = {
 export function ContaCard({ onSair }: Props) {
   return (
     <View className="gap-2">
-      <Text className="px-1 text-[11px] font-semibold uppercase tracking-[0.8px] text-muted">
+      <Text className="px-1 text-[11px] font-semibold uppercase tracking-[0.8px] text-muted dark:text-gray-400">
         Conta
       </Text>
 
-      <View className="rounded-2xl bg-white px-4 shadow-sm">
+      <View className="rounded-2xl bg-white dark:bg-gray-800 px-4 shadow-sm">
         <TouchableOpacity
           activeOpacity={0.8}
           className="my-2 flex-row items-center justify-center gap-2 rounded-xl border-[1.5px] border-amber py-3.5"
@@ -37,7 +37,7 @@ export function ContaCard({ onSair }: Props) {
           activeOpacity={0.7}
           className="items-center py-3.5"
         >
-          <Text className="text-sm font-medium text-red">
+          <Text className="text-sm font-medium text-red-500">
             Sair da conta
           </Text>
         </TouchableOpacity>

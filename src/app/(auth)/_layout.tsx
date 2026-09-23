@@ -5,6 +5,7 @@ export default function LayoutAutenticacao() {
     <Stack>
       <Stack.Screen name="login" options={{ title: "" }} />
       <Stack.Screen name="cadastro" options={{ title: "" }} />
+      <Stack.Screen name="esqueci-senha" options={{ title: "" }} />
       <Stack.Screen
         name="cadastro-sucesso"
         options={{

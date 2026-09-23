@@ -19,7 +19,7 @@ export function CardPet({ pet, onPress }: Props) {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
-      className="bg-white rounded-2xl p-4 mb-3 shadow-sm"
+      className="bg-white dark:bg-gray-800 rounded-2xl p-4 mb-3 shadow-sm"
     >
       <View className="flex-row items-center gap-3">
         <View className="w-16 h-16 rounded-2xl items-center justify-center bg-amber">
@@ -27,17 +27,11 @@ export function CardPet({ pet, onPress }: Props) {
         </View>
 
         <View className="flex-1">
-          <Text className="text-base font-bold text-gray-900">{pet.nome}</Text>
-          <Text className="text-xs text-muted mt-0.5">
+          <Text className="text-base font-bold text-gray-900 dark:text-white">{pet.nome}</Text>
+          <Text className="text-xs text-muted dark:text-gray-400 mt-0.5">
             {racaOuEspecie}
             {idade !== "—" ? ` • ${idade}` : ""}
           </Text>
-
-          {/* ⚠️ A API não expõe status de saúde do pet — badge fixo, sem
-              lógica real (mesmo placeholder já usado em pet/[id]/index.tsx). */}
-          <View className="self-start bg-green-medium rounded-full px-3 py-1 mt-2">
-            <Text className="text-xs font-semibold text-primary-dark">✓ Saúde em dia!</Text>
-          </View>
         </View>
 
         <Ionicons name="chevron-forward" size={18} color="#9E9589" />

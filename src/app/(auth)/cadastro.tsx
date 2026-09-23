@@ -1,56 +1,21 @@
 import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 import CampoTexto from "@/components/ui/CampoTexto";
+import { useCadastrar } from "@/hooks/useAutenticacao";
 import { CadastroInput, CadastroSchema } from "@/schemas/cadastro.schema";
-import { cadastrar as servicoCadastrar } from "@/services/autenticacao.service"; // ← alias
 import { mascararCelular, mascararCPF, mascararData } from "@/utils/mascaras";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
 
 export default function TelaCadastro() {
-  const [mostrarSucesso, setMostrarSucesso] = useState(false);
-
-  const scale = useSharedValue(0.7);
-  const opacity = useSharedValue(0);
-
-  const estiloCartao = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  useEffect(() => {
-    if (!mostrarSucesso) return;
-
-    scale.value = withSpring(1, { damping: 14, mass: 0.8 });
-    opacity.value = withTiming(1, { duration: 250 });
-
-    const timer = setTimeout(() => {
-      setMostrarSucesso(false);
-      router.replace("/login");
-    }, 2500);
-
-    return () => clearTimeout(timer);
-  }, [mostrarSucesso]);
-
   const {
     control,
     handleSubmit,
@@ -70,38 +35,34 @@ export default function TelaCadastro() {
     mode: "onTouched",
   });
 
-  // ─── useMutation ─────────────────────────────────────────────────────────
-  const { mutate: enviarCadastro, isPending: enviando } = useMutation({
-    mutationFn: (data: CadastroInput) => servicoCadastrar(data),
-    onSuccess: (resultado) => {
-      if (!resultado.ok) {
-        if (resultado.error === "email_taken") {
-          setError("email", { message: "Este e-mail já está cadastrado" });
-        } else {
-          setError("root", {
-            message: "Erro ao criar conta. Tente novamente.",
-          });
-        }
-        return;
-      }
-
-      scale.value = 0.7;
-      opacity.value = 0;
-      setMostrarSucesso(true);
-    },
-    onError: () => {
-      setError("root", { message: "Erro de conexão. Tente novamente." });
-    },
-  });
+  const { mutate: enviarCadastro, isPending: enviando } = useCadastrar();
 
   function fazerCadastro(data: CadastroInput) {
-    enviarCadastro(data);
+    enviarCadastro(data, {
+      onSuccess: (resultado) => {
+        if (!resultado.ok) {
+          if (resultado.error === "email_taken") {
+            setError("email", { message: "Este e-mail já está cadastrado" });
+          } else {
+            setError("root", {
+              message: "Erro ao criar conta. Tente novamente.",
+            });
+          }
+          return;
+        }
+
+        router.replace("/cadastro-sucesso");
+      },
+      onError: () => {
+        setError("root", { message: "Erro de conexão. Tente novamente." });
+      },
+    });
   }
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-surface"
+      className="flex-1 bg-surface dark:bg-gray-900"
     >
       <ScrollView
         className="flex-1"
@@ -110,7 +71,7 @@ export default function TelaCadastro() {
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-1 px-6 pt-10 pb-10 gap-8">
-          <Text className="text-4xl font-bold text-gray-900 leading-tight">
+          <Text className="text-4xl font-bold text-gray-900 dark:text-white leading-tight">
             Crie sua{"\n"}Conta!
           </Text>
 
@@ -145,7 +106,7 @@ export default function TelaCadastro() {
             />
 
             <View className="gap-1">
-              <Text className="text-sm text-gray-700 font-medium">Celular</Text>
+              <Text className="text-sm text-gray-700 dark:text-gray-300 font-medium">Celular</Text>
               <View className="flex-row gap-3">
                 <View className="w-20">
                   <CampoTexto
@@ -199,7 +160,6 @@ export default function TelaCadastro() {
 
           <View className="flex-1" />
 
-          
           <BotaoEnviar
             enviando={enviando}
             onPress={handleSubmit(fazerCadastro)}
@@ -208,35 +168,6 @@ export default function TelaCadastro() {
           />
         </View>
       </ScrollView>
-
-      <Modal
-        transparent
-        visible={mostrarSucesso}
-        animationType="fade"
-        statusBarTranslucent
-      >
-        <View className="flex-1 bg-black/60 items-center justify-center px-8">
-          <Animated.View
-            style={estiloCartao}
-            className="bg-white rounded-3xl p-8 items-center gap-5 w-full"
-          >
-            <View className="w-20 h-20 rounded-full bg-green-medium items-center justify-center">
-              <Ionicons name="checkmark" size={44} color="#fff" />
-            </View>
-
-            <View className="items-center gap-2">
-              <Text className="text-2xl font-bold text-primary text-center">
-                Conta criada!
-              </Text>
-              <Text className="text-sm text-muted text-center leading-relaxed">
-                Conta criada com sucesso!{"\n"}
-                Agora faça login para entrar no Afe
-                <Text className="text-amber font-semibold">tto</Text>.
-              </Text>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 }

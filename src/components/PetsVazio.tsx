@@ -10,12 +10,12 @@ type PetsVazioProps = {
 
 export function PetsVazio({ erro, aoTentarNovamente }: PetsVazioProps = {}) {
   return (
-    <View className="flex-1 bg-surface">
+    <View className="flex-1 bg-surface dark:bg-gray-900">
       <CabecalhoOla />
 
       <View className="px-6 pt-6 pb-2">
-        <Text className="text-xl font-bold text-gray-900">Meus Pets</Text>
-        <Text className="text-sm text-muted mt-0.5">
+        <Text className="text-xl font-bold text-gray-900 dark:text-white">Meus Pets</Text>
+        <Text className="text-sm text-muted dark:text-gray-400 mt-0.5">
           {erro ? "Não foi possível carregar" : "Nenhum pet cadastrado"}
         </Text>
       </View>
@@ -33,7 +33,7 @@ export function PetsVazio({ erro, aoTentarNovamente }: PetsVazioProps = {}) {
 
         {erro && (
           <TouchableOpacity onPress={aoTentarNovamente} className="mt-1">
-            <Text className="text-muted text-xs text-center underline">
+            <Text className="text-muted dark:text-gray-400 text-xs text-center underline">
               Não foi possível carregar seus pets. Tentar novamente
             </Text>
           </TouchableOpacity>
