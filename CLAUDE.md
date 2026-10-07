@@ -49,7 +49,7 @@ src/
 │   ├── paginacao.ts      ← extrairLista — normaliza resposta paginada (Spring Page) ou array puro
 │   └── queryClient.ts   ← instância do QueryClient (só importado no _layout.tsx raiz)
 ├── app/
-│   ├── _layout.tsx            ← raiz: fontes, QueryClientProvider + SessaoProvider + Stack de grupos
+│   ├── _layout.tsx            ← raiz: fontes, QueryClientProvider + TemaProvider + SessaoProvider + Stack de grupos
 │   ├── index.tsx               ← onboarding + gate (sessão → tabs; sem sessão → onboarding)
 │   ├── +not-found.tsx          ← tela de erro 404 do Expo Router (rota inexistente) — nome de arquivo reservado, não renomear
 │   ├── (auth)/                 ← telas PRÉ-login (grupo não aparece na URL)
@@ -93,6 +93,7 @@ src/
 │   │   ├── DadosPessoaisCard.tsx    ← modo visualização (somente leitura, com ícones)
 │   │   ├── FormDadosPessoais.tsx    ← modo edição (CampoTexto + react-hook-form)
 │   │   ├── SegurancaCard.tsx
+│   │   ├── AparenciaCard.tsx        ← seletor de tema Claro/Escuro/Sistema — usa useTema() (TemaContext)
 │   │   ├── ContaCard.tsx
 │   │   └── AlterarSenhaModal.tsx
 │   ├── RotaProtegida.tsx          ← guard de rotas privadas
@@ -103,6 +104,7 @@ src/
 │   └── useClientOnlyValue.ts(.web.ts) ← ⚠️ boilerplate do template, não usado
 ├── context/
 │   ├── SessaoContext.tsx          ← ÚNICA fonte de verdade de sessão (ver seção 9)
+│   ├── TemaContext.tsx            ← ÚNICA fonte de verdade da preferência de tema (Claro/Escuro/Sistema, ver seção 4)
 │   └── AutenticacaoContext.tsx    ← ⚠️ código morto — importa `@/lib/firebase`, que NÃO EXISTE no projeto. Nunca importe este arquivo.
 ├── hooks/
 │   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet
@@ -171,12 +173,13 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 - Se/quando Fraunces (títulos) e DM Sans (interface) forem adicionadas ao design, isso exige: baixar os `.ttf`, registrar em `useFonts` no `_layout.tsx`, e estender `theme.fontFamily` no `tailwind.config.js` — só então usar `className="font-fraunces"` / `font-dmsans`. Não escreva `style={{ fontFamily: ... }}` solto em telas.
 
 **Dark mode:**
-- `tailwind.config.js` tem `darkMode: "media"` — o tema responde automaticamente à preferência do sistema operacional (`prefers-color-scheme`), sem toggle manual nem estado de tema salvo em lugar nenhum.
-- Cobertura: fundos de tela (`bg-surface` → `dark:bg-gray-900`), cards (`bg-white` → `dark:bg-gray-800`), texto (`text-gray-900`/`text-primary` → `dark:text-white`, `text-muted`/`text-gray-700`/`text-gray-600` → `dark:text-gray-400`/`dark:text-gray-300`) e bordas (`border-border`/`border-gray-200` → `dark:border-gray-700`) têm variante `dark:` em todos os componentes reutilizáveis e telas.
+- `tailwind.config.js` tem `darkMode: "class"` — o tema é controlado manualmente via `colorScheme` do pacote `nativewind` (não mais só a preferência do SO). O usuário escolhe entre **Claro / Escuro / Sistema** num seletor em `/perfil` (`components/perfil/AparenciaCard.tsx`); a escolha "Sistema" delega para `prefers-color-scheme` do SO, as outras duas fixam o tema.
+- `context/TemaContext.tsx` é a fonte de verdade da preferência de tema (`PreferenciaTema = "light" | "dark" | "system"`): guarda o valor escolhido em `useState`, persiste em `AsyncStorage` na chave **`@afetto:tema`** e aplica via `colorScheme.set(valor)` (API do `nativewind`, não é `useState` de CSS). No bootstrap (`TemaProvider`, montado em `app/_layout.tsx` envolvendo o `SessaoProvider`), lê o valor salvo do AsyncStorage e aplica antes da tela renderizar; se nunca foi definido, o padrão é `"system"`. Use o hook `useTema()` para ler/alterar — nunca chame `colorScheme.set` fora desse context.
+- Para o valor **resolvido** (light/dark, já considerando a escolha do usuário) em componentes que não usam `className`, use `useColorScheme()` importado de **`"nativewind"`** (não de `"react-native"` — esse reflete só o SO e ignora a escolha manual). É o que `app/_layout.tsx` (StatusBar) e `(tabs)/_layout.tsx` (tab bar) fazem.
+- Cobertura de `className`: fundos de tela (`bg-surface` → `dark:bg-gray-900`), cards (`bg-white` → `dark:bg-gray-800`), texto (`text-gray-900`/`text-primary` → `dark:text-white`, `text-muted`/`text-gray-700`/`text-gray-600` → `dark:text-gray-400`/`dark:text-gray-300`) e bordas (`border-border`/`border-gray-200` → `dark:border-gray-700`) têm variante `dark:` em todos os componentes reutilizáveis e telas.
 - `bg-primary` (headers verdes) e `text-amber`/`bg-amber` (cor de marca) **não** ganham variante `dark:` — são identidade visual e continuam iguais nos dois temas, igual à tela de onboarding (`app/index.tsx`), que é toda `bg-primary` e não precisa de ajuste.
 - Badges com fundo próprio e estático (ex. `bg-golden-pale`/`bg-green-medium` nos cartões de vacina, `bg-blue-100` na linha do tempo) não recebem `dark:` — o texto dentro deles (`text-golden`, `text-primary-dark`, `text-blue-700`) só precisa ter contraste com o fundo do próprio badge, que não muda com o tema.
-- ⚠️ Limitação conhecida: `className` do NativeWind não alcança a prop `color` de `Ionicons` nem `placeholderTextColor` de `TextInput` — são props nativas, não estilo via `style`/`className`. Ícones e placeholders continuam com a cor de modo claro (ex. `color="#1E3A2F"`) mesmo no dark mode; o contraste é aceitável na maioria dos casos (tons de cinza médio como `#9E9589`), mas alguns ícones verde-escuro sobre fundo escuro ficam com contraste baixo. Resolver isso exigiria `useColorScheme()` em cada tela/componente para trocar a cor manualmente — não foi feito por enquanto. Ao tocar num ícone com esse problema, aplique o mesmo padrão usado em `(tabs)/_layout.tsx` (tab bar) e `_layout.tsx` raiz (StatusBar): ler `useColorScheme()` do `react-native` e escolher a cor via JS, já que não dá pra usar `dark:` numa prop nativa.
-- `StatusBar` (`app/_layout.tsx`) e a tab bar (`(tabs)/_layout.tsx`) usam `useColorScheme()` do `react-native` para trocar de estilo/cores em JS, pelo mesmo motivo acima — são componentes nativos, não `View`/`Text` estilizáveis via `className`.
+- ⚠️ Limitação conhecida: `className` do NativeWind não alcança a prop `color` de `Ionicons` nem `placeholderTextColor` de `TextInput` — são props nativas, não estilo via `style`/`className`. Ícones e placeholders continuam com a cor de modo claro (ex. `color="#1E3A2F"`) mesmo no dark mode; o contraste é aceitável na maioria dos casos (tons de cinza médio como `#9E9589`), mas alguns ícones verde-escuro sobre fundo escuro ficam com contraste baixo. Resolver isso exige ler `useColorScheme()` de `"nativewind"` em cada tela/componente e escolher a cor via JS (mesmo padrão de `AparenciaCard.tsx`, `(tabs)/_layout.tsx` e `app/_layout.tsx`) — não foi feito em todos os ícones por enquanto.
 
 ---
 
@@ -245,7 +248,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 - Funções puras, sem hooks, sem I/O: só `mascaras.ts` hoje (`mascararCPF`, `mascararCelular`, `mascararData`, `mascararCEP`).
 
 **Context (`src/context/`):**
-- `SessaoContext` é a única fonte de verdade de sessão em uso.
+- `SessaoContext` é a única fonte de verdade de sessão em uso; `TemaContext` é a única fonte de verdade da preferência de tema (ver seção 4) — são dois contexts legítimos, com responsabilidades diferentes. A regra "nunca criar um segundo context" (seção 12) vale para **autenticação/sessão**, não proíbe contexts novos para outras responsabilidades globais.
 - `AutenticacaoContext.tsx` é código morto: importa `@/lib/firebase`, um caminho que **não existe** no projeto (não há pasta `src/lib`), então qualquer import dele quebra o bundler. Não é montado em nenhum `_layout.tsx`. Não crie nova lógica nele nem o importe — se for necessário migrar para Firebase algum dia, isso é uma decisão de arquitetura a discutir antes, não um contexto "quase pronto" para religar.
 
 ---
@@ -319,7 +322,7 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 
 - Autenticação via **cookie de sessão** (`JSESSIONID`) — `withCredentials: true` no Axios (`src/api/api.ts`). Não há JWT/Bearer no projeto atual.
 - `SessaoContext` (`src/context/SessaoContext.tsx`) é a **única** fonte de verdade da sessão. `AutenticacaoContext` é código morto (Firebase, não integrado, importa um arquivo inexistente) — não use.
-- Sessão persistida via `AsyncStorage` com a chave **`@afetto:session`** (não `@afetto:token` — o cookie de sessão é gerenciado pelo navegador/WebView, o AsyncStorage guarda só os dados de UI: `id`, `email`, `nome`, `progresso`).
+- Sessão persistida via `AsyncStorage` com a chave **`@afetto:session`** (não `@afetto:token` — o cookie de sessão é gerenciado pelo navegador/WebView, o AsyncStorage guarda só os dados de UI: `id`, `email`, `nome`, `progresso`). A preferência de tema usa outra chave, **`@afetto:tema`** (ver seção 4, `TemaContext`) — são dois valores independentes, não misture.
 - A API não expõe `GET /usuario/me`: o `id`/nome do usuário logado é descoberto varrendo `GET /usuario` paginado até achar o e-mail (`bootstrapUsuarioAposLogin`, roda uma vez após o login). Depois disso, todo o resto da app usa `buscarUsuarioPorId(id)`.
 - Um `401` de qualquer chamada dispara o tratador registrado por `SessaoContext` via `definirTratadorSessaoExpirada` (em `api.ts`), que limpa o AsyncStorage e zera a sessão — o `<RotaProtegida>` reage sozinho e redireciona para `/login`.
 - Um `403` **não** é tratado como sessão inválida (pode ser regra de negócio, ex. e-mail em uso) — cada tela trata seu próprio `isError`/`onError`. Não adicione um interceptor global de 403.
