@@ -1,12 +1,10 @@
 import { CabecalhoOla } from "@/components/CabecalhoOla";
 import { CardPet } from "@/components/CardPet";
 import { PetsVazio } from "@/components/PetsVazio";
-import { useSessao } from "@/context/SessaoContext";
 import { usePets } from "@/hooks/usePets";
 import { Pet } from "@/schemas/pet.schema";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -16,19 +14,7 @@ import {
 } from "react-native";
 
 export default function TelaPets() {
-  const { concluirEtapa } = useSessao();
   const { data: pets = [], isLoading: carregando, isError: temErro, refetch } = usePets();
-  const [concluindo, setConcluindo] = useState(false);
-
-  async function aoConcluir() {
-    setConcluindo(true);
-    try {
-      await concluirEtapa("petCadastrado");
-      router.back();
-    } finally {
-      setConcluindo(false);
-    }
-  }
 
   if (carregando) {
     return (
@@ -70,11 +56,12 @@ export default function TelaPets() {
         data={pets}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderizarCartao}
-        contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
       />
 
-      {/* Footer — só aparece quando tem pets */}
-      <View className="absolute bottom-0 left-0 right-0 px-6 pb-10 pt-3 gap-3 bg-surface dark:bg-gray-900 border-t border-border dark:border-gray-700">
+      {/* Footer — só aparece quando tem pets. A etapa "Cadastrar seu Pet" da
+          Home conclui sozinha a partir desta mesma lista (usePets), sem botão. */}
+      <View className="absolute bottom-0 left-0 right-0 px-6 pb-10 pt-3 bg-surface dark:bg-gray-900 border-t border-border dark:border-gray-700">
         <TouchableOpacity
           onPress={() => router.push("/pet/cadastrar" as any)}
           activeOpacity={0.85}
@@ -86,20 +73,6 @@ export default function TelaPets() {
               Adicionar novo pet
             </Text>
           </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={aoConcluir}
-          disabled={concluindo}
-          activeOpacity={0.85}
-          className={`items-center justify-center py-4 rounded-2xl ${concluindo ? "bg-primary/70" : "bg-primary"
-            }`}
-        >
-          {concluindo ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-white text-lg font-semibold">Concluir</Text>
-          )}
         </TouchableOpacity>
       </View>
     </View>

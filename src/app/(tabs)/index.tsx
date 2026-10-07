@@ -2,24 +2,38 @@ import { BarraProgresso } from "@/components/BarraProgresso";
 import { BotaoSeusPets } from "@/components/BotaoSeusPets";
 import { ItemChecklist } from "@/components/ItemChecklist";
 import { useSessao } from "@/context/SessaoContext";
+import { usePets } from "@/hooks/usePets";
 import { calcularProgressoOnboarding } from "@/utils/onboarding";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-
-const PROGRESSO_PADRAO = {
-  perfilCompleto: false,
-  petCadastrado: false,
-  clinicaVinculada: false,
-};
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function TelaInicio() {
   const { sessao } = useSessao();
-  const [temPets, setTemPets] = useState(false);
+  const {
+    data: pets,
+    // isFetching (e não isLoading) para o indicador também aparecer durante o
+    // "Tentar novamente" depois de uma falha.
+    isFetching: carregandoPets,
+    refetch: recarregarPets,
+  } = usePets();
+
+  // O progresso depende da lista de pets da API. Enquanto ela não chega (ou se
+  // a busca falhar), a tela não mostra checklist nem barra — mostrar "pet
+  // pendente" sem saber a resposta seria um dado falso.
+  const carregouPets = pets !== undefined;
 
   const { checklist, percentual, rotuloEtapa, obrigatoriosConcluidos } =
-    calcularProgressoOnboarding(sessao?.progresso ?? PROGRESSO_PADRAO);
+    calcularProgressoOnboarding({
+      perfilCompleto: sessao?.progresso?.perfilCompleto ?? false,
+      petCadastrado: (pets?.length ?? 0) > 0,
+    });
 
   return (
     <ScrollView
@@ -50,29 +64,49 @@ export default function TelaInicio() {
         </View>
 
         {/* Subtítulo */}
-        <Text className="text-base text-amber underline mt-2">
-          {obrigatoriosConcluidos
-            ? "Tudo certo! Seu pet está protegido."
-            : "Vamos começar o perfil do seu pet!"}
-        </Text>
+        {carregouPets && (
+          <Text className="text-base text-amber underline mt-2">
+            {obrigatoriosConcluidos
+              ? "Tudo certo! Seu pet está protegido."
+              : "Vamos começar o perfil do seu pet!"}
+          </Text>
+        )}
 
         {/* Barra de progresso */}
-        {!obrigatoriosConcluidos && (
+        {carregouPets && !obrigatoriosConcluidos && (
           <BarraProgresso rotulo={rotuloEtapa} percentual={percentual} />
         )}
       </View>
 
       {/* Body */}
       <View className="px-6 pt-6 pb-10 gap-6">
-        {/* Botão Seus Pets */}
+        {/* Botão Seus Pets — a quantidade vem da API */}
         <BotaoSeusPets
-          ativo={temPets}
-          onAtivoChange={setTemPets}
+          quantidade={pets?.length}
           onPress={() => router.push("/(tabs)/pets")}
         />
 
-        {/* Checklist — some apenas enquanto os passos obrigatórios não estiverem completos */}
-        {!obrigatoriosConcluidos && (
+        {/* Carregando a lista de pets */}
+        {!carregouPets && carregandoPets && (
+          <View className="items-center py-6">
+            <ActivityIndicator color="#E8A838" />
+          </View>
+        )}
+
+        {/* Falha ao carregar a lista de pets */}
+        {!carregouPets && !carregandoPets && (
+          <View className="items-center gap-2 py-4">
+            <Text className="text-sm text-muted dark:text-gray-400 text-center">
+              Não foi possível carregar seus pets.
+            </Text>
+            <TouchableOpacity onPress={() => recarregarPets()}>
+              <Text className="text-amber font-semibold">Tentar novamente</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Checklist — some quando os passos obrigatórios estão completos */}
+        {carregouPets && !obrigatoriosConcluidos && (
           <View className="gap-3">
             <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
               Sua configuração

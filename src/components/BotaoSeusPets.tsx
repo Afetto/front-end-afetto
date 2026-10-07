@@ -1,13 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Switch, Text, TouchableOpacity } from "react-native";
+import { Text, TouchableOpacity } from "react-native";
 
 type Props = {
-  ativo: boolean;
-  onAtivoChange: (value: boolean) => void;
+  /** Quantidade de pets vinda da API. `undefined` enquanto carrega ou se a busca falhou. */
+  quantidade?: number;
   onPress: () => void;
 };
 
-export function BotaoSeusPets({ ativo, onAtivoChange, onPress }: Props) {
+function rotuloQuantidade(quantidade: number): string {
+  if (quantidade === 0) return "Nenhum pet";
+  return quantidade === 1 ? "1 pet" : `${quantidade} pets`;
+}
+
+export function BotaoSeusPets({ quantidade, onPress }: Props) {
   return (
     <TouchableOpacity
       activeOpacity={0.85}
@@ -18,12 +23,12 @@ export function BotaoSeusPets({ ativo, onAtivoChange, onPress }: Props) {
       <Text className="flex-1 text-white text-base font-semibold ml-3">
         Seus <Text className="text-amber">Pets</Text>
       </Text>
-      <Switch
-        value={ativo}
-        onValueChange={onAtivoChange}
-        trackColor={{ false: "rgba(255,255,255,0.25)", true: "#E8A838" }}
-        thumbColor="#fff"
-      />
+      {quantidade !== undefined && (
+        <Text className="text-sm text-white/80 mr-2">
+          {rotuloQuantidade(quantidade)}
+        </Text>
+      )}
+      <Ionicons name="chevron-forward" size={18} color="#E8A838" />
     </TouchableOpacity>
   );
 }

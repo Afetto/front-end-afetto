@@ -1,4 +1,14 @@
-import { ProgressoOnboarding } from "@/context/SessaoContext";
+/**
+ * Etapas do onboarding e de onde vem cada uma:
+ * - `perfilCompleto`: guardado na sessão local (`SessaoContext`), marcado
+ *   quando o envio de /completar-perfil dá certo.
+ * - `petCadastrado`: derivado da API — verdadeiro quando `usePets()` devolve
+ *   ao menos um pet. Não é guardado em lugar nenhum.
+ */
+export type EtapasOnboarding = {
+  perfilCompleto: boolean;
+  petCadastrado: boolean;
+};
 
 export type ItemOnboarding = {
   id: string;
@@ -16,16 +26,16 @@ export type ProgressoCalculado = {
   obrigatoriosConcluidos: boolean;
 };
 
-/** Deriva o checklist, a etapa atual e o percentual de progresso do onboarding a partir da sessão. */
+/** Deriva o checklist, a etapa atual e o percentual de progresso do onboarding. */
 export function calcularProgressoOnboarding(
-  progresso: ProgressoOnboarding
+  etapas: EtapasOnboarding
 ): ProgressoCalculado {
   const checklist: ItemOnboarding[] = [
     {
       id: "cadastro",
       titulo: "Finalize seu cadastro!",
       subtitulo: "Coloque suas infos adicionais!",
-      concluido: progresso.perfilCompleto,
+      concluido: etapas.perfilCompleto,
       opcional: false,
       rota: "/completar-perfil",
     },
@@ -33,17 +43,9 @@ export function calcularProgressoOnboarding(
       id: "pet",
       titulo: "Cadastrar seu Pet",
       subtitulo: "Nome, raça, idade e histórico",
-      concluido: progresso.petCadastrado,
+      concluido: etapas.petCadastrado,
       opcional: false,
       rota: "/(tabs)/pets",
-    },
-    {
-      id: "clinica",
-      titulo: "Vincular sua clínica",
-      subtitulo: "Nunca perca uma vacina",
-      concluido: progresso.clinicaVinculada,
-      opcional: true,
-      rota: "/(tabs)/clinica",
     },
   ];
 

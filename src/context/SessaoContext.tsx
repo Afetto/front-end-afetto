@@ -5,10 +5,10 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 const CHAVE_SESSAO = "@afetto:session";
 
-export type ProgressoOnboarding = {
+// Só as etapas do onboarding que não dá para ler da API ficam guardadas na
+// sessão. "Pet cadastrado" não entra aqui: a Home deriva de `usePets()`.
+type ProgressoOnboarding = {
   perfilCompleto: boolean;
-  petCadastrado: boolean;
-  clinicaVinculada: boolean;
 };
 
 type Sessao = {
@@ -29,8 +29,6 @@ type DadosSessaoContexto = {
 
 const PROGRESSO_PADRAO: ProgressoOnboarding = {
   perfilCompleto: false,
-  petCadastrado: false,
-  clinicaVinculada: false,
 };
 
 const SessaoContext = createContext<DadosSessaoContexto>({} as DadosSessaoContexto);
