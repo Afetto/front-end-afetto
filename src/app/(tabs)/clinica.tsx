@@ -3,8 +3,8 @@ import { Text, View } from "react-native";
 
 // A API real (confirmada em GET /v3/api-docs) ainda não expõe nenhum
 // endpoint de clínica — não é uma falha temporária de rede, então a tela
-// não tenta nenhuma chamada e mostra direto o estado de "em breve" (ver
-// clinica.service.ts).
+// não tenta nenhuma chamada e mostra direto o estado de "em breve". Quando
+// o backend expuser o recurso, recriar service, schema e hooks como em pets.
 export default function TelaClinica() {
   return (
     <View className="flex-1 bg-surface dark:bg-gray-900">

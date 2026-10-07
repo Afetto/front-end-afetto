@@ -33,7 +33,6 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 | Ícones | `@expo/vector-icons` — **padrão real: `Ionicons`** (usado em todas as telas e componentes; `FontAwesome` só existe no boilerplate do `_layout.tsx` para os ícones de navegação padrão do template, sem uso funcional hoje) |
 | Animações | `react-native-reanimated` `~4` |
 | Testes | `jest` + `jest-expo` + `@testing-library/react-native` (instalados; `npm test` funciona) |
-| ⚠️ Presente mas não integrado | `firebase` `^12` — só é referenciado por `AutenticacaoContext.tsx`, que é código morto (ver seção 9) |
 
 **Variável de ambiente:** `EXPO_PUBLIC_API_URL` define a base da API. Sem ela, `src/api/api.ts` cai num fallback (`https://java-afetto-fork.onrender.com`) e emite um `console.warn`. Sempre configure um `.env` local em desenvolvimento.
 
@@ -86,7 +85,6 @@ src/
 │   ├── SeletorEspecie.tsx         ← grid de cards (emoji + nome) para escolher a espécie do pet — usado dentro de FormPet
 │   ├── CardPet.tsx                ← card de pet na listagem (pets.tsx)
 │   ├── CardPetResumo.tsx          ← card de pet que sobrepõe o header verde — usado em pet/[id]/index.tsx e historico.tsx
-│   ├── CardClinica.tsx            ← ⚠️ não usado hoje — clinica.tsx virou tela estática "Em breve" (ver seção 5)
 │   ├── EstadoVazio.tsx / EstadoErro.tsx ← estados genéricos reutilizáveis (lista vazia / erro de carregamento)
 │   ├── perfil/                    ← componentes específicos da tela /perfil (não reutilizados fora dela)
 │   │   ├── PerfilHeader.tsx         ← header com toggle visualização/edição (pencil ↔ "Cancelar")
@@ -98,18 +96,13 @@ src/
 │   │   └── AlterarSenhaModal.tsx
 │   ├── RotaProtegida.tsx          ← guard de rotas privadas
 │   ├── PetsVazio.tsx              ← estado vazio/erro da lista de pets
-│   ├── CirculosConcentricos.tsx   ← decoração da tela de onboarding
-│   ├── ExternalLink.tsx           ← ⚠️ boilerplate do template Expo Router, não usado
-│   ├── useColorScheme.ts(.web.ts) ← ⚠️ boilerplate do template, não usado — o dark mode real usa `useColorScheme` de `"react-native"` direto (ver seção 4), não este hook
-│   └── useClientOnlyValue.ts(.web.ts) ← ⚠️ boilerplate do template, não usado
+│   └── CirculosConcentricos.tsx   ← decoração da tela de onboarding
 ├── context/
 │   ├── SessaoContext.tsx          ← ÚNICA fonte de verdade de sessão (ver seção 9)
-│   ├── TemaContext.tsx            ← ÚNICA fonte de verdade da preferência de tema (Claro/Escuro/Sistema, ver seção 4)
-│   └── AutenticacaoContext.tsx    ← ⚠️ código morto — importa `@/lib/firebase`, que NÃO EXISTE no projeto. Nunca importe este arquivo.
+│   └── TemaContext.tsx            ← ÚNICA fonte de verdade da preferência de tema (Claro/Escuro/Sistema, ver seção 4)
 ├── hooks/
 │   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet
 │   ├── useVacinas.ts          ← useVacinasPet, useVacina, useCriarVacina, useAtualizarVacina, useDeletarVacina
-│   ├── useClinicas.ts         ← useClinicas, useVincularClinica, useDesvincularClinica — ⚠️ nenhum é chamado por tela hoje (clinica.tsx é estática, ver seção 5)
 │   ├── useAutenticacao.ts     ← useCadastrar, useEntrar, useCompletarPerfil (logout fica inline — ver seção 8)
 │   ├── useBuscarCep.ts        ← useQuery reativo, chama `cepService.buscarPorCep`
 │   └── perfil/
@@ -120,15 +113,12 @@ src/
 │   ├── cadastro.schema.ts
 │   ├── completar-perfil.schema.ts
 │   ├── pet.schema.ts
-│   ├── clinica.schema.ts
-│   ├── editar-perfil.schema.ts ← edição de dados pessoais em /perfil (nome, email, telefone, dataNascimento)
-│   └── usuario.schema.ts      ← ⚠️ não é importado por nenhuma tela/hook/service — ver seção 5
+│   └── editar-perfil.schema.ts ← edição de dados pessoais em /perfil (nome, email, telefone, dataNascimento)
 ├── services/
 │   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, sair, completarPerfil (funções nomeadas)
 │   ├── cep.service.ts           ← cepService.buscarPorCep (objeto) — API pública do ViaCEP, usa `fetch` direto (não é a API do Afetto, não passa pelo cliente Axios)
 │   ├── pet.service.ts           ← petService.{listar,buscarPorId,criar,atualizar,remover} (objeto)
-│   ├── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
-│   └── clinica.service.ts       ← ⚠️ stub — todo método lança erro ("A API ainda não expõe endpoints de clínica"), confirmado em GET /v3/api-docs. Não faz nenhuma chamada HTTP hoje.
+│   └── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
 ├── types/
 │   └── autenticacao.types.ts   ← tipos globais de autenticação/usuário
 ├── utils/
@@ -211,10 +201,8 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 | `CirculosConcentricos` | Decoração exclusiva da tela de onboarding |
 
 **Inconsistências reais encontradas na auditoria (corrigir ao tocar no código, não replicar):**
-- `pets.tsx` define sua própria função local `renderizarCartao` para o item da lista (usa `CardPet`). Se uma nova listagem desse tipo aparecer, extraia um `Card*` dedicado em vez de repetir a função — já existe o precedente (`CardPet`, `CardPetResumo`, `CardClinica`).
-- `CardClinica.tsx` existe mas **não é usado por nenhuma tela hoje** — `clinica.tsx` virou uma tela estática de "Em breve" porque a API não tem endpoint de clínica (ver seção 6, `clinica.service.ts`). Não é código morto por descuido, é código à espera do backend — não delete, mas também não importe em telas novas até o recurso voltar a existir de verdade.
-- `useClinicas`, `useVincularClinica` e `useDesvincularClinica` (`useClinicas.ts`) também não são chamados por nenhuma tela pelo mesmo motivo.
-- `ExternalLink.tsx`, `useColorScheme(.web).ts` e `useClientOnlyValue(.web).ts` são sobras do template padrão do Expo Router e não são usados por nenhuma tela real. Não os importe em código novo; podem ser removidos com segurança quando alguém for limpar o projeto.
+- `pets.tsx` define sua própria função local `renderizarCartao` para o item da lista (usa `CardPet`). Se uma nova listagem desse tipo aparecer, extraia um `Card*` dedicado em vez de repetir a função — já existe o precedente (`CardPet`, `CardPetResumo`).
+- `clinica.tsx` é uma tela estática de "Em breve": a API não tem endpoint de clínica (confirmado em `GET /v3/api-docs`). O código de integração que existia sem uso (service, schema, hooks e `CardClinica`) foi removido — quando o backend expuser o recurso, recrie service, schema e hooks no mesmo padrão de pets (`pet.service.ts`, `pet.schema.ts`, `usePets.ts`).
 
 ---
 
@@ -228,7 +216,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 
 **Hooks (`src/hooks/`):**
 - Duas categorias reais no projeto, ambas válidas — documente qual está sendo usada em cada novo hook:
-  1. **Hooks de dados** (`usePets.ts`, `useClinicas.ts`, `useAutenticacao.ts`): só `useQuery`/`useMutation` chamando o service, sem estado local próprio. Retornam o objeto do TanStack Query como está (`data`, `isLoading`, `isError`, `refetch`, `mutate`, `isPending`).
+  1. **Hooks de dados** (`usePets.ts`, `useVacinas.ts`, `useAutenticacao.ts`): só `useQuery`/`useMutation` chamando o service, sem estado local próprio. Retornam o objeto do TanStack Query como está (`data`, `isLoading`, `isError`, `refetch`, `mutate`, `isPending`).
   2. **Hooks de tela** (`hooks/perfil/useAlterarSenha.ts`): concentram estado local (`useState`), validação manual e a `useMutation` de um fluxo de UI específico (ex.: o modal de troca de senha), expondo um objeto próprio (`{ senhaAtual, setSenhaAtual, salvandoSenha, alterarSenha, ... }`) em vez do formato padrão do React Query. `hooks/perfil/usePerfil.ts` **não é mais desse tipo** — desde que `/perfil` ganhou modo visualização/edição, ele voltou a ser um hook de dados: expõe `usuario`/`carregando`/`temErro`/`refazer` do `useQuery` e `salvarPerfil`/`salvando` de um `useMutation` padrão (a tela usa `react-hook-form` para o estado dos campos em edição).
 - Login, cadastro e completar-perfil usam hooks dedicados em `useAutenticacao.ts` (`useEntrar`, `useCadastrar`, `useCompletarPerfil`) — a tela só monta o `useForm`, passa `onSuccess`/`onError` pro `mutate()` e trata o resultado (`setError`, `entrar()` do `SessaoContext`, navegação). Logout **não** tem hook dedicado: chama `sair()` do `SessaoContext` direto em `perfil.tsx` (ação única, sem payload) — isso é intencional, documentado em `useAutenticacao.ts`.
 - Invalidação de cache sempre via `useQueryClient()` dentro do hook — nunca `import { queryClient } from "@/api/queryClient"`.
@@ -236,20 +224,18 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 
 **Services (`src/services/`):**
 - Contêm as chamadas HTTP e a transformação de payload: limpeza de máscaras (`replace(/\D/g, "")`), conversão de data BR→ISO, normalização de listas paginadas (`extrairLista`).
-- ⚠️ Duas convenções de export coexistem hoje: `autenticacao.service.ts` exporta funções nomeadas soltas (`cadastrar`, `autenticar`, ...); `pet.service.ts` e `clinica.service.ts` exportam um objeto com métodos (`petService.listar`, `clinicaService.vincular`). Ambas funcionam e estão em uso — **não** refatore um para o outro "de passagem" ao editar uma feature; se for criar um service para uma **nova entidade**, prefira o padrão objeto (`nomeService.metodo`), que é o mais recente e o que melhor sinaliza autocomplete/agrupamento no editor.
+- ⚠️ Duas convenções de export coexistem hoje: `autenticacao.service.ts` exporta funções nomeadas soltas (`cadastrar`, `autenticar`, ...); `pet.service.ts` e `vacina.service.ts` exportam um objeto com métodos (`petService.listar`, `vacinaService.criar`). Ambas funcionam e estão em uso — **não** refatore um para o outro "de passagem" ao editar uma feature; se for criar um service para uma **nova entidade**, prefira o padrão objeto (`nomeService.metodo`), que é o mais recente e o que melhor sinaliza autocomplete/agrupamento no editor.
 - Podem conter lógica de contorno de limitações reais da API — documente o *porquê* como em `bootstrapUsuarioAposLogin` (a API não devolve `id`/nome no login nem tem `/usuario/me`, então o service varre `GET /usuario` paginado até achar o e-mail). Esse tipo de comentário é obrigatório sempre que o código estiver compensando uma lacuna do backend, não é "só documentação bonita".
 - ⚠️ `cep.service.ts` é a única exceção ao cliente Axios: chama a API pública do ViaCEP via `fetch` direto (padrão objeto, `cepService.buscarPorCep`), porque não é a API do Afetto e não deve levar `withCredentials`/interceptor de sessão. Não migre esse service para `api.ts` nem os outros services para `fetch` "de passagem".
 
 **Schemas (`src/schemas/`):**
 - Contêm apenas schemas Zod, exportando o tipo inferido junto.
-- ⚠️ `usuario.schema.ts` não é importado por nenhum arquivo do projeto hoje (verificado por busca no código) e usa `id: z.number()`, enquanto toda a API real usa `id: string` (UUID). Não use esse schema como referência — é um artefato de uma versão anterior da API. Se for tipar o usuário, use `UsuarioArmazenado`/`UsuarioApi` de `autenticacao.types.ts`/`autenticacao.service.ts`.
 
 **Utils (`src/utils/`):**
 - Funções puras, sem hooks, sem I/O: só `mascaras.ts` hoje (`mascararCPF`, `mascararCelular`, `mascararData`, `mascararCEP`).
 
 **Context (`src/context/`):**
 - `SessaoContext` é a única fonte de verdade de sessão em uso; `TemaContext` é a única fonte de verdade da preferência de tema (ver seção 4) — são dois contexts legítimos, com responsabilidades diferentes. A regra "nunca criar um segundo context" (seção 12) vale para **autenticação/sessão**, não proíbe contexts novos para outras responsabilidades globais.
-- `AutenticacaoContext.tsx` é código morto: importa `@/lib/firebase`, um caminho que **não existe** no projeto (não há pasta `src/lib`), então qualquer import dele quebra o bundler. Não é montado em nenhum `_layout.tsx`. Não crie nova lógica nele nem o importe — se for necessário migrar para Firebase algum dia, isso é uma decisão de arquitetura a discutir antes, não um contexto "quase pronto" para religar.
 
 ---
 
@@ -296,7 +282,7 @@ Consistente em `RotaProtegida`, `pets.tsx`, `perfil.tsx`, `pet/[id]/*` (fundo `b
   </View>
 </TouchableOpacity>
 ```
-Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o header). `CardClinica` existe no mesmo padrão mas está sem uso (ver seção 5).
+Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o header).
 
 **Botão de submit fixo:** use `BotaoEnviar` (ver seção 5) — não reimplemente o `TouchableOpacity` com `ActivityIndicator` condicional.
 
@@ -321,7 +307,7 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 ## 9. Autenticação e Sessão
 
 - Autenticação via **cookie de sessão** (`JSESSIONID`) — `withCredentials: true` no Axios (`src/api/api.ts`). Não há JWT/Bearer no projeto atual.
-- `SessaoContext` (`src/context/SessaoContext.tsx`) é a **única** fonte de verdade da sessão. `AutenticacaoContext` é código morto (Firebase, não integrado, importa um arquivo inexistente) — não use.
+- `SessaoContext` (`src/context/SessaoContext.tsx`) é a **única** fonte de verdade da sessão.
 - Sessão persistida via `AsyncStorage` com a chave **`@afetto:session`** (não `@afetto:token` — o cookie de sessão é gerenciado pelo navegador/WebView, o AsyncStorage guarda só os dados de UI: `id`, `email`, `nome`, `progresso`). A preferência de tema usa outra chave, **`@afetto:tema`** (ver seção 4, `TemaContext`) — são dois valores independentes, não misture.
 - A API não expõe `GET /usuario/me`: o `id`/nome do usuário logado é descoberto varrendo `GET /usuario` paginado até achar o e-mail (`bootstrapUsuarioAposLogin`, roda uma vez após o login). Depois disso, todo o resto da app usa `buscarUsuarioPorId(id)`.
 - Um `401` de qualquer chamada dispara o tratador registrado por `SessaoContext` via `definirTratadorSessaoExpirada` (em `api.ts`), que limpa o AsyncStorage e zera a sessão — o `<RotaProtegida>` reage sozinho e redireciona para `/login`.
@@ -381,14 +367,13 @@ const { mutate: enviarCadastro } = useMutation({
 - Nunca escrever `style={{ backgroundColor: "#hex" }}` / `color: "#hex"` — sempre uma classe Tailwind.
 - Nunca usar uma classe de cor Tailwind sem confirmar que ela existe no `tailwind.config.js` ou na paleta padrão (evita repetir bugs como `bg-greenMedium`/`text-red`).
 - Nunca duplicar um bloco de UI que já existe como componente ou como rota (ex.: recriar a tela de sucesso do cadastro dentro de um `Modal`).
-- Nunca importar `AutenticacaoContext.tsx` — quebra o build (`@/lib/firebase` não existe).
 - Nunca criar um segundo context de autenticação/sessão — `SessaoContext` é o único.
 - Nunca usar `any` sem justificativa documentada em comentário (ex.: casts de rota para telas ainda não criadas devem ter um `// TODO` explicando o que falta).
 - Nunca instalar biblioteca nova sem discutir com o time.
 - Nunca alterar o schema Zod para contornar uma validação — corrigir o dado ou a regra de negócio.
 - Nunca navegar para uma rota inexistente sem criá-la primeiro (ou deixar um `TODO` explícito, como já é feito em `login.tsx`).
 - Nunca commitar com `npx tsc --noEmit` retornando erros novos.
-- Nunca deixar um componente importado sem uso na árvore renderizada — se não for usado, delete o import e, se for redundante, o componente. (Exceção documentada: `CardClinica`, `useClinicas`, `useVincularClinica`, `useDesvincularClinica` — sem uso hoje porque a API não tem endpoint de clínica, não por descuido.)
+- Nunca deixar um componente importado sem uso na árvore renderizada — se não for usado, delete o import e, se for redundante, o componente.
 
 ---
 
@@ -436,7 +421,6 @@ Após petCadastrado: true
 - O alias `@/` aponta para `src/`.
 - O `QueryClient` é importado diretamente apenas no `_layout.tsx` raiz, para o `QueryClientProvider`.
 - O `SessaoProvider` deve sempre envolver o `Stack` no `_layout.tsx`.
-- Existe um arquivo `FIELDS_MAP.md` na raiz do projeto: ele descreve uma versão **anterior** do app (rotas `register.tsx`/`login.tsx` na raiz, `AuthContext.tsx`, autenticação JWT, telas de pets/clínica mockadas). Isso não reflete mais o código atual — não use esse documento como referência sem revalidar contra o código.
 - Telas do Figma serão implementadas progressivamente — sempre verificar o design antes de criar.
 
 ---
