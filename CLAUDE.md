@@ -122,9 +122,14 @@ src/
 ├── types/
 │   └── autenticacao.types.ts   ← tipos globais de autenticação/usuário
 ├── utils/
-│   └── mascaras.ts              ← mascararCPF, mascararCelular, mascararData, mascararCEP
+│   ├── mascaras.ts              ← mascararCPF, mascararCelular, mascararData, mascararCEP
+│   ├── data.ts                  ← converterDataParaISO, converterDataParaBR, normalizarData, calcularIdade
+│   ├── pet.ts                   ← LABEL_ESPECIE, ICONE_ESPECIE (rótulo e emoji por espécie)
+│   └── onboarding.ts            ← calcularProgressoOnboarding — checklist e progresso da Home (ver "Fluxo de Onboarding")
 ├── __tests__/
-│   └── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado)
+│   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado)
+│   ├── inicio.test.tsx          ← teste da Home: progresso e quantidade de pets vindos da API (HTTP mockado)
+│   └── onboarding.test.ts       ← teste unitário de calcularProgressoOnboarding
 └── global.css                   ← @tailwind base/components/utilities
 ```
 
@@ -232,7 +237,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 - Contêm apenas schemas Zod, exportando o tipo inferido junto.
 
 **Utils (`src/utils/`):**
-- Funções puras, sem hooks, sem I/O: só `mascaras.ts` hoje (`mascararCPF`, `mascararCelular`, `mascararData`, `mascararCEP`).
+- Funções puras, sem hooks, sem I/O: `mascaras.ts` (máscaras de CPF, celular, data e CEP), `data.ts` (conversão e normalização de datas), `pet.ts` (rótulos e ícones por espécie) e `onboarding.ts` (checklist e progresso da Home).
 
 **Context (`src/context/`):**
 - `SessaoContext` é a única fonte de verdade de sessão em uso; `TemaContext` é a única fonte de verdade da preferência de tema (ver seção 4) — são dois contexts legítimos, com responsabilidades diferentes. A regra "nunca criar um segundo context" (seção 12) vale para **autenticação/sessão**, não proíbe contexts novos para outras responsabilidades globais.
@@ -400,17 +405,15 @@ const { mutate: enviarCadastro } = useMutation({
 ```
 Login/Cadastro
   └── Home (checklist)
-        ├── /completar-perfil  → perfilCompleto: true
-        ├── /(tabs)/pets       → petCadastrado: true
-        └── /(tabs)/clinica    → clinicaVinculada: true   (opcional)
-
-Após petCadastrado: true
-  └── Aba "Pets" já existe fixa nas tabs hoje (não há mostrar/escondê-la
-      dinamicamente implementado — ver (tabs)/_layout.tsx)
-  └── Botão "Seus Pets" aparece na Home
+        ├── /completar-perfil  → perfilCompleto: true (guardado na sessão local)
+        └── /(tabs)/pets       → concluído quando a API devolve ao menos um pet
 ```
 
-⚠️ `(tabs)/index.tsx` (Home) tem um `useState(temPets)` com um `<Switch>` que não está ligado a nenhum dado real (`usePets` já existe e não é usado ali) — é um resquício de mock. Ao tocar nessa tela, ou remova o `Switch` ou ligue-o a `usePets().data.length > 0`.
+De onde vem cada etapa (`utils/onboarding.ts`, tipo `EtapasOnboarding`):
+- **Pet cadastrado** é derivado da API: a Home (`(tabs)/index.tsx`) chama `usePets()` e passa `pets.length > 0`. Não existe flag local nem botão "Concluir" — cadastrar ou excluir um pet invalida a query `["pets"]` e a Home se atualiza sozinha. Enquanto a lista não chega (ou se a busca falha), a Home não mostra checklist nem barra de progresso, só o indicador de carregamento ou "Tentar novamente".
+- **Perfil completo** ainda é uma flag local (`sessao.progresso.perfilCompleto`, marcada por `concluirEtapa("perfilCompleto")` em `completar-perfil.tsx`) e volta a `false` a cada login. ⚠️ Pendência: confirmar em `GET /v3/api-docs` se a API permite ler esse estado, para derivá-lo da API também.
+- O item "Vincular sua clínica" saiu do checklist porque nunca podia ser concluído (a API não tem endpoint de clínica). A aba Clínica continua existindo.
+- O botão "Seus Pets" da Home (`BotaoSeusPets`) mostra a quantidade de pets vinda de `usePets()`.
 
 ---
 
