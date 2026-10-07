@@ -4,14 +4,16 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { AppState, useColorScheme } from "react-native";
+import { AppState } from "react-native";
 import { useReactQueryDevTools } from "@dev-plugins/react-query";
 import { focusManager, QueryClientProvider } from "@tanstack/react-query";
+import { useColorScheme } from "nativewind";
 import "react-native-reanimated";
 import "../global.css";
 
 import { queryClient } from "@/api/queryClient";
 import { SessaoProvider } from "@/context/SessaoContext";
+import { TemaProvider } from "@/context/TemaContext";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -50,19 +52,21 @@ export default function LayoutRaiz() {
 
 function LayoutRaizNav() {
   useReactQueryDevTools(queryClient);
-  const esquema = useColorScheme();
+  const { colorScheme } = useColorScheme();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SessaoProvider>
-        <StatusBar style={esquema === "dark" ? "light" : "dark"} />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(app)" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-      </SessaoProvider>
+      <TemaProvider>
+        <SessaoProvider>
+          <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(app)" />
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+        </SessaoProvider>
+      </TemaProvider>
     </QueryClientProvider>
   );
 }

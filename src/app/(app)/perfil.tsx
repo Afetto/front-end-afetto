@@ -1,5 +1,6 @@
 import { EstadoErro } from "@/components/EstadoErro";
 import { AlterarSenhaModal } from "@/components/perfil/AlterarSenhaModal";
+import { AparenciaCard } from "@/components/perfil/AparenciaCard";
 import { ContaCard } from "@/components/perfil/ContaCard";
 import { DadosPessoaisCard } from "@/components/perfil/DadosPessoaisCard";
 import { FormDadosPessoais } from "@/components/perfil/FormDadosPessoais";
@@ -229,6 +230,8 @@ export default function TelaPerfil() {
               onNotifWhatsappChange={setNotifWhatsapp}
               onAlterarSenha={abrirModal}
             />
+
+            <AparenciaCard />
 
             <ContaCard onSair={handleSair} />
           </View>

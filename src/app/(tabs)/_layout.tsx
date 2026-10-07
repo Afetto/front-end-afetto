@@ -1,7 +1,7 @@
 import { RotaProtegida } from "@/components/RotaProtegida";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { useColorScheme } from "react-native";
+import { useColorScheme } from "nativewind";
 
 type NomeIcone = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -10,7 +10,8 @@ function IconeAba({ name, color }: { name: NomeIcone; color: string }) {
 }
 
 export default function LayoutAbas() {
-  const escuro = useColorScheme() === "dark";
+  const { colorScheme } = useColorScheme();
+  const escuro = colorScheme === "dark";
 
   return (
     <RotaProtegida>
