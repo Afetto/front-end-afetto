@@ -24,3 +24,20 @@ jest.mock("expo-router", () => ({
     navigate: jest.fn(),
   },
 }));
+
+// expo-notifications: módulo nativo — nos testes vira funções vazias, para as
+// telas e hooks que passam pelo notificacao.service não dependerem do aparelho.
+// O service tem teste próprio, com mock detalhado (notificacao.service.test.ts).
+jest.mock("expo-notifications", () => ({
+  AndroidImportance: { HIGH: 6 },
+  SchedulableTriggerInputTypes: { DATE: "date" },
+  setNotificationHandler: jest.fn(),
+  setNotificationChannelAsync: jest.fn().mockResolvedValue(null),
+  getPermissionsAsync: jest.fn().mockResolvedValue({ granted: false, canAskAgain: false }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({ granted: false, canAskAgain: false }),
+  scheduleNotificationAsync: jest.fn().mockResolvedValue("id"),
+  cancelScheduledNotificationAsync: jest.fn().mockResolvedValue(undefined),
+  getAllScheduledNotificationsAsync: jest.fn().mockResolvedValue([]),
+  clearLastNotificationResponse: jest.fn(),
+  useLastNotificationResponse: jest.fn(() => null),
+}));

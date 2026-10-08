@@ -1,6 +1,6 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
@@ -14,6 +14,7 @@ import "../global.css";
 import { queryClient } from "@/api/queryClient";
 import { SessaoProvider } from "@/context/SessaoContext";
 import { TemaProvider } from "@/context/TemaContext";
+import { useNotificacoes } from "@/hooks/useNotificacoes";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -53,6 +54,13 @@ export default function LayoutRaiz() {
 function LayoutRaizNav() {
   useReactQueryDevTools(queryClient);
   const { colorScheme } = useColorScheme();
+
+  // Toque num lembrete de vacina → histórico do pet. Sem sessão, o
+  // <RotaProtegida> do grupo (app) manda para o login.
+  useNotificacoes({
+    aoAbrirPet: (idPet) =>
+      router.push({ pathname: "/pet/[id]/historico", params: { id: idPet } }),
+  });
 
   return (
     <QueryClientProvider client={queryClient}>
