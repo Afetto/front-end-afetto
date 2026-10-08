@@ -32,6 +32,7 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 | Sessão/Storage | `@react-native-async-storage/async-storage` |
 | Ícones | `@expo/vector-icons` — **padrão real: `Ionicons`** (usado em todas as telas e componentes; `FontAwesome` só existe no boilerplate do `_layout.tsx` para os ícones de navegação padrão do template, sem uso funcional hoje) |
 | Animações | `react-native-reanimated` `~4` |
+| Notificações | `expo-notifications` `~0.32` — só notificações **locais** (lembrete de vacina, ver seção "Notificações Locais"); não há push remoto |
 | Testes | `jest` + `jest-expo` + `@testing-library/react-native` (instalados; `npm test` funciona) |
 
 **Variável de ambiente:** `EXPO_PUBLIC_API_URL` define a base da API. Sem ela, `src/api/api.ts` cai num fallback (`https://java-afetto-fork.onrender.com`) e emite um `console.warn`. Sempre configure um `.env` local em desenvolvimento.
@@ -48,7 +49,7 @@ src/
 │   ├── paginacao.ts      ← extrairLista — normaliza resposta paginada (Spring Page) ou array puro
 │   └── queryClient.ts   ← instância do QueryClient (só importado no _layout.tsx raiz)
 ├── app/
-│   ├── _layout.tsx            ← raiz: fontes, QueryClientProvider + TemaProvider + SessaoProvider + Stack de grupos
+│   ├── _layout.tsx            ← raiz: fontes, QueryClientProvider + TemaProvider + SessaoProvider + Stack de grupos; chama `useNotificacoes` (toque em lembrete → histórico do pet)
 │   ├── index.tsx               ← onboarding + gate (sessão → tabs; sem sessão → onboarding)
 │   ├── +not-found.tsx          ← tela de erro 404 do Expo Router (rota inexistente) — nome de arquivo reservado, não renomear
 │   ├── (auth)/                 ← telas PRÉ-login (grupo não aparece na URL)
@@ -101,10 +102,11 @@ src/
 │   ├── SessaoContext.tsx          ← ÚNICA fonte de verdade de sessão (ver seção 9)
 │   └── TemaContext.tsx            ← ÚNICA fonte de verdade da preferência de tema (Claro/Escuro/Sistema, ver seção 4)
 ├── hooks/
-│   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet
-│   ├── useVacinas.ts          ← useVacinasPet, useVacina, useCriarVacina, useAtualizarVacina, useDeletarVacina
+│   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet (+ `CHAVE_CONSULTA_PETS`, a chave do cache)
+│   ├── useVacinas.ts          ← useVacinasPet, useVacina, useCriarVacina, useAtualizarVacina, useDeletarVacina — as três mutations agendam/reagendam/cancelam o lembrete
 │   ├── useAutenticacao.ts     ← useCadastrar, useEntrar, useCompletarPerfil (logout fica inline — ver seção 8)
 │   ├── useBuscarCep.ts        ← useQuery reativo, chama `cepService.buscarPorCep`
+│   ├── useNotificacoes.ts     ← liga as notificações locais ao app (configuração + toque); chamado só no `_layout.tsx` raiz
 │   └── perfil/
 │       ├── usePerfil.ts        ← hook de dados: useQuery(usuario) + useMutation(salvarPerfil)
 │       └── useAlterarSenha.ts  ← estado + validação + mutation do modal de troca de senha
@@ -118,18 +120,24 @@ src/
 │   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, sair, completarPerfil (funções nomeadas)
 │   ├── cep.service.ts           ← cepService.buscarPorCep (objeto) — API pública do ViaCEP, usa `fetch` direto (não é a API do Afetto, não passa pelo cliente Axios)
 │   ├── pet.service.ts           ← petService.{listar,buscarPorId,criar,atualizar,remover} (objeto)
-│   └── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
+│   ├── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
+│   └── notificacao.service.ts   ← notificacaoService.{configurar,agendarLembreteVacina,cancelarLembreteVacina,cancelarLembretesDoPet,...} — único arquivo que agenda/cancela via `expo-notifications`
 ├── types/
 │   └── autenticacao.types.ts   ← tipos globais de autenticação/usuário
 ├── utils/
 │   ├── mascaras.ts              ← mascararCPF, mascararCelular, mascararData, mascararCEP
 │   ├── data.ts                  ← converterDataParaISO, converterDataParaBR, normalizarData, calcularIdade
 │   ├── pet.ts                   ← LABEL_ESPECIE, ICONE_ESPECIE (rótulo e emoji por espécie)
-│   └── onboarding.ts            ← calcularProgressoOnboarding — checklist e progresso da Home (ver "Fluxo de Onboarding")
+│   ├── onboarding.ts            ← calcularProgressoOnboarding — checklist e progresso da Home (ver "Fluxo de Onboarding")
+│   └── lembrete.ts              ← calcularLembreteVacina, proximaDataDoCuidado — regra pura de quando lembrar de uma vacina
 ├── __tests__/
 │   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado)
 │   ├── inicio.test.tsx          ← teste da Home: progresso e quantidade de pets vindos da API (HTTP mockado)
-│   └── onboarding.test.ts       ← teste unitário de calcularProgressoOnboarding
+│   ├── onboarding.test.ts       ← teste unitário de calcularProgressoOnboarding
+│   ├── data.test.ts             ← normalizarData no fuso do aparelho
+│   ├── lembrete.test.ts         ← regra de quando lembrar (véspera, no dia, na hora)
+│   ├── notificacao.service.test.ts ← o que o service pede ao expo-notifications (mockado)
+│   └── useVacinas.test.tsx      ← salvar/editar/excluir vacina agenda/reagenda/cancela o lembrete
 └── global.css                   ← @tailwind base/components/utilities
 ```
 
@@ -237,7 +245,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 - Contêm apenas schemas Zod, exportando o tipo inferido junto.
 
 **Utils (`src/utils/`):**
-- Funções puras, sem hooks, sem I/O: `mascaras.ts` (máscaras de CPF, celular, data e CEP), `data.ts` (conversão e normalização de datas), `pet.ts` (rótulos e ícones por espécie) e `onboarding.ts` (checklist e progresso da Home).
+- Funções puras, sem hooks, sem I/O: `mascaras.ts` (máscaras de CPF, celular, data e CEP), `data.ts` (conversão e normalização de datas), `pet.ts` (rótulos e ícones por espécie) `onboarding.ts` (checklist e progresso da Home) e `lembrete.ts` (quando lembrar de uma vacina). ⚠️ Para comparar datas da API (`YYYY-MM-DD`) use sempre `normalizarData` — `new Date("2026-10-08")` é lido em UTC e, no Brasil, cai no dia anterior.
 
 **Context (`src/context/`):**
 - `SessaoContext` é a única fonte de verdade de sessão em uso; `TemaContext` é a única fonte de verdade da preferência de tema (ver seção 4) — são dois contexts legítimos, com responsabilidades diferentes. A regra "nunca criar um segundo context" (seção 12) vale para **autenticação/sessão**, não proíbe contexts novos para outras responsabilidades globais.
@@ -414,6 +422,21 @@ De onde vem cada etapa (`utils/onboarding.ts`, tipo `EtapasOnboarding`):
 - **Perfil completo** ainda é uma flag local (`sessao.progresso.perfilCompleto`, marcada por `concluirEtapa("perfilCompleto")` em `completar-perfil.tsx`) e volta a `false` a cada login. ⚠️ Pendência: confirmar em `GET /v3/api-docs` se a API permite ler esse estado, para derivá-lo da API também.
 - O item "Vincular sua clínica" saiu do checklist porque nunca podia ser concluído (a API não tem endpoint de clínica). A aba Clínica continua existindo.
 - O botão "Seus Pets" da Home (`BotaoSeusPets`) mostra a quantidade de pets vinda de `usePets()`.
+
+---
+
+## 🔔 Notificações Locais
+
+Lembrete de vacina com `expo-notifications`, agendado no próprio aparelho (sem servidor de push).
+
+- **Evento que dispara:** salvar uma vacina em `/pet/{id}/cuidados`. O `onSuccess` de `useCriarVacina`/`useAtualizarVacina` chama `notificacaoService.agendarLembreteVacina`; `useDeletarVacina` chama `cancelarLembreteVacina`; `useRemoverPet` chama `cancelarLembretesDoPet`. Nenhuma tela dispara notificação — não crie botão de "testar notificação".
+- **Quando lembrar** (`utils/lembrete.ts`, função pura e testada): na véspera do cuidado às 9h; se a véspera já passou, no dia às 9h; se a próxima dose é hoje e já passou das 9h, na hora. "Cuidado" é a data mais próxima entre `dataAplicacao` futura (vacina agendada) e `proximaDose` de hoje em diante. Sem data futura, não há lembrete.
+- **Confirmação:** quando o lembrete fica para depois, o service dispara na hora uma notificação "Lembrete agendado" com o dia do aviso.
+- **Toque:** toda notificação leva `data: { tipo: "lembrete-vacina", idPet }`. `useNotificacoes` (chamado só em `app/_layout.tsx`) lê o toque — app aberto, em segundo plano ou fechado — e o layout navega para `/pet/{id}/historico`. Sem sessão, o `<RotaProtegida>` manda para o login.
+- **Identificador:** `vacina-{id}`, o que permite reagendar na edição e cancelar na exclusão.
+- **Permissão:** pedida na primeira vez que há um lembrete para agendar, não na abertura do app. Se o usuário negar, a vacina é salva normalmente e só o lembrete não é criado.
+- **Camadas:** `expo-notifications` só é importado em `services/notificacao.service.ts` (agendar, cancelar, permissão, canal) e em `hooks/useNotificacoes.ts` (o hook de toque da biblioteca). A chamada ao service dentro dos hooks de dados não bloqueia e ignora falha de propósito: notificação nunca pode transformar um salvamento que deu certo em erro.
+- **Limites conhecidos:** os lembretes vivem no aparelho — reinstalar o app ou entrar por outro aparelho não os recria. Na web tudo vira no-op. No Expo Go para Android a biblioteca escreve no console um aviso sobre push remoto; é esperado e não afeta as notificações locais.
 
 ---
 
