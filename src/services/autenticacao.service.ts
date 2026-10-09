@@ -1,6 +1,5 @@
 import { api } from "@/api/api";
 import { classificarErro } from "@/api/erros";
-import { extrairLista } from "@/api/paginacao";
 import { converterDataParaISO } from "@/utils/data";
 import {
   DadosAtualizacaoUsuario,
@@ -13,7 +12,7 @@ import {
 } from "@/types/autenticacao.types";
 import axios from "axios";
 
-/** Formato do usuário como a API devolve (GET /usuario, GET /usuario/{id}). */
+/** Formato do usuário como a API devolve (GET /usuario/me, GET /usuario/{id}). */
 type UsuarioApi = {
   id: string;
   nome?: string;
@@ -23,53 +22,19 @@ type UsuarioApi = {
   dataNascimento?: string;
 };
 
-// Item da listagem GET /usuario — NÃO traz id nem email: só o nome e um link
-// HATEOAS com o id embutido no href.
-type UsuarioListaItem = { linkUsuario?: { href?: string } };
-
-const MAX_PAGINAS_BUSCA = 15;
-
-function idDoHref(href: string | undefined): string | null {
-  if (!href) return null;
-  const partes = href.split("/").filter(Boolean);
-  return partes[partes.length - 1] || null;
-}
-
 /**
- * A API não devolve id/nome no /login nem tem GET /usuario/me — a única forma
- * de descobrir quem acabou de logar é varrer GET /usuario até achar o e-mail.
- * Isso só precisa rodar uma vez, logo após o login: a partir daí o id fica
- * guardado na sessão e todo o resto da app usa `buscarUsuarioPorId`.
+ * Quem está logado nesta sessão.
+ * GET /usuario/me — o backend descobre o usuário pelo cookie de sessão, sem
+ * precisar de id. Devolve `null` se a sessão não vale mais ou se a API não
+ * respondeu.
  */
-async function bootstrapUsuarioAposLogin(email: string): Promise<UsuarioArmazenado | null> {
-  const alvo = email.trim().toLowerCase();
+export async function buscarUsuarioLogado(): Promise<UsuarioArmazenado | null> {
   try {
-    let pageNumber = 0;
-    let totalPages = 1;
-
-    while (pageNumber < totalPages && pageNumber < MAX_PAGINAS_BUSCA) {
-      const { data } = await api.get("/usuario", { params: { pageNumber } });
-      totalPages = Number((data as { totalPages?: number })?.totalPages ?? 1);
-
-      for (const item of extrairLista<UsuarioListaItem>(data)) {
-        const id = idDoHref(item?.linkUsuario?.href);
-        if (!id) continue;
-        try {
-          const { data: detalhe } = await api.get<UsuarioApi>(`/usuario/${id}`);
-          if (detalhe?.email?.trim().toLowerCase() === alvo) {
-            return mapearUsuario(detalhe);
-          }
-        } catch {
-          // detalhe indisponível — segue para o próximo
-        }
-      }
-
-      pageNumber++;
-    }
+    const { data } = await api.get<UsuarioApi>("/usuario/me");
+    return data?.id ? mapearUsuario(data) : null;
   } catch {
-    // listagem indisponível (ex.: sessão não propagou o cookie)
+    return null;
   }
-  return null;
 }
 
 function mapearUsuario(u: UsuarioApi): UsuarioArmazenado {
@@ -127,12 +92,19 @@ export async function autenticar(
     return { ok: false, motivo: classificarErro(error) };
   }
 
-  const usuario = await bootstrapUsuarioAposLogin(emailNormalizado);
-
-  return {
-    ok: true,
-    usuario: usuario ?? { id: "", nome: "", email: emailNormalizado, cpf: "", telefone: "", dataNascimento: "" },
-  };
+  // O /login não devolve os dados do usuário: quem entrou vem de
+  // GET /usuario/me, já com o cookie que o login acabou de criar. Se essa
+  // chamada falhar, o login não segue: entrar sem o id deixaria a sessão
+  // quebrada (cadastrar pet, por exemplo, precisa dele).
+  try {
+    const { data } = await api.get<UsuarioApi>("/usuario/me");
+    if (!data?.id) {
+      return { ok: false, motivo: "desconhecido" };
+    }
+    return { ok: true, usuario: mapearUsuario(data) };
+  } catch (error) {
+    return { ok: false, motivo: classificarErro(error) };
+  }
 }
 
 /**

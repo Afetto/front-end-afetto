@@ -35,7 +35,7 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 | Notificações | `expo-notifications` `~0.32` — só notificações **locais** (lembrete de vacina, ver seção "Notificações Locais"); não há push remoto |
 | Testes | `jest` + `jest-expo` + `@testing-library/react-native` (instalados; `npm test` funciona) |
 
-**Variável de ambiente:** `EXPO_PUBLIC_API_URL` define a base da API. Sem ela, `src/api/api.ts` cai num fallback (`https://java-afetto-fork.onrender.com`) e emite um `console.warn`. Sempre configure um `.env` local em desenvolvimento.
+**Endereço da API:** o app usa a **API Java local, na porta 8081** (a API do Render não é usada). Sem `.env`, `definirUrlDaApi()` em `src/api/api.ts` pega o endereço do computador que roda o Expo (`Constants.expoConfig.hostUri`) e monta `http://<esse computador>:8081` — assim funciona no celular (Expo Go na mesma rede), no emulador e no navegador; sem esse dado, usa `http://localhost:8081`. Para apontar para outro lugar, defina `EXPO_PUBLIC_API_URL` no `.env` (modelo em `.env.example`). Como a API ocupa a 8081, o Expo (que também usa 8081 por padrão) roda em outra porta, ex.: 8082. No navegador, o back end libera CORS para `localhost` em qualquer porta.
 
 ---
 
@@ -44,7 +44,7 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 ```
 src/
 ├── api/
-│   ├── api.ts          ← instância Axios (baseURL, withCredentials, interceptor de 401)
+│   ├── api.ts          ← instância Axios (baseURL da API local na 8081 via `definirUrlDaApi`, withCredentials, interceptor de 401)
 │   ├── erros.ts         ← classificarErro / mensagemPorTipo / mensagemErroApi (mensagens padronizadas de erro de API)
 │   ├── paginacao.ts      ← extrairLista — normaliza resposta paginada (Spring Page) ou array puro
 │   └── queryClient.ts   ← instância do QueryClient (só importado no _layout.tsx raiz)
@@ -117,7 +117,7 @@ src/
 │   ├── pet.schema.ts
 │   └── editar-perfil.schema.ts ← edição de dados pessoais em /perfil (nome, email, telefone, dataNascimento)
 ├── services/
-│   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, sair, completarPerfil (funções nomeadas)
+│   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioLogado, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, sair, completarPerfil (funções nomeadas)
 │   ├── cep.service.ts           ← cepService.buscarPorCep (objeto) — API pública do ViaCEP, usa `fetch` direto (não é a API do Afetto, não passa pelo cliente Axios)
 │   ├── pet.service.ts           ← petService.{listar,buscarPorId,criar,atualizar,remover} (objeto)
 │   ├── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
@@ -137,7 +137,11 @@ src/
 │   ├── data.test.ts             ← normalizarData no fuso do aparelho
 │   ├── lembrete.test.ts         ← regra de quando lembrar (véspera, no dia, na hora)
 │   ├── notificacao.service.test.ts ← o que o service pede ao expo-notifications (mockado)
-│   └── useVacinas.test.tsx      ← salvar/editar/excluir vacina agenda/reagenda/cancela o lembrete
+│   ├── useVacinas.test.tsx      ← salvar/editar/excluir vacina agenda/reagenda/cancela o lembrete
+│   ├── api.test.ts              ← endereço da API (computador do Expo na 8081, localhost, .env)
+│   ├── autenticacao.service.test.ts ← login busca quem entrou em GET /usuario/me
+│   ├── sessao.test.tsx          ← revalidação da sessão salva no boot (GET /usuario/me)
+│   └── vacina.service.test.ts   ← vacinas do pet via GET /vacina?idPet=
 └── global.css                   ← @tailwind base/components/utilities
 ```
 
@@ -238,7 +242,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 **Services (`src/services/`):**
 - Contêm as chamadas HTTP e a transformação de payload: limpeza de máscaras (`replace(/\D/g, "")`), conversão de data BR→ISO, normalização de listas paginadas (`extrairLista`).
 - ⚠️ Duas convenções de export coexistem hoje: `autenticacao.service.ts` exporta funções nomeadas soltas (`cadastrar`, `autenticar`, ...); `pet.service.ts` e `vacina.service.ts` exportam um objeto com métodos (`petService.listar`, `vacinaService.criar`). Ambas funcionam e estão em uso — **não** refatore um para o outro "de passagem" ao editar uma feature; se for criar um service para uma **nova entidade**, prefira o padrão objeto (`nomeService.metodo`), que é o mais recente e o que melhor sinaliza autocomplete/agrupamento no editor.
-- Podem conter lógica de contorno de limitações reais da API — documente o *porquê* como em `bootstrapUsuarioAposLogin` (a API não devolve `id`/nome no login nem tem `/usuario/me`, então o service varre `GET /usuario` paginado até achar o e-mail). Esse tipo de comentário é obrigatório sempre que o código estiver compensando uma lacuna do backend, não é "só documentação bonita".
+- Podem conter lógica de contorno de limitações reais da API — documente o *porquê* como em `vacina.service.ts` (a listagem não devolve o `id` da vacina como campo, então o service tira o id do fim do link HATEOAS `linkVacina.href`). Esse tipo de comentário é obrigatório sempre que o código estiver compensando uma lacuna do backend, não é "só documentação bonita".
 - ⚠️ `cep.service.ts` é a única exceção ao cliente Axios: chama a API pública do ViaCEP via `fetch` direto (padrão objeto, `cepService.buscarPorCep`), porque não é a API do Afetto e não deve levar `withCredentials`/interceptor de sessão. Não migre esse service para `api.ts` nem os outros services para `fetch` "de passagem".
 
 **Schemas (`src/schemas/`):**
@@ -322,7 +326,7 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 - Autenticação via **cookie de sessão** (`JSESSIONID`) — `withCredentials: true` no Axios (`src/api/api.ts`). Não há JWT/Bearer no projeto atual.
 - `SessaoContext` (`src/context/SessaoContext.tsx`) é a **única** fonte de verdade da sessão.
 - Sessão persistida via `AsyncStorage` com a chave **`@afetto:session`** (não `@afetto:token` — o cookie de sessão é gerenciado pelo navegador/WebView, o AsyncStorage guarda só os dados de UI: `id`, `email`, `nome`, `progresso`). A preferência de tema usa outra chave, **`@afetto:tema`** (ver seção 4, `TemaContext`) — são dois valores independentes, não misture.
-- A API não expõe `GET /usuario/me`: o `id`/nome do usuário logado é descoberto varrendo `GET /usuario` paginado até achar o e-mail (`bootstrapUsuarioAposLogin`, roda uma vez após o login). Depois disso, todo o resto da app usa `buscarUsuarioPorId(id)`.
+- O `POST /login` não devolve os dados do usuário: logo depois dele, `autenticar` busca quem entrou em `GET /usuario/me` (o backend identifica pelo cookie). Se essa chamada falhar, o login não segue — entrar sem `id` deixaria a sessão quebrada. No boot do app, o `SessaoProvider` revalida a sessão salva com o mesmo `GET /usuario/me` (`buscarUsuarioLogado`): se não responder ou for de outra conta, a sessão local é descartada; se responder, nome e e-mail são atualizados. O resto da app continua usando `buscarUsuarioPorId(id)` onde precisa do detalhe.
 - Um `401` de qualquer chamada dispara o tratador registrado por `SessaoContext` via `definirTratadorSessaoExpirada` (em `api.ts`), que limpa o AsyncStorage e zera a sessão — o `<RotaProtegida>` reage sozinho e redireciona para `/login`.
 - Um `403` **não** é tratado como sessão inválida (pode ser regra de negócio, ex. e-mail em uso) — cada tela trata seu próprio `isError`/`onError`. Não adicione um interceptor global de 403.
 - Páginas protegidas usam `<RotaProtegida>` — envolve tanto `(tabs)/_layout.tsx` quanto `(app)/_layout.tsx` (todas as rotas de `/perfil`, `/completar-perfil` e `/pet/*` passam pelo guard e redirecionam pra `/login` sem sessão).

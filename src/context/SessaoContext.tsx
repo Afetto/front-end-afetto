@@ -1,5 +1,5 @@
 import { definirTratadorSessaoExpirada } from "@/api/api";
-import { buscarUsuarioPorId, sair as sairService } from "@/services/autenticacao.service";
+import { buscarUsuarioLogado, sair as sairService } from "@/services/autenticacao.service";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -67,14 +67,24 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
         // AsyncStorage de uma sessão anterior ficava "fantasma": o app
         // continuava mostrando as abas normalmente, mas toda chamada que
         // dependia desse id (ex.: POST /pet com `idUsuario`) quebrava com
-        // 500 do backend. Revalidamos aqui, uma vez, no boot do app.
-        const usuario = await buscarUsuarioPorId(salva.id);
-        if (!usuario) {
+        // 500 do backend. Revalidamos aqui, uma vez, no boot do app, com
+        // GET /usuario/me: ele só responde se o cookie ainda vale e diz de
+        // quem é a sessão. Se não responder, ou se for de outra conta, a
+        // sessão salva é descartada.
+        const usuario = await buscarUsuarioLogado();
+        if (!usuario || usuario.id !== salva.id) {
           await AsyncStorage.removeItem(CHAVE_SESSAO);
           return;
         }
 
-        setSessao(salva);
+        // Nome e e-mail podem ter mudado (ex.: editados em outro aparelho)
+        const atualizada: Sessao = {
+          ...salva,
+          nome: usuario.nome || salva.nome,
+          email: usuario.email || salva.email,
+        };
+        await AsyncStorage.setItem(CHAVE_SESSAO, JSON.stringify(atualizada));
+        setSessao(atualizada);
       })
       .finally(() => setCarregando(false));
   }, []);

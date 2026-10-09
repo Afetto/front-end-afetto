@@ -1,17 +1,41 @@
 import axios from "axios";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 // A API do Afetto usa autenticação por sessão via cookie (JSESSIONID),
 // não JWT/Bearer. O cookie é enviado automaticamente em toda requisição
 // graças ao `withCredentials: true` abaixo.
-const URL_API_PADRAO = "https://java-afetto-fork.onrender.com";
 
-const urlBase = process.env.EXPO_PUBLIC_API_URL ?? URL_API_PADRAO;
+// A API Java roda no computador de desenvolvimento, nesta porta
+// (`server.port` no application.properties do back end).
+export const PORTA_API_LOCAL = 8081;
 
-if (!process.env.EXPO_PUBLIC_API_URL) {
-    console.warn(
-        `[api] EXPO_PUBLIC_API_URL não configurada — usando fallback ${URL_API_PADRAO}. ` +
-        "Defina a variável no arquivo .env para conectar à API real."
-    );
+/**
+ * Endereço da API:
+ * 1. `EXPO_PUBLIC_API_URL` do `.env`, quando definida (ex.: API em outro computador).
+ * 2. Senão, a API local no mesmo computador que roda o Expo. O endereço desse
+ *    computador vem do próprio Expo (`hostUri`, ex.: "192.168.0.10:8082"). Não dá
+ *    para fixar "localhost": no celular, localhost é o próprio celular.
+ *    No navegador, usa o mesmo endereço da página: o cookie de sessão só vai
+ *    junto quando a API está no mesmo site que o app.
+ * 3. Sem esse dado, localhost.
+ */
+export function definirUrlDaApi(): string {
+    const configurada = process.env.EXPO_PUBLIC_API_URL?.trim();
+    if (configurada) return configurada;
+
+    const computador =
+        Platform.OS === "web"
+            ? globalThis.location?.hostname
+            : Constants.expoConfig?.hostUri?.split(":")[0];
+
+    return `http://${computador || "localhost"}:${PORTA_API_LOCAL}`;
+}
+
+const urlBase = definirUrlDaApi();
+
+if (__DEV__ && !process.env.EXPO_PUBLIC_API_URL) {
+    console.log(`[api] Usando a API local em ${urlBase}`);
 }
 
 export const api = axios.create({

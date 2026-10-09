@@ -1,13 +1,12 @@
 import { api } from "@/api/api";
+import { extrairLista } from "@/api/paginacao";
 import { DadosVacina, Vacina } from "@/schemas/vacina.schema";
 
-// ⚠️ CONTORNO DE LACUNA DA API — confirmado lendo o OpenAPI real em
-// GET /v3/api-docs: `GET /vacina` só aceita `page`/`size` (sem filtro por
-// pet) e nunca devolve `idPet` como campo direto, nem em VacinaLista
-// (listagem) nem em VacinaResponse (detalhe). O único vínculo com o pet é
-// o link HATEOAS `linkPet.href` (ex.: ".../pet/3fa8...").  Por isso este
-// service busca a página de vacinas inteira e extrai o id do pet (e o id
-// da própria vacina, via `linkVacina.href`) do fim da URL de cada link.
+// ⚠️ CONTORNO DE LACUNA DA API: `GET /vacina?idPet=` já filtra pelo pet no
+// servidor, mas a API nunca devolve `id` nem `idPet` como campos diretos, nem
+// em VacinaLista (listagem) nem em VacinaResponse (detalhe). O vínculo vem só
+// nos links HATEOAS (`linkVacina.href`, `linkPet.href`, ex.: ".../pet/3fa8...").
+// Por isso o id da vacina (e o do pet, no detalhe) sai do fim da URL do link.
 function idDoLink(href?: string): string {
   if (!href) return "";
   const partes = href.split("/").filter(Boolean);
@@ -49,19 +48,18 @@ function mapDetalhe(dados: VacinaDetalheApi): Vacina {
 }
 
 export const vacinaService = {
+  // GET /vacina?idPet= — só as vacinas deste pet (antes vinha a lista de todos
+  // os pets e o app filtrava aqui)
   listarPorPet: async (idPet: string): Promise<Vacina[]> => {
-    const response = await api.get("/vacina", { params: { page: 0, size: 200 } });
-    const itens: VacinaListaApi[] = response.data?.content ?? [];
+    const response = await api.get("/vacina", { params: { idPet, page: 0, size: 200 } });
 
-    return itens
-      .filter((item) => idDoLink(item.linkPet?.href) === idPet)
-      .map((item) => ({
-        id: idDoLink(item.linkVacina?.href),
-        nomeVacina: item.nomeVacina,
-        dataAplicacao: item.dataAplicacao,
-        proximaDose: item.proximaDose || undefined,
-        idPet,
-      }));
+    return extrairLista<VacinaListaApi>(response.data).map((item) => ({
+      id: idDoLink(item.linkVacina?.href),
+      nomeVacina: item.nomeVacina,
+      dataAplicacao: item.dataAplicacao,
+      proximaDose: item.proximaDose || undefined,
+      idPet,
+    }));
   },
 
   buscarPorId: async (id: string): Promise<Vacina> => {
