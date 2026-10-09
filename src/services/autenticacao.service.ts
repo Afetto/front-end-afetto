@@ -237,37 +237,3 @@ export async function sair(): Promise<void> {
     // estava inválida — a limpeza local acontece de qualquer forma.
   }
 }
-
-/**
- * Envia os dados adicionais do perfil (moradia, pets e endereço).
- * PUT /usuarios/me/perfil-completo
- */
-export type DadosPerfilCompleto = {
-  tipoMoradia: "casa" | "apartamento";
-  telaProtecao: "sim" | "nao";
-  quantidadePets: number;
-  endereco: {
-    cep: string;
-    logradouro: string;
-    numero: string;
-    complemento?: string;
-    bairro: string;
-    cidade: string;
-    estado: string;
-  };
-};
-
-export type ResultadoPerfilCompleto =
-  | { ok: true }
-  | { ok: false; error: "unknown" };
-
-export async function completarPerfil(
-  payload: DadosPerfilCompleto
-): Promise<ResultadoPerfilCompleto> {
-  try {
-    await api.put("/usuarios/me/perfil-completo", payload);
-    return { ok: true };
-  } catch {
-    return { ok: false, error: "unknown" };
-  }
-}

@@ -1,7 +1,7 @@
 /**
  * Etapas do onboarding e de onde vem cada uma:
- * - `perfilCompleto`: guardado na sessão local (`SessaoContext`), marcado
- *   quando o envio de /completar-perfil dá certo.
+ * - `perfilCompleto`: derivado da API — `perfilCompleto` de
+ *   GET /usuario/me/perfil (moradia, tela de proteção e endereço salvos).
  * - `petCadastrado`: derivado da API — verdadeiro quando `usePets()` devolve
  *   ao menos um pet. Não é guardado em lugar nenhum.
  */

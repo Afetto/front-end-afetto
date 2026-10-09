@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
+// "Finalize seu cadastro" (PUT /usuario/me/perfil). A data de nascimento não
+// fica aqui: ela já vem do cadastro e é editada em /perfil.
 export const CompletarPerfilSchema = z.object({
-    // Informações adicionais
-    birthDate: z.string().min(10, 'Data inválida'),
+    // Sobre o lar
     tipoMoradia: z.enum(['casa', 'apartamento'], {
         message: 'Selecione o tipo de moradia',
     }),
@@ -12,7 +13,9 @@ export const CompletarPerfilSchema = z.object({
     quantidadePets: z
         .string()
         .min(1, 'Informe a quantidade')
-        .refine((v) => Number(v) >= 1, { message: 'Mínimo 1 pet' }),
+        .refine((v) => Number(v) >= 1, { message: 'Mínimo 1 pet' })
+        // Limite da API
+        .refine((v) => Number(v) <= 50, { message: 'Máximo 50 pets' }),
 
     // Endereço
     cep: z.string().length(9, 'CEP inválido'),

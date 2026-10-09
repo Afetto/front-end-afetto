@@ -43,14 +43,27 @@ export function mensagemErroApi(error: unknown): string {
 }
 
 /**
- * A mensagem que a própria API do Afetto manda nos erros de regra de negócio
- * (corpo `{"erro": "..."}`, ex.: 400 "Os dados não conferem...", 429 "Muitas
- * tentativas..."). Sem ela (ex.: sem conexão), cai na mensagem padrão do tipo.
+ * A mensagem que a própria API do Afetto manda nos erros:
+ * - regra de negócio: corpo `{"erro": "..."}` (ex.: 400 "Os dados não
+ *   conferem...", 429 "Muitas tentativas...");
+ * - validação de campos (400): corpo `{"campo": "mensagem", ...}` — usa a
+ *   primeira mensagem.
+ * Sem nenhuma das duas (ex.: sem conexão), cai na mensagem padrão do tipo.
  */
 export function mensagemDaApi(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    const erro = (error.response?.data as { erro?: unknown } | undefined)?.erro;
-    if (typeof erro === "string" && erro.trim()) return erro;
+    const corpo = error.response?.data;
+    if (corpo && typeof corpo === "object") {
+      const { erro } = corpo as { erro?: unknown };
+      if (typeof erro === "string" && erro.trim()) return erro;
+
+      if (error.response?.status === 400) {
+        const primeira = Object.values(corpo).find(
+          (valor): valor is string => typeof valor === "string" && valor.trim() !== ""
+        );
+        if (primeira) return primeira;
+      }
+    }
   }
   return mensagemErroApi(error);
 }

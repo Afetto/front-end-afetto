@@ -60,7 +60,7 @@ src/
 │   │   └── esqueci-senha.tsx         → /esqueci-senha (confirma e-mail, CPF e nascimento e define a senha nova — POST /senha/redefinir, sem login)
 │   ├── (app)/                  ← telas PÓS-login fora das tabs (Stack, protegido por <RotaProtegida>)
 │   │   ├── _layout.tsx
-│   │   ├── completar-perfil.tsx     → /completar-perfil
+│   │   ├── completar-perfil.tsx     → /completar-perfil ("Finalize seu cadastro": GET/PUT /usuario/me/perfil, já vem preenchido se salvo antes)
 │   │   ├── perfil.tsx                → /perfil
 │   │   └── pet/
 │   │       ├── cadastrar.tsx          → /pet/cadastrar
@@ -104,7 +104,8 @@ src/
 ├── hooks/
 │   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet (+ `CHAVE_CONSULTA_PETS`, a chave do cache)
 │   ├── useVacinas.ts          ← useVacinasPet, useVacina, useCriarVacina, useAtualizarVacina, useDeletarVacina — as três mutations agendam/reagendam/cancelam o lembrete
-│   ├── useAutenticacao.ts     ← useCadastrar, useEntrar, useCompletarPerfil (logout fica inline — ver seção 8)
+│   ├── useAutenticacao.ts     ← useCadastrar, useEntrar, useRedefinirSenha (logout fica inline — ver seção 8)
+│   ├── usePerfilCompleto.ts   ← usePerfilCompleto, useSalvarPerfilCompleto (+ `CHAVE_PERFIL_COMPLETO`; a chave leva o id do usuário)
 │   ├── useBuscarCep.ts        ← useQuery reativo, chama `cepService.buscarPorCep`
 │   ├── useNotificacoes.ts     ← liga as notificações locais ao app (configuração + toque); chamado só no `_layout.tsx` raiz
 │   └── perfil/
@@ -118,7 +119,8 @@ src/
 │   ├── editar-perfil.schema.ts ← edição de dados pessoais em /perfil (nome, email, telefone, dataNascimento)
 │   └── esqueci-senha.schema.ts ← e-mail, CPF, nascimento, senha nova + confirmação
 ├── services/
-│   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioLogado, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, redefinirSenha, sair, completarPerfil (funções nomeadas)
+│   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioLogado, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, redefinirSenha, sair (funções nomeadas)
+│   ├── perfil-completo.service.ts ← perfilCompletoService.{buscar,salvar} (objeto) — converte casa/apartamento e sim/não do formulário para CASA/APARTAMENTO e true/false da API
 │   ├── cep.service.ts           ← cepService.buscarPorCep (objeto) — API pública do ViaCEP, usa `fetch` direto (não é a API do Afetto, não passa pelo cliente Axios)
 │   ├── pet.service.ts           ← petService.{listar,buscarPorId,criar,atualizar,remover} (objeto)
 │   ├── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
@@ -134,7 +136,9 @@ src/
 │   └── validacao.ts             ← cpfValido, dataValida — usadas pelos schemas de cadastro e de esqueci a senha
 ├── __tests__/
 │   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado)
-│   ├── inicio.test.tsx          ← teste da Home: progresso e quantidade de pets vindos da API (HTTP mockado)
+│   ├── inicio.test.tsx          ← teste da Home: progresso (pets e perfil completo) e quantidade de pets vindos da API (HTTP mockado)
+│   ├── completar-perfil.test.tsx ← payload do PUT /usuario/me/perfil, formulário preenchido com o que já foi salvo, erro da API
+│   ├── perfil-completo.service.test.ts ← conversão API ↔ formulário e mensagem de erro por campo
 │   ├── onboarding.test.ts       ← teste unitário de calcularProgressoOnboarding
 │   ├── data.test.ts             ← normalizarData no fuso do aparelho
 │   ├── lembrete.test.ts         ← regra de quando lembrar (véspera, no dia, na hora)
@@ -238,7 +242,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 - Duas categorias reais no projeto, ambas válidas — documente qual está sendo usada em cada novo hook:
   1. **Hooks de dados** (`usePets.ts`, `useVacinas.ts`, `useAutenticacao.ts`): só `useQuery`/`useMutation` chamando o service, sem estado local próprio. Retornam o objeto do TanStack Query como está (`data`, `isLoading`, `isError`, `refetch`, `mutate`, `isPending`).
   2. **Hooks de tela** (`hooks/perfil/useAlterarSenha.ts`): concentram estado local (`useState`), validação manual e a `useMutation` de um fluxo de UI específico (ex.: o modal de troca de senha), expondo um objeto próprio (`{ senhaAtual, setSenhaAtual, salvandoSenha, alterarSenha, ... }`) em vez do formato padrão do React Query. `hooks/perfil/usePerfil.ts` **não é mais desse tipo** — desde que `/perfil` ganhou modo visualização/edição, ele voltou a ser um hook de dados: expõe `usuario`/`carregando`/`temErro`/`refazer` do `useQuery` e `salvarPerfil`/`salvando` de um `useMutation` padrão (a tela usa `react-hook-form` para o estado dos campos em edição).
-- Login, cadastro e completar-perfil usam hooks dedicados em `useAutenticacao.ts` (`useEntrar`, `useCadastrar`, `useCompletarPerfil`) — a tela só monta o `useForm`, passa `onSuccess`/`onError` pro `mutate()` e trata o resultado (`setError`, `entrar()` do `SessaoContext`, navegação). Logout **não** tem hook dedicado: chama `sair()` do `SessaoContext` direto em `perfil.tsx` (ação única, sem payload) — isso é intencional, documentado em `useAutenticacao.ts`.
+- Login, cadastro e esqueci a senha usam hooks dedicados em `useAutenticacao.ts` (`useEntrar`, `useCadastrar`, `useRedefinirSenha`); completar-perfil usa `usePerfilCompleto.ts` (`usePerfilCompleto`, `useSalvarPerfilCompleto`) — a tela só monta o `useForm`, passa `onSuccess`/`onError` pro `mutate()` e trata o resultado (`setError`, `entrar()` do `SessaoContext`, navegação). Logout **não** tem hook dedicado: chama `sair()` do `SessaoContext` direto em `perfil.tsx` (ação única, sem payload) — isso é intencional, documentado em `useAutenticacao.ts`.
 - Invalidação de cache sempre via `useQueryClient()` dentro do hook — nunca `import { queryClient } from "@/api/queryClient"`.
 - Não contêm JSX e não navegam (sem `router.push` dentro de um hook — isso fica na tela, no `onSuccess` do `useMutation`).
 
@@ -328,7 +332,7 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 
 - Autenticação via **cookie de sessão** (`JSESSIONID`) — `withCredentials: true` no Axios (`src/api/api.ts`). Não há JWT/Bearer no projeto atual.
 - `SessaoContext` (`src/context/SessaoContext.tsx`) é a **única** fonte de verdade da sessão.
-- Sessão persistida via `AsyncStorage` com a chave **`@afetto:session`** (não `@afetto:token` — o cookie de sessão é gerenciado pelo navegador/WebView, o AsyncStorage guarda só os dados de UI: `id`, `email`, `nome`, `progresso`). A preferência de tema usa outra chave, **`@afetto:tema`** (ver seção 4, `TemaContext`) — são dois valores independentes, não misture.
+- Sessão persistida via `AsyncStorage` com a chave **`@afetto:session`** (não `@afetto:token` — o cookie de sessão é gerenciado pelo navegador/WebView, o AsyncStorage guarda só os dados de UI: `id`, `email`, `nome` — o progresso do onboarding vem da API). A preferência de tema usa outra chave, **`@afetto:tema`** (ver seção 4, `TemaContext`) — são dois valores independentes, não misture.
 - O `POST /login` não devolve os dados do usuário: logo depois dele, `autenticar` busca quem entrou em `GET /usuario/me` (o backend identifica pelo cookie). Se essa chamada falhar, o login não segue — entrar sem `id` deixaria a sessão quebrada. No boot do app, o `SessaoProvider` revalida a sessão salva com o mesmo `GET /usuario/me` (`buscarUsuarioLogado`): se não responder ou for de outra conta, a sessão local é descartada; se responder, nome e e-mail são atualizados. O resto da app continua usando `buscarUsuarioPorId(id)` onde precisa do detalhe.
 - Um `401` de qualquer chamada dispara o tratador registrado por `SessaoContext` via `definirTratadorSessaoExpirada` (em `api.ts`), que limpa o AsyncStorage e zera a sessão — o `<RotaProtegida>` reage sozinho e redireciona para `/login`.
 - Um `403` **não** é tratado como sessão inválida (pode ser regra de negócio, ex. e-mail em uso) — cada tela trata seu próprio `isError`/`onError`. Não adicione um interceptor global de 403.
@@ -420,13 +424,13 @@ const { mutate: enviarCadastro } = useMutation({
 ```
 Login/Cadastro
   └── Home (checklist)
-        ├── /completar-perfil  → perfilCompleto: true (guardado na sessão local)
+        ├── /completar-perfil  → perfilCompleto (GET /usuario/me/perfil)
         └── /(tabs)/pets       → concluído quando a API devolve ao menos um pet
 ```
 
 De onde vem cada etapa (`utils/onboarding.ts`, tipo `EtapasOnboarding`):
 - **Pet cadastrado** é derivado da API: a Home (`(tabs)/index.tsx`) chama `usePets()` e passa `pets.length > 0`. Não existe flag local nem botão "Concluir" — cadastrar ou excluir um pet invalida a query `["pets"]` e a Home se atualiza sozinha. Enquanto a lista não chega (ou se a busca falha), a Home não mostra checklist nem barra de progresso, só o indicador de carregamento ou "Tentar novamente".
-- **Perfil completo** ainda é uma flag local (`sessao.progresso.perfilCompleto`, marcada por `concluirEtapa("perfilCompleto")` em `completar-perfil.tsx`) e volta a `false` a cada login. ⚠️ Pendência: confirmar em `GET /v3/api-docs` se a API permite ler esse estado, para derivá-lo da API também.
+- **Perfil completo** também é derivado da API: a Home chama `usePerfilCompleto()` (`GET /usuario/me/perfil`) e usa o campo `perfilCompleto` (moradia, tela de proteção e endereço salvos). Salvar em `/completar-perfil` atualiza o cache com o perfil que o `PUT` devolve, então a Home muda na volta. Não existe mais flag local de progresso na sessão. A Home só mostra checklist e barra depois que as duas respostas (pets e perfil) chegam.
 - O item "Vincular sua clínica" saiu do checklist porque nunca podia ser concluído (a API não tem endpoint de clínica). A aba Clínica continua existindo.
 - O botão "Seus Pets" da Home (`BotaoSeusPets`) mostra a quantidade de pets vinda de `usePets()`.
 

@@ -1,18 +1,17 @@
 import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 import { CampoSelecao } from "@/components/ui/CampoSelecao";
 import CampoTexto from "@/components/ui/CampoTexto";
-import { useSessao } from "@/context/SessaoContext";
-import { useCompletarPerfil } from "@/hooks/useAutenticacao";
 import { useBuscarCep } from "@/hooks/useBuscarCep";
+import { usePerfilCompleto, useSalvarPerfilCompleto } from "@/hooks/usePerfilCompleto";
 import {
     CompletarPerfilInput,
     CompletarPerfilSchema,
 } from "@/schemas/completar-perfil.schema";
-import { mascararCEP, mascararData } from "@/utils/mascaras";
+import { mascararCEP } from "@/utils/mascaras";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import {
     ActivityIndicator,
@@ -24,17 +23,18 @@ import {
 } from "react-native";
 
 export default function TelaCompletarPerfil() {
-  const { concluirEtapa } = useSessao();
+  // O que já foi salvo antes (GET /usuario/me/perfil) preenche o formulário
+  const { data: perfilSalvo, isLoading: carregandoPerfil } = usePerfilCompleto();
 
   const {
     control,
     handleSubmit,
     setValue,
     setError,
+    reset,
     formState: { errors },
   } = useForm<CompletarPerfilInput>({
     defaultValues: {
-      birthDate: "",
       tipoMoradia: undefined,
       telaProtecao: undefined,
       quantidadePets: "1",
@@ -49,6 +49,27 @@ export default function TelaCompletarPerfil() {
     resolver: zodResolver(CompletarPerfilSchema),
     mode: "onTouched",
   });
+
+  // Preenche uma vez só: um refetch depois não pode apagar o que o tutor está digitando
+  const jaPreencheu = useRef(false);
+  useEffect(() => {
+    if (!perfilSalvo || jaPreencheu.current) return;
+    jaPreencheu.current = true;
+    if (!perfilSalvo.perfilCompleto) return;
+
+    reset({
+      tipoMoradia: perfilSalvo.tipoMoradia,
+      telaProtecao: perfilSalvo.telaProtecao,
+      quantidadePets: String(Math.max(perfilSalvo.quantidadePets, 1)),
+      cep: perfilSalvo.endereco?.cep ?? "",
+      logradouro: perfilSalvo.endereco?.logradouro ?? "",
+      numero: perfilSalvo.endereco?.numero ?? "",
+      complemento: perfilSalvo.endereco?.complemento ?? "",
+      bairro: perfilSalvo.endereco?.bairro ?? "",
+      cidade: perfilSalvo.endereco?.cidade ?? "",
+      estado: perfilSalvo.endereco?.estado ?? "",
+    });
+  }, [perfilSalvo, reset]);
 
   // ─── Busca CEP — dispara sozinha quando o campo completa 8 dígitos ────────
   const cepDigitado = useWatch({ control, name: "cep" });
@@ -73,7 +94,7 @@ export default function TelaCompletarPerfil() {
     });
   }, [cepComErro, erroCep, setError]);
 
-  const { mutate: enviarPerfil, isPending: enviando } = useCompletarPerfil();
+  const { mutate: enviarPerfil, isPending: enviando } = useSalvarPerfilCompleto();
 
   function aoEnviar(data: CompletarPerfilInput) {
     enviarPerfil(
@@ -92,18 +113,27 @@ export default function TelaCompletarPerfil() {
         },
       },
       {
-        onSuccess: async (resultado) => {
+        onSuccess: (resultado) => {
           if (!resultado.ok) {
-            setError("root", { message: "Erro ao salvar perfil. Tente novamente." });
+            // Mensagem da API (ex.: "UF inválida: XX") ou de falha de conexão
+            setError("root", { message: resultado.mensagem });
             return;
           }
-          await concluirEtapa("perfilCompleto");
+          // A Home já recebe o perfil salvo (o hook atualiza o cache)
           router.back();
         },
         onError: () => {
           setError("root", { message: "Erro de conexão. Tente novamente." });
         },
       }
+    );
+  }
+
+  if (carregandoPerfil) {
+    return (
+      <View className="flex-1 items-center justify-center bg-surface dark:bg-gray-900">
+        <ActivityIndicator color="#E8A838" size="large" />
+      </View>
     );
   }
 
@@ -118,7 +148,8 @@ export default function TelaCompletarPerfil() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View className="flex-1 px-6 pt-10 pb-10 gap-8">
+        {/* pb-32: espaço para o botão fixo do rodapé não cobrir o último campo */}
+        <View className="flex-1 px-6 pt-10 pb-32 gap-8">
 
           {/* Título */}
           <View className="gap-1">
@@ -128,28 +159,6 @@ export default function TelaCompletarPerfil() {
             <Text className="text-sm text-muted dark:text-gray-400 mt-1">
               Essas informações nos ajudam a personalizar sua experiência.
             </Text>
-          </View>
-
-          {/* ─── SEÇÃO: Informações pessoais ───────────────────────────── */}
-          <View className="gap-4">
-            <View className="flex-row items-center gap-2">
-              <Ionicons name="person-outline" size={16} color="#E8A838" />
-              <Text className="text-sm font-semibold text-primary dark:text-white">
-                Informações pessoais
-              </Text>
-            </View>
-
-            <CampoTexto
-              name="birthDate"
-              control={control}
-              label="Data de nascimento"
-              placeholder="DD/MM/AAAA"
-              keyboardType="numeric"
-              transformarTexto={mascararData}
-              iconeDireita={
-                <Ionicons name="calendar-outline" size={18} color="#9E9589" />
-              }
-            />
           </View>
 
           {/* ─── SEÇÃO: Sobre seu lar ──────────────────────────────────── */}

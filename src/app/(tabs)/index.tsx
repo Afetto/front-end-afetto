@@ -2,6 +2,7 @@ import { BarraProgresso } from "@/components/BarraProgresso";
 import { BotaoSeusPets } from "@/components/BotaoSeusPets";
 import { ItemChecklist } from "@/components/ItemChecklist";
 import { useSessao } from "@/context/SessaoContext";
+import { usePerfilCompleto } from "@/hooks/usePerfilCompleto";
 import { usePets } from "@/hooks/usePets";
 import { calcularProgressoOnboarding } from "@/utils/onboarding";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,14 +25,28 @@ export default function TelaInicio() {
     refetch: recarregarPets,
   } = usePets();
 
-  // O progresso depende da lista de pets da API. Enquanto ela não chega (ou se
-  // a busca falhar), a tela não mostra checklist nem barra — mostrar "pet
-  // pendente" sem saber a resposta seria um dado falso.
+  const {
+    data: perfil,
+    isFetching: carregandoPerfil,
+    refetch: recarregarPerfil,
+  } = usePerfilCompleto();
+
+  // O progresso depende de duas respostas da API: a lista de pets e o
+  // "Finalize seu cadastro" (GET /usuario/me/perfil). Enquanto elas não chegam
+  // (ou se uma falhar), a tela não mostra checklist nem barra — mostrar uma
+  // etapa pendente sem saber a resposta seria um dado falso.
   const carregouPets = pets !== undefined;
+  const carregouProgresso = carregouPets && perfil !== undefined;
+  const carregandoProgresso = carregandoPets || carregandoPerfil;
+
+  function recarregarProgresso() {
+    if (!carregouPets) recarregarPets();
+    if (perfil === undefined) recarregarPerfil();
+  }
 
   const { checklist, percentual, rotuloEtapa, obrigatoriosConcluidos } =
     calcularProgressoOnboarding({
-      perfilCompleto: sessao?.progresso?.perfilCompleto ?? false,
+      perfilCompleto: perfil?.perfilCompleto ?? false,
       petCadastrado: (pets?.length ?? 0) > 0,
     });
 
@@ -64,7 +79,7 @@ export default function TelaInicio() {
         </View>
 
         {/* Subtítulo */}
-        {carregouPets && (
+        {carregouProgresso && (
           <Text className="text-base text-amber underline mt-2">
             {obrigatoriosConcluidos
               ? "Tudo certo! Seu pet está protegido."
@@ -73,7 +88,7 @@ export default function TelaInicio() {
         )}
 
         {/* Barra de progresso */}
-        {carregouPets && !obrigatoriosConcluidos && (
+        {carregouProgresso && !obrigatoriosConcluidos && (
           <BarraProgresso rotulo={rotuloEtapa} percentual={percentual} />
         )}
       </View>
@@ -86,27 +101,29 @@ export default function TelaInicio() {
           onPress={() => router.push("/(tabs)/pets")}
         />
 
-        {/* Carregando a lista de pets */}
-        {!carregouPets && carregandoPets && (
+        {/* Carregando pets e perfil */}
+        {!carregouProgresso && carregandoProgresso && (
           <View className="items-center py-6">
             <ActivityIndicator color="#E8A838" />
           </View>
         )}
 
-        {/* Falha ao carregar a lista de pets */}
-        {!carregouPets && !carregandoPets && (
+        {/* Falha ao carregar pets ou perfil */}
+        {!carregouProgresso && !carregandoProgresso && (
           <View className="items-center gap-2 py-4">
             <Text className="text-sm text-muted dark:text-gray-400 text-center">
-              Não foi possível carregar seus pets.
+              {carregouPets
+                ? "Não foi possível carregar seu cadastro."
+                : "Não foi possível carregar seus pets."}
             </Text>
-            <TouchableOpacity onPress={() => recarregarPets()}>
+            <TouchableOpacity onPress={recarregarProgresso}>
               <Text className="text-amber font-semibold">Tentar novamente</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Checklist — some quando os passos obrigatórios estão completos */}
-        {carregouPets && !obrigatoriosConcluidos && (
+        {carregouProgresso && !obrigatoriosConcluidos && (
           <View className="gap-3">
             <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
               Sua configuração

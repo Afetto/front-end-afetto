@@ -4,12 +4,11 @@ import { EsqueciSenhaInput } from "@/schemas/esqueci-senha.schema";
 import {
   autenticar,
   cadastrar,
-  completarPerfil,
-  DadosPerfilCompleto,
   redefinirSenha,
 } from "@/services/autenticacao.service";
 import { useMutation } from "@tanstack/react-query";
 
+// O "Finalize seu cadastro" fica em usePerfilCompleto.ts.
 // O logout não tem hook dedicado: chama `sair()` do SessaoContext direto em
 // perfil.tsx — é uma chamada única, sem payload nem necessidade de isPending
 // próprio (o botão já usa Alert.alert + await).
@@ -35,13 +34,5 @@ export function useEntrar() {
 export function useRedefinirSenha() {
     return useMutation({
         mutationFn: (data: EsqueciSenhaInput) => redefinirSenha(data),
-    });
-}
-
-// ─── COMPLETAR PERFIL ────────────────────────────────────────────────────────
-
-export function useCompletarPerfil() {
-    return useMutation({
-        mutationFn: (data: DadosPerfilCompleto) => completarPerfil(data),
     });
 }

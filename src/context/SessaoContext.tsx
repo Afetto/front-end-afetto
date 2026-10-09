@@ -5,17 +5,13 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 const CHAVE_SESSAO = "@afetto:session";
 
-// Só as etapas do onboarding que não dá para ler da API ficam guardadas na
-// sessão. "Pet cadastrado" não entra aqui: a Home deriva de `usePets()`.
-type ProgressoOnboarding = {
-  perfilCompleto: boolean;
-};
-
+// Só os dados do usuário para a UI. O progresso do onboarding não fica aqui:
+// a Home lê da API ("Perfil completo" em GET /usuario/me/perfil e "Pet
+// cadastrado" em GET /pet).
 type Sessao = {
   id: string;
   email: string;
   nome: string;
-  progresso: ProgressoOnboarding;
 };
 
 type DadosSessaoContexto = {
@@ -23,12 +19,7 @@ type DadosSessaoContexto = {
   carregando: boolean;
   entrar: (usuario: { id: string; email: string; nome: string }) => Promise<void>;
   sair: () => Promise<void>;
-  concluirEtapa: (etapa: keyof ProgressoOnboarding) => Promise<void>;
   atualizarPerfil: (alteracoes: { nome?: string; email?: string }) => Promise<void>;
-};
-
-const PROGRESSO_PADRAO: ProgressoOnboarding = {
-  perfilCompleto: false,
 };
 
 const SessaoContext = createContext<DadosSessaoContexto>({} as DadosSessaoContexto);
@@ -45,9 +36,9 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
         try {
           const parsed = JSON.parse(sessaoBruta);
           // Só aceita se tiver o formato atual — descarta sessões de versões
-          // antigas do app (que usavam `name`/`setup` em vez de `nome`/`progresso`).
-          if (parsed && typeof parsed.nome === "string" && parsed.progresso) {
-            salva = parsed;
+          // antigas do app (que usavam `name`/`setup` em vez de `nome`).
+          if (parsed && typeof parsed.id === "string" && typeof parsed.nome === "string") {
+            salva = { id: parsed.id, email: parsed.email ?? "", nome: parsed.nome };
           }
         } catch {
           // JSON inválido — trata como sessão inexistente abaixo.
@@ -108,7 +99,6 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
       id: usuario.id,
       email: usuario.email,
       nome: usuario.nome,
-      progresso: PROGRESSO_PADRAO,
     };
     // O cookie de sessão (JSESSIONID) é persistido automaticamente pelo axios;
     // aqui guardamos apenas os dados do usuário para a UI.
@@ -134,18 +124,8 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
     setSessao(atualizada);
   }
 
-  async function concluirEtapa(etapa: keyof ProgressoOnboarding) {
-    if (!sessao) return;
-    const atualizada: Sessao = {
-      ...sessao,
-      progresso: { ...sessao.progresso, [etapa]: true },
-    };
-    await AsyncStorage.setItem(CHAVE_SESSAO, JSON.stringify(atualizada));
-    setSessao(atualizada);
-  }
-
   return (
-    <SessaoContext.Provider value={{ sessao, carregando, entrar, sair, concluirEtapa, atualizarPerfil }}>
+    <SessaoContext.Provider value={{ sessao, carregando, entrar, sair, atualizarPerfil }}>
       {children}
     </SessaoContext.Provider>
   );
