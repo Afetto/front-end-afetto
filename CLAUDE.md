@@ -67,9 +67,10 @@ src/
 │   │       └── [id]/                  ← hub de detalhe do pet
 │   │           ├── index.tsx           → /pet/{id} (resumo, acesso rápido, próximos cuidados, excluir)
 │   │           ├── editar.tsx          → /pet/{id}/editar
-│   │           ├── historico.tsx       → /pet/{id}/historico (linha do tempo de vacinas e remédios, filtros Todos/Vacinas/Remédios — Consultas ainda desabilitado)
-│   │           ├── cuidados.tsx        → /pet/{id}/cuidados (criar/editar vacina; ao adicionar, `SeletorTipoCuidado` troca para remédio)
+│   │           ├── historico.tsx       → /pet/{id}/historico (linha do tempo de vacinas, consultas e remédios, filtros Todos/Vacinas/Consultas/Remédios; consulta agendada tem "Cancelar")
+│   │           ├── cuidados.tsx        → /pet/{id}/cuidados (criar/editar vacina; ao adicionar, `SeletorTipoCuidado` troca para remédio ou consulta)
 │   │           ├── remedio.tsx         → /pet/{id}/remedio (criar/editar remédio — `?remedioId=` para editar)
+│   │           ├── consulta.tsx        → /pet/{id}/consulta (registrar/editar consulta — `?consultaId=` para editar; futura = agendada)
 │   │           └── calendario.tsx      → /pet/{id}/calendario (placeholder "Em breve")
 │   └── (tabs)/                 ← app principal (protegido por <RotaProtegida>)
 │       ├── _layout.tsx  ← abas: Início, Pets, Assistente, Clínica
@@ -80,12 +81,12 @@ src/
 ├── components/
 │   ├── ui/                        ← componentes de UI genéricos, reutilizáveis entre telas
 │   │   ├── CampoTexto.tsx           ← input padrão com react-hook-form (Controller)
-│   │   ├── CampoSelecao.tsx         ← seletor de opções em botões
+│   │   ├── CampoSelecao.tsx         ← seletor de opções em botões (`tresPorLinha` para muitas opções)
 │   │   ├── BotaoEnviar.tsx          ← botão fixo no rodapé com estado de envio (isPending)
 │   │   └── ToastSucesso.tsx         ← toast animado de sucesso (usa classe Tailwind inválida — ver seção 4)
 │   ├── FormPet.tsx                ← campos + botão de submit do formulário de pet — usado em pet/cadastrar.tsx e pet/[id]/editar.tsx
 │   ├── SeletorEspecie.tsx         ← grid de cards (emoji + nome) para escolher a espécie do pet — usado dentro de FormPet
-│   ├── SeletorTipoCuidado.tsx     ← Vacina | Remédio no topo das telas de adicionar cuidado (troca de uma para a outra)
+│   ├── SeletorTipoCuidado.tsx     ← Vacina | Remédio | Consulta no topo das telas de adicionar cuidado (troca de uma para a outra)
 │   ├── CardPet.tsx                ← card de pet na listagem (pets.tsx)
 │   ├── CardPetResumo.tsx          ← card de pet que sobrepõe o header verde — usado em pet/[id]/index.tsx e historico.tsx
 │   ├── EstadoVazio.tsx / EstadoErro.tsx ← estados genéricos reutilizáveis (lista vazia / erro de carregamento)
@@ -107,6 +108,7 @@ src/
 │   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet (+ `CHAVE_CONSULTA_PETS`, a chave do cache)
 │   ├── useVacinas.ts          ← useVacinasPet, useVacina, useCriarVacina, useAtualizarVacina, useDeletarVacina — as três mutations agendam/reagendam/cancelam o lembrete
 │   ├── useRemedios.ts         ← useRemediosPet, useRemedio, useCriarRemedio, useAtualizarRemedio, useDeletarRemedio (+ `CHAVE_REMEDIOS`)
+│   ├── useConsultas.ts        ← useConsultasPet, useConsulta, useCriarConsulta, useAtualizarConsulta, useCancelarConsulta, useDeletarConsulta (+ `CHAVE_CONSULTAS`)
 │   ├── useAutenticacao.ts     ← useCadastrar, useEntrar, useRedefinirSenha (logout fica inline — ver seção 8)
 │   ├── usePerfilCompleto.ts   ← usePerfilCompleto, useSalvarPerfilCompleto (+ `CHAVE_PERFIL_COMPLETO`; a chave leva o id do usuário)
 │   ├── useBuscarCep.ts        ← useQuery reativo, chama `cepService.buscarPorCep`
@@ -121,7 +123,8 @@ src/
 │   ├── pet.schema.ts
 │   ├── editar-perfil.schema.ts ← edição de dados pessoais em /perfil (nome, email, telefone, dataNascimento)
 │   ├── esqueci-senha.schema.ts ← e-mail, CPF, nascimento, senha nova + confirmação
-│   └── remedio.schema.ts       ← tipos Remedio/DadosRemedio + FormRemedioSchema (fim não pode ser antes do início)
+│   ├── remedio.schema.ts       ← tipos Remedio/DadosRemedio + FormRemedioSchema (fim não pode ser antes do início)
+│   └── consulta.schema.ts      ← tipos Consulta/DadosConsulta, TIPOS_CONSULTA + LABEL_TIPO_CONSULTA, FormConsultaSchema (hora HH:MM opcional)
 ├── services/
 │   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioLogado, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, redefinirSenha, sair (funções nomeadas)
 │   ├── perfil-completo.service.ts ← perfilCompletoService.{buscar,salvar} (objeto) — converte casa/apartamento e sim/não do formulário para CASA/APARTAMENTO e true/false da API
@@ -129,19 +132,20 @@ src/
 │   ├── pet.service.ts           ← petService.{listar,buscarPorId,criar,atualizar,remover} (objeto)
 │   ├── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
 │   ├── remedio.service.ts       ← remedioService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto) — GET /remedio?idPet=
+│   ├── consulta.service.ts      ← consultaService.{listarPorPet,buscarPorId,criar,atualizar,cancelar,remover} (objeto) — PATCH /consulta/{id}/cancelar; hora da API vira HH:MM
 │   └── notificacao.service.ts   ← notificacaoService.{configurar,agendarLembreteVacina,cancelarLembreteVacina,cancelarLembretesDoPet,...} — único arquivo que agenda/cancela via `expo-notifications`
 ├── types/
 │   └── autenticacao.types.ts   ← tipos globais de autenticação/usuário
 ├── utils/
-│   ├── mascaras.ts              ← mascararCPF, mascararCelular, mascararData, mascararCEP
+│   ├── mascaras.ts              ← mascararCPF, mascararCelular, mascararData, mascararCEP, mascararHora
 │   ├── data.ts                  ← converterDataParaISO, converterDataParaBR, normalizarData, calcularIdade
 │   ├── pet.ts                   ← LABEL_ESPECIE, ICONE_ESPECIE (rótulo e emoji por espécie)
 │   ├── onboarding.ts            ← calcularProgressoOnboarding — checklist e progresso da Home (ver "Fluxo de Onboarding")
 │   ├── lembrete.ts              ← calcularLembreteVacina, proximaDataDoCuidado — regra pura de quando lembrar de uma vacina
 │   ├── validacao.ts             ← cpfValido, dataValida, dataExiste — usadas pelos schemas
 │   ├── remedio.ts               ← situacaoRemedio (futuro / em uso / terminado), descreverPeriodo, descreverDose
-│   ├── historico.ts             ← montarHistorico — vacinas e remédios numa linha do tempo só (em uso → próximos → passados)
-│   └── cuidados.ts              ← proximosCuidados — "Próximos cuidados" do pet (remédios em uso/que vão começar + vacinas agendadas)
+│   ├── historico.ts             ← montarHistorico — vacinas, remédios e consultas numa linha do tempo só (em andamento → próximos → passados)
+│   └── cuidados.ts              ← proximosCuidados — "Próximos cuidados" do pet (remédios em uso/que vão começar, consultas agendadas e vacinas agendadas)
 ├── __tests__/
 │   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado)
 │   ├── inicio.test.tsx          ← teste da Home: progresso (pets e perfil completo) e quantidade de pets vindos da API (HTTP mockado)
@@ -159,7 +163,8 @@ src/
 │   ├── esqueci-senha.test.tsx   ← redefinir senha: payload, sucesso, 400/429 com a mensagem da API, confirmação diferente
 │   ├── remedio.test.ts          ← situação do remédio, textos, ordem da linha do tempo e próximos cuidados
 │   ├── remedio-tela.test.tsx    ← criar (datas ISO), fim antes do início, erro da API, editar com PUT
-│   └── historico.test.tsx       ← vacinas e remédios juntos e o filtro Remédios
+│   ├── historico.test.tsx       ← vacinas, remédios e consultas juntos; filtros; consulta cancelada sem Editar
+│   └── consulta.test.tsx        ← registrar (tipo, ISO, hora), hora inválida, editar com erro da API, consultas no histórico e nos próximos cuidados
 └── global.css                   ← @tailwind base/components/utilities
 ```
 
