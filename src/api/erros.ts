@@ -1,0 +1,69 @@
+import axios from "axios";
+
+/** Classificação padronizada dos erros de API usados em toda a app. */
+export type TipoErroApi =
+  | "rede"
+  | "tempo_esgotado"
+  | "nao_autenticado"
+  | "nao_encontrado"
+  | "servidor"
+  | "desconhecido";
+
+export function classificarErro(error: unknown): TipoErroApi {
+  if (!axios.isAxiosError(error)) return "desconhecido";
+  if (error.code === "ECONNABORTED") return "tempo_esgotado";
+  if (!error.response) return "rede";
+
+  const status = error.response.status;
+  if (status === 401) return "nao_autenticado";
+  if (status === 404) return "nao_encontrado";
+  if (status >= 500) return "servidor";
+  return "desconhecido";
+}
+
+export function mensagemPorTipo(tipo: TipoErroApi): string {
+  switch (tipo) {
+    case "rede":
+      return "Sem conexão com a internet. Verifique sua rede e tente novamente.";
+    case "tempo_esgotado":
+      return "A requisição demorou demais. Tente novamente.";
+    case "nao_autenticado":
+      return "Sua sessão expirou. Faça login novamente.";
+    case "nao_encontrado":
+      return "Não encontrado.";
+    case "servidor":
+      return "Erro no servidor. Tente novamente em instantes.";
+    default:
+      return "Algo deu errado. Tente novamente.";
+  }
+}
+
+export function mensagemErroApi(error: unknown): string {
+  return mensagemPorTipo(classificarErro(error));
+}
+
+/**
+ * A mensagem que a própria API do Afetto manda nos erros:
+ * - regra de negócio: corpo `{"erro": "..."}` (ex.: 400 "Os dados não
+ *   conferem...", 429 "Muitas tentativas...");
+ * - validação de campos (400): corpo `{"campo": "mensagem", ...}` — usa a
+ *   primeira mensagem.
+ * Sem nenhuma das duas (ex.: sem conexão), cai na mensagem padrão do tipo.
+ */
+export function mensagemDaApi(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const corpo = error.response?.data;
+    if (corpo && typeof corpo === "object") {
+      const { erro } = corpo as { erro?: unknown };
+      if (typeof erro === "string" && erro.trim()) return erro;
+
+      if (error.response?.status === 400) {
+        const primeira = Object.values(corpo).find(
+          (valor): valor is string => typeof valor === "string" && valor.trim() !== ""
+        );
+        if (primeira) return primeira;
+      }
+    }
+  }
+  return mensagemErroApi(error);
+}
