@@ -45,7 +45,7 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 src/
 ├── api/
 │   ├── api.ts          ← instância Axios (baseURL da API local na 8081 via `definirUrlDaApi`, withCredentials, interceptor de 401)
-│   ├── erros.ts         ← classificarErro / mensagemPorTipo / mensagemErroApi (mensagens padronizadas de erro de API)
+│   ├── erros.ts         ← classificarErro / mensagemPorTipo / mensagemErroApi (mensagens padronizadas de erro de API) / mensagemDaApi (usa o `{"erro": ...}` que a API manda nas regras de negócio)
 │   ├── paginacao.ts      ← extrairLista — normaliza resposta paginada (Spring Page) ou array puro
 │   └── queryClient.ts   ← instância do QueryClient (só importado no _layout.tsx raiz)
 ├── app/
@@ -57,7 +57,7 @@ src/
 │   │   ├── login.tsx                → /login
 │   │   ├── cadastro.tsx              → /cadastro
 │   │   ├── cadastro-sucesso.tsx      → /cadastro-sucesso (modal transparente — cadastro.tsx navega pra cá no sucesso)
-│   │   └── esqueci-senha.tsx         → /esqueci-senha (formulário só valida e-mail; API ainda não tem endpoint de recuperação)
+│   │   └── esqueci-senha.tsx         → /esqueci-senha (confirma e-mail, CPF e nascimento e define a senha nova — POST /senha/redefinir, sem login)
 │   ├── (app)/                  ← telas PÓS-login fora das tabs (Stack, protegido por <RotaProtegida>)
 │   │   ├── _layout.tsx
 │   │   ├── completar-perfil.tsx     → /completar-perfil
@@ -115,9 +115,10 @@ src/
 │   ├── cadastro.schema.ts
 │   ├── completar-perfil.schema.ts
 │   ├── pet.schema.ts
-│   └── editar-perfil.schema.ts ← edição de dados pessoais em /perfil (nome, email, telefone, dataNascimento)
+│   ├── editar-perfil.schema.ts ← edição de dados pessoais em /perfil (nome, email, telefone, dataNascimento)
+│   └── esqueci-senha.schema.ts ← e-mail, CPF, nascimento, senha nova + confirmação
 ├── services/
-│   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioLogado, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, sair, completarPerfil (funções nomeadas)
+│   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioLogado, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, redefinirSenha, sair, completarPerfil (funções nomeadas)
 │   ├── cep.service.ts           ← cepService.buscarPorCep (objeto) — API pública do ViaCEP, usa `fetch` direto (não é a API do Afetto, não passa pelo cliente Axios)
 │   ├── pet.service.ts           ← petService.{listar,buscarPorId,criar,atualizar,remover} (objeto)
 │   ├── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
@@ -129,7 +130,8 @@ src/
 │   ├── data.ts                  ← converterDataParaISO, converterDataParaBR, normalizarData, calcularIdade
 │   ├── pet.ts                   ← LABEL_ESPECIE, ICONE_ESPECIE (rótulo e emoji por espécie)
 │   ├── onboarding.ts            ← calcularProgressoOnboarding — checklist e progresso da Home (ver "Fluxo de Onboarding")
-│   └── lembrete.ts              ← calcularLembreteVacina, proximaDataDoCuidado — regra pura de quando lembrar de uma vacina
+│   ├── lembrete.ts              ← calcularLembreteVacina, proximaDataDoCuidado — regra pura de quando lembrar de uma vacina
+│   └── validacao.ts             ← cpfValido, dataValida — usadas pelos schemas de cadastro e de esqueci a senha
 ├── __tests__/
 │   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado)
 │   ├── inicio.test.tsx          ← teste da Home: progresso e quantidade de pets vindos da API (HTTP mockado)
@@ -141,7 +143,8 @@ src/
 │   ├── api.test.ts              ← endereço da API (computador do Expo na 8081, localhost, .env)
 │   ├── autenticacao.service.test.ts ← login busca quem entrou em GET /usuario/me
 │   ├── sessao.test.tsx          ← revalidação da sessão salva no boot (GET /usuario/me)
-│   └── vacina.service.test.ts   ← vacinas do pet via GET /vacina?idPet=
+│   ├── vacina.service.test.ts   ← vacinas do pet via GET /vacina?idPet=
+│   └── esqueci-senha.test.tsx   ← redefinir senha: payload, sucesso, 400/429 com a mensagem da API, confirmação diferente
 └── global.css                   ← @tailwind base/components/utilities
 ```
 
@@ -249,7 +252,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 - Contêm apenas schemas Zod, exportando o tipo inferido junto.
 
 **Utils (`src/utils/`):**
-- Funções puras, sem hooks, sem I/O: `mascaras.ts` (máscaras de CPF, celular, data e CEP), `data.ts` (conversão e normalização de datas), `pet.ts` (rótulos e ícones por espécie) `onboarding.ts` (checklist e progresso da Home) e `lembrete.ts` (quando lembrar de uma vacina). ⚠️ Para comparar datas da API (`YYYY-MM-DD`) use sempre `normalizarData` — `new Date("2026-10-08")` é lido em UTC e, no Brasil, cai no dia anterior.
+- Funções puras, sem hooks, sem I/O: `mascaras.ts` (máscaras de CPF, celular, data e CEP), `data.ts` (conversão e normalização de datas), `pet.ts` (rótulos e ícones por espécie) `onboarding.ts` (checklist e progresso da Home), `lembrete.ts` (quando lembrar de uma vacina) e `validacao.ts` (CPF e data válidos, usadas pelos schemas). ⚠️ Para comparar datas da API (`YYYY-MM-DD`) use sempre `normalizarData` — `new Date("2026-10-08")` é lido em UTC e, no Brasil, cai no dia anterior.
 
 **Context (`src/context/`):**
 - `SessaoContext` é a única fonte de verdade de sessão em uso; `TemaContext` é a única fonte de verdade da preferência de tema (ver seção 4) — são dois contexts legítimos, com responsabilidades diferentes. A regra "nunca criar um segundo context" (seção 12) vale para **autenticação/sessão**, não proíbe contexts novos para outras responsabilidades globais.
@@ -339,7 +342,7 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 - Toda navegação via `expo-router` (`router.push`, `router.replace`, `router.back`, `<Redirect>`).
 - Os grupos `(auth)` e `(app)` **não** aparecem na URL — `(auth)/login.tsx` é `/login`, não `/(auth)/login`. Nunca escreva `/(auth)/...` ou `/(app)/...` num `router.push`.
 - Rotas de tabs precisam do prefixo: `/(tabs)/pets`, `/(tabs)/clinica`.
-- `login.tsx` navega para `/esqueci-senha` (rota existe, sem cast). A tela só valida o e-mail e mostra "Em breve esta funcionalidade estará disponível" — não há endpoint de recuperação de senha na API ainda.
+- `login.tsx` navega para `/esqueci-senha`. Sem e-mail de recuperação: o tutor confirma e-mail, CPF e data de nascimento do cadastro e define a senha nova (`POST /senha/redefinir`, não precisa de login). Erro de dados (400) ou bloqueio por tentativas (429) mostra a mensagem da API; no sucesso, a tela troca para "Senha alterada!" com o botão "Ir para o login".
 
 **Onde criar uma tela nova (telas do Figma):**
 

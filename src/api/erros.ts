@@ -41,3 +41,16 @@ export function mensagemPorTipo(tipo: TipoErroApi): string {
 export function mensagemErroApi(error: unknown): string {
   return mensagemPorTipo(classificarErro(error));
 }
+
+/**
+ * A mensagem que a própria API do Afetto manda nos erros de regra de negócio
+ * (corpo `{"erro": "..."}`, ex.: 400 "Os dados não conferem...", 429 "Muitas
+ * tentativas..."). Sem ela (ex.: sem conexão), cai na mensagem padrão do tipo.
+ */
+export function mensagemDaApi(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const erro = (error.response?.data as { erro?: unknown } | undefined)?.erro;
+    if (typeof erro === "string" && erro.trim()) return erro;
+  }
+  return mensagemErroApi(error);
+}

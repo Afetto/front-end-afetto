@@ -1,10 +1,12 @@
 import { LoginInput } from "@/schemas/login.schema";
 import { CadastroInput } from "@/schemas/cadastro.schema";
+import { EsqueciSenhaInput } from "@/schemas/esqueci-senha.schema";
 import {
   autenticar,
   cadastrar,
   completarPerfil,
   DadosPerfilCompleto,
+  redefinirSenha,
 } from "@/services/autenticacao.service";
 import { useMutation } from "@tanstack/react-query";
 
@@ -25,6 +27,14 @@ export function useCadastrar() {
 export function useEntrar() {
     return useMutation({
         mutationFn: ({ email, password }: LoginInput) => autenticar(email, password),
+    });
+}
+
+// ─── ESQUECI A SENHA ─────────────────────────────────────────────────────────
+
+export function useRedefinirSenha() {
+    return useMutation({
+        mutationFn: (data: EsqueciSenhaInput) => redefinirSenha(data),
     });
 }
 

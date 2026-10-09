@@ -28,8 +28,8 @@ export type UsuarioArmazenado = {
 };
 
 // A API autentica por cookie de sessão (JSESSIONID) — não há token no corpo da
-// resposta. O login também não devolve id/nome: resolvemos varrendo GET /usuario
-// pelo e-mail (não existe GET /usuario/me).
+// resposta. O login também não devolve id/nome: logo depois dele o service
+// busca quem entrou em GET /usuario/me.
 export type ResultadoAutenticacao =
   | { ok: true; usuario: UsuarioArmazenado }
   | { ok: false; motivo: "credenciais_invalidas" | TipoErroApi };
@@ -48,6 +48,12 @@ export type DadosAtualizacaoUsuario = {
 export type ResultadoAtualizacaoUsuario =
   | { ok: true; novoEmail: string }
   | { ok: false; error: "email_taken" | "not_found" | "unknown" };
+
+// Esqueci a senha: a mensagem de erro vem pronta da API (dados que não
+// conferem, muitas tentativas) ou é a mensagem padrão de falha de conexão.
+export type ResultadoRedefinicaoSenha =
+  | { ok: true }
+  | { ok: false; mensagem: string };
 
 export type ResultadoTrocaSenha =
   | { ok: true }

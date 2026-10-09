@@ -1,5 +1,6 @@
 import { api } from "@/api/api";
-import { classificarErro } from "@/api/erros";
+import { classificarErro, mensagemDaApi } from "@/api/erros";
+import { EsqueciSenhaInput } from "@/schemas/esqueci-senha.schema";
 import { converterDataParaISO } from "@/utils/data";
 import {
   DadosAtualizacaoUsuario,
@@ -7,6 +8,7 @@ import {
   ResultadoAtualizacaoUsuario,
   ResultadoAutenticacao,
   ResultadoCadastro,
+  ResultadoRedefinicaoSenha,
   ResultadoTrocaSenha,
   UsuarioArmazenado,
 } from "@/types/autenticacao.types";
@@ -197,6 +199,26 @@ export async function atualizarSenha(
     return { ok: true };
   } catch {
     return { ok: false, error: "unknown" };
+  }
+}
+
+/**
+ * Esqueci a senha (sem e-mail de recuperação): a API confere e-mail, CPF e
+ * data de nascimento do cadastro e grava a senha nova. Não precisa de login.
+ * POST /senha/redefinir → 204. Dado que não confere → 400; 5 erros seguidos
+ * com o mesmo e-mail → 429 por 15 minutos (as mensagens vêm prontas da API).
+ */
+export async function redefinirSenha(dados: EsqueciSenhaInput): Promise<ResultadoRedefinicaoSenha> {
+  try {
+    await api.post("/senha/redefinir", {
+      email: dados.email.trim().toLowerCase(),
+      cpf: dados.cpf.replace(/\D/g, ""),
+      dataNascimento: converterDataParaISO(dados.birthDate), // DD/MM/AAAA → YYYY-MM-DD
+      novaSenha: dados.password,
+    });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, mensagem: mensagemDaApi(error) };
   }
 }
 
