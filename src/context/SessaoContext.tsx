@@ -1,6 +1,7 @@
 import { definirTratadorSessaoExpirada } from "@/api/api";
 import { buscarUsuarioLogado, sair as sairService } from "@/services/autenticacao.service";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
 
 const CHAVE_SESSAO = "@afetto:session";
@@ -27,6 +28,11 @@ const SessaoContext = createContext<DadosSessaoContexto>({} as DadosSessaoContex
 export function SessaoProvider({ children }: { children: React.ReactNode }) {
   const [sessao, setSessao] = useState<Sessao | null>(null);
   const [carregando, setCarregando] = useState(true);
+
+  // Os dados em cache (pets, avaliações, consultas...) são da conta que estava
+  // logada e ficam "frescos" por 5 min (queryClient.ts). Sem limpar ao trocar de
+  // conta, a conta nova via os pets e o comentário da anterior como se fossem dela.
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     AsyncStorage.getItem(CHAVE_SESSAO)
@@ -85,10 +91,11 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     definirTratadorSessaoExpirada(() => {
       AsyncStorage.removeItem(CHAVE_SESSAO);
+      queryClient.clear();
       setSessao(null);
     });
     return () => definirTratadorSessaoExpirada(null);
-  }, []);
+  }, [queryClient]);
 
   async function entrar(usuario: {
     id: string;
@@ -103,6 +110,8 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
     // O cookie de sessão (JSESSIONID) é persistido automaticamente pelo axios;
     // aqui guardamos apenas os dados do usuário para a UI.
     await AsyncStorage.setItem(CHAVE_SESSAO, JSON.stringify(novaSessao));
+    // Conta nova (ou a mesma de novo): nada do cache anterior é reaproveitado
+    queryClient.clear();
     setSessao(novaSessao);
   }
 
@@ -114,6 +123,7 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
       // que a sessão local seja limpa.
     }
     await AsyncStorage.removeItem(CHAVE_SESSAO);
+    queryClient.clear();
     setSessao(null);
   }
 

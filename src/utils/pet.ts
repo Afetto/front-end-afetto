@@ -31,11 +31,11 @@ export const ICONE_ESPECIE: Record<string, string> = {
 };
 
 /**
- * O pet é do usuário logado? ⚠️ CONTORNO DE LACUNA DA API: GET /pet devolve os
- * pets de todas as contas, e a listagem só traz o dono no link HATEOAS
- * `linkUsuario.href` (".../usuario/{id}"). Sem esse link, considera que é.
- * Usado onde um pet de outra conta quebraria a ação (ex.: agendar consulta,
- * que a API recusa com 404).
+ * O pet é do usuário logado? A listagem só traz o dono no link HATEOAS
+ * `linkUsuario.href` (".../usuario/{id}"); sem esse link, considera que é.
+ * Desde a correção do back end, GET /pet já devolve só os pets da conta — o
+ * filtro fica como segurança onde um pet de outra conta quebraria a ação (ex.:
+ * agendar consulta, que a API recusa com 404), inclusive com uma API antiga.
  */
 export function petEhDoUsuario(pet: object, idUsuario: string): boolean {
   const href = (pet as { linkUsuario?: { href?: string } }).linkUsuario?.href;

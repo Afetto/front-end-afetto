@@ -88,7 +88,13 @@ export async function autenticar(
   try {
     await api.post("/login", { email: emailNormalizado, senha });
   } catch (error) {
-    if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 400)) {
+    // ⚠️ CONTORNO DE LACUNA DA API: com e-mail ou senha errados (ou uma conta
+    // que não existe mais — o banco H2 é zerado a cada reinício da API), o
+    // back end não trata a falha do login e ela chega como 403, não 401. O
+    // /login é liberado para todos e não tem CSRF, então um 403 aqui só pode
+    // ser isso. Sem tratar, a tela mostrava "Algo deu errado".
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+    if (status === 400 || status === 401 || status === 403) {
       return { ok: false, motivo: "credenciais_invalidas" };
     }
     return { ok: false, motivo: classificarErro(error) };

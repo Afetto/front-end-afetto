@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { render, screen } from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, render, screen } from "@testing-library/react-native";
 import { Text } from "react-native";
 
 import { SessaoProvider, useSessao } from "@/context/SessaoContext";
@@ -35,17 +36,25 @@ function usuarioDaApi(id: string, nome = "Ana") {
   return { id, nome, email: "ana@afetto.com", cpf: "", telefone: "", dataNascimento: "" };
 }
 
+let sessaoAtual: ReturnType<typeof useSessao>;
+
 function MostrarSessao() {
-  const { sessao, carregando } = useSessao();
+  sessaoAtual = useSessao();
+  const { sessao, carregando } = sessaoAtual;
   if (carregando) return <Text>carregando</Text>;
   return <Text>{sessao ? `logada: ${sessao.nome}` : "sem sessão"}</Text>;
 }
 
+let queryClient: QueryClient;
+
 async function abrirApp() {
+  queryClient = new QueryClient();
   render(
-    <SessaoProvider>
-      <MostrarSessao />
-    </SessaoProvider>
+    <QueryClientProvider client={queryClient}>
+      <SessaoProvider>
+        <MostrarSessao />
+      </SessaoProvider>
+    </QueryClientProvider>
   );
   await screen.findByText(/logada|sem sessão/);
 }
@@ -84,5 +93,22 @@ describe("SessaoProvider — revalidação no boot do app", () => {
 
     expect(screen.getByText("sem sessão")).toBeTruthy();
     expect(await AsyncStorage.getItem(CHAVE_SESSAO)).toBeNull();
+  });
+});
+
+describe("SessaoProvider — troca de conta", () => {
+  it("entrar com outra conta e sair limpam o cache (nada da conta anterior aparece na nova)", async () => {
+    mockBuscarUsuarioLogado.mockResolvedValueOnce(usuarioDaApi("usuario-1"));
+    await abrirApp();
+
+    // Algo que a conta anterior carregou (ex.: a lista de pets)
+    queryClient.setQueryData(["pets"], [{ id: "pet-da-ana" }]);
+
+    await act(() => sessaoAtual.entrar({ id: "usuario-2", email: "bruno@afetto.com", nome: "Bruno" }));
+    expect(queryClient.getQueryData(["pets"])).toBeUndefined();
+
+    queryClient.setQueryData(["pets"], [{ id: "pet-do-bruno" }]);
+    await act(() => sessaoAtual.sair());
+    expect(queryClient.getQueryData(["pets"])).toBeUndefined();
   });
 });

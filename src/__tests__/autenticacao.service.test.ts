@@ -51,6 +51,23 @@ describe("autenticar", () => {
     expect(mockGet).not.toHaveBeenCalled();
   });
 
+  it("senha errada ou conta inexistente que a API devolve como 403 vira 'E-mail ou senha incorretos'", async () => {
+    mockPost.mockRejectedValueOnce(erroHttp(403));
+
+    const resultado = await autenticar("ana@afetto.com", "errada");
+
+    expect(resultado).toEqual({ ok: false, motivo: "credenciais_invalidas" });
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  it("sem conexão com a API, avisa que é rede (não credencial)", async () => {
+    mockPost.mockRejectedValueOnce(erroHttp());
+
+    const resultado = await autenticar("ana@afetto.com", "senha123");
+
+    expect(resultado).toEqual({ ok: false, motivo: "rede" });
+  });
+
   it("se GET /usuario/me falhar, não entra com uma sessão sem id", async () => {
     mockPost.mockResolvedValueOnce({ data: {} });
     mockGet.mockRejectedValueOnce(erroHttp());
