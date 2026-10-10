@@ -1,13 +1,14 @@
 import { api } from "@/api/api";
-import { autenticar, buscarUsuarioLogado } from "@/services/autenticacao.service";
+import { atualizarSenha, atualizarUsuario, autenticar, buscarUsuarioLogado } from "@/services/autenticacao.service";
 
 // Mocka só o boundary HTTP: o service roda de verdade.
 jest.mock("@/api/api", () => ({
-  api: { get: jest.fn(), post: jest.fn() },
+  api: { get: jest.fn(), post: jest.fn(), put: jest.fn() },
 }));
 
 const mockGet = api.get as jest.Mock;
 const mockPost = api.post as jest.Mock;
+const mockPut = api.put as jest.Mock;
 
 const USUARIO_DA_API = {
   id: "usuario-1",
@@ -90,5 +91,41 @@ describe("buscarUsuarioLogado", () => {
     mockGet.mockRejectedValueOnce(erroHttp(403));
 
     expect(await buscarUsuarioLogado()).toBeNull();
+  });
+});
+
+describe("atualizarUsuario", () => {
+  it("não manda senha no PUT /usuario/{id} (editar os dados não mexe mais na senha)", async () => {
+    mockGet.mockResolvedValueOnce({ data: USUARIO_DA_API });
+    mockPut.mockResolvedValueOnce({ data: {} });
+
+    const resultado = await atualizarUsuario("usuario-1", { nome: "Ana Paula" });
+
+    expect(resultado).toEqual({ ok: true, novoEmail: "ana@afetto.com" });
+    const [url, corpo] = mockPut.mock.calls[0];
+    expect(url).toBe("/usuario/usuario-1");
+    expect(corpo).not.toHaveProperty("senha");
+    expect(corpo).toMatchObject({ nome: "Ana Paula", cpf: "12345678909", dataNascimento: "1995-05-20" });
+  });
+});
+
+describe("atualizarSenha", () => {
+  it("manda a senha atual e a nova para PUT /usuario/me/senha", async () => {
+    mockPut.mockResolvedValueOnce({ data: undefined });
+
+    expect(await atualizarSenha("senha123", "outra456")).toEqual({ ok: true });
+    expect(mockPut).toHaveBeenCalledWith("/usuario/me/senha", { senhaAtual: "senha123", novaSenha: "outra456" });
+  });
+
+  it("senha atual errada: devolve a mensagem da API", async () => {
+    mockPut.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { status: 400, data: { erro: "A senha atual está incorreta" } },
+    });
+
+    expect(await atualizarSenha("chute123", "outra456")).toEqual({
+      ok: false,
+      mensagem: "A senha atual está incorreta",
+    });
   });
 });

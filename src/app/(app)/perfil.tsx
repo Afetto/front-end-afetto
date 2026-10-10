@@ -87,7 +87,6 @@ export default function TelaPerfil() {
       email: "",
       telefone: "",
       dataNascimento: "",
-      senha: "",
     },
   });
 
@@ -98,7 +97,6 @@ export default function TelaPerfil() {
       email: usuario.email,
       telefone: usuario.telefone,
       dataNascimento: formatarDataNascimento(usuario.dataNascimento),
-      senha: "",
     });
   }, [usuario, reset]);
 
@@ -122,7 +120,6 @@ export default function TelaPerfil() {
         email: usuario.email,
         telefone: usuario.telefone,
         dataNascimento: formatarDataNascimento(usuario.dataNascimento),
-        senha: "",
       });
     }
     setEditando(false);

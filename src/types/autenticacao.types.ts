@@ -49,10 +49,7 @@ export type DadosAtualizacaoUsuario = {
   email?: string;
   telefone?: string;
   dataNascimento?: string; // YYYY-MM-DD
-  // PUT /usuario/{id} substitui o recurso inteiro e a API exige `senha` em
-  // toda requisição (mesmo quando não é uma troca de senha) — por isso é
-  // obrigatório aqui, não opcional como os outros campos.
-  senha: string;
+  // Sem senha: o PUT /usuario/{id} não mexe mais nela (trocar é PUT /usuario/me/senha)
 };
 
 export type ResultadoAtualizacaoUsuario =
@@ -65,6 +62,9 @@ export type ResultadoRedefinicaoSenha =
   | { ok: true }
   | { ok: false; mensagem: string };
 
+// Trocar a senha logado (PUT /usuario/me/senha): a mensagem de erro vem pronta
+// da API ("A senha atual está incorreta", senha nova curta) ou é a mensagem
+// padrão de falha de conexão.
 export type ResultadoTrocaSenha =
   | { ok: true }
-  | { ok: false; error: "wrong_password" | "unknown" };
+  | { ok: false; mensagem: string };

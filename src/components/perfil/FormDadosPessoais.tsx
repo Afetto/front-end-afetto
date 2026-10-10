@@ -61,21 +61,6 @@ export function FormDadosPessoais({ control, cpf }: Props) {
         </View>
       </View>
 
-      <View className="gap-1 px-1">
-        <Text className="text-[11px] text-muted dark:text-gray-400">
-          Digite sua senha atual para confirmar — atenção: se digitar errado,
-          sua senha de acesso será alterada para o que for digitado aqui.
-        </Text>
-        <CampoTexto
-          name="senha"
-          control={control}
-          label="Senha atual"
-          placeholder="••••••••"
-          campoSenha
-          autoComplete="current-password"
-          textContentType="password"
-        />
-      </View>
     </View>
   );
 }

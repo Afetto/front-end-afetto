@@ -132,16 +132,11 @@ export async function buscarUsuarioPorId(id: string): Promise<UsuarioArmazenado 
 /**
  * Atualiza dados do perfil do usuário.
  * PUT /usuario/{id} — substitui o recurso inteiro, então buscamos o atual e
- * fazemos merge das alterações antes de enviar. A API também exige `senha`
- * em toda chamada (mesmo quando não é troca de senha).
+ * fazemos merge das alterações antes de enviar. A senha não vai aqui: antes a
+ * API gravava como senha o que viesse neste PUT (sem conferir a atual) e a tela
+ * pedia a "senha atual" para isso; agora ela só muda em `atualizarSenha`.
  *
- * ⚠️ Esse `senha` NÃO é validado contra a senha atual — o backend simplesmente
- * define esse valor como a nova senha (mesmo comportamento de `atualizarSenha`
- * abaixo). Ou seja, não existe como "confirmar" a senha atual sem risco de
- * alterá-la: se o valor enviado não for a senha real, a senha da conta muda
- * para esse valor sem aviso.
- *
- * NÃO tente "verificar" a senha chamando POST /login antes deste PUT: login
+ * NÃO tente "verificar" uma senha chamando POST /login: login
  * (sucesso OU falha) sempre devolve um `Set-Cookie` novo, e no app o cliente
  * HTTP persiste esse cookie automaticamente — isso substitui silenciosamente
  * o cookie de sessão válido do usuário por um outro (inválido, se a senha
@@ -164,7 +159,6 @@ export async function atualizarUsuario(
       dataNascimento: alteracoes.dataNascimento ?? atual.dataNascimento,
       email: novoEmail,
       telefone: (alteracoes.telefone ?? atual.telefone ?? "").replace(/\D/g, ""),
-      senha: alteracoes.senha,
     });
 
     return { ok: true, novoEmail };
@@ -180,31 +174,20 @@ export async function atualizarUsuario(
 }
 
 /**
- * Altera a senha do usuário.
- * A API não tem endpoint dedicado — enviamos via PUT /usuario/{id} com o campo
- * `senha`. Não há verificação de "senha atual" no backend, então `senhaAtual`
- * é ignorada por ora.
+ * Troca a senha de quem está logado (o usuário vem do cookie de sessão).
+ * PUT /usuario/me/senha → 204. A API confere a senha atual: errada → 400
+ * "A senha atual está incorreta". Antes não havia essa conferência — qualquer
+ * coisa no campo "senha atual" era aceita, e a troca parecia não ter valido.
  */
 export async function atualizarSenha(
-  id: string,
-  _senhaAtual: string,
+  senhaAtual: string,
   novaSenha: string
 ): Promise<ResultadoTrocaSenha> {
   try {
-    const { data: atual } = await api.get<UsuarioApi>(`/usuario/${id}`);
-
-    await api.put(`/usuario/${id}`, {
-      nome: atual.nome,
-      cpf: (atual.cpf ?? "").replace(/\D/g, ""),
-      dataNascimento: atual.dataNascimento,
-      email: atual.email,
-      telefone: (atual.telefone ?? "").replace(/\D/g, ""),
-      senha: novaSenha,
-    });
-
+    await api.put("/usuario/me/senha", { senhaAtual, novaSenha });
     return { ok: true };
-  } catch {
-    return { ok: false, error: "unknown" };
+  } catch (error) {
+    return { ok: false, mensagem: mensagemDaApi(error) };
   }
 }
 

@@ -1,12 +1,9 @@
 import { mensagemErroApi } from "@/api/erros";
-import { useSessao } from "@/context/SessaoContext";
 import { atualizarSenha } from "@/services/autenticacao.service";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 export function useAlterarSenha() {
-  const { sessao } = useSessao();
-
   const [mostrarModal, setMostrarModal] = useState(false);
 
   const [senhaAtual, setSenhaAtual] = useState("");
@@ -28,13 +25,11 @@ export function useAlterarSenha() {
     setErroSenha("");
   };
 
+  // A API confere a senha atual (PUT /usuario/me/senha); errada → a mensagem dela aparece no modal
   const { mutateAsync: enviarNovaSenha, isPending: salvandoSenha } = useMutation({
-    mutationFn: async () => {
-      const id = sessao?.id;
-      if (!id) throw new Error("sem_id");
-
-      const resultado = await atualizarSenha(id, senhaAtual, novaSenha);
-      if (!resultado.ok) throw resultado;
+    mutationFn: async (senhas: { senhaAtual: string; novaSenha: string }) => {
+      const resultado = await atualizarSenha(senhas.senhaAtual, senhas.novaSenha);
+      if (!resultado.ok) throw new Error(resultado.mensagem);
     },
   });
 
@@ -56,16 +51,17 @@ export function useAlterarSenha() {
       return false;
     }
 
+    if (novaSenha === senhaAtual) {
+      setErroSenha("A nova senha precisa ser diferente da atual.");
+      return false;
+    }
+
     try {
-      await enviarNovaSenha();
+      await enviarNovaSenha({ senhaAtual, novaSenha });
       fecharModal();
       return true;
     } catch (erro) {
-      if (erro instanceof Error && erro.message === "sem_id") {
-        setErroSenha("Não foi possível identificar seu usuário. Tente sair e entrar de novo.");
-      } else {
-        setErroSenha(mensagemErroApi(erro));
-      }
+      setErroSenha(erro instanceof Error && erro.message ? erro.message : mensagemErroApi(erro));
       return false;
     }
   };

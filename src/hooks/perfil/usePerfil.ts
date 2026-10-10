@@ -31,15 +31,12 @@ export function usePerfil() {
       const id = sessao?.id;
       if (!id) throw new Error("sem_id");
 
-      // Não há como verificar a senha atual sem risco (ver comentário em
-      // autenticacao.service.ts#atualizarUsuario) — enviamos o valor digitado
-      // direto, exatamente como o usuário confirmou na tela.
+      // Sem senha: editar os dados não mexe mais nela (trocar é no "Alterar senha")
       const resultado = await atualizarUsuario(id, {
         nome: dados.nome,
         email: dados.email,
         telefone: dados.telefone.replace(/\D/g, ""),
         dataNascimento: converterDataParaISO(dados.dataNascimento),
-        senha: dados.senha,
       });
 
       if (!resultado.ok) throw resultado;

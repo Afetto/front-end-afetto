@@ -140,7 +140,7 @@ src/
 │   ├── clinica.schema.ts       ← tipos ClinicaResumo/ClinicaDetalhe/Avaliacao/DiaDisponivel + FormAvaliacaoSchema (nota 1 a 5, comentário até 500) e FormAgendamentoSchema (pet, dia e horário obrigatórios)
 │   └── consulta.schema.ts      ← tipos Consulta/DadosConsulta, TIPOS_CONSULTA + LABEL_TIPO_CONSULTA, FormConsultaSchema (hora HH:MM opcional)
 ├── services/
-│   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioLogado, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, redefinirSenha, sair (funções nomeadas)
+│   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioLogado, buscarUsuarioPorId, atualizarUsuario (sem senha), atualizarSenha (PUT /usuario/me/senha — a API confere a senha atual), redefinirSenha, sair (funções nomeadas)
 │   ├── perfil-completo.service.ts ← perfilCompletoService.{buscar,salvar} (objeto) — converte casa/apartamento e sim/não do formulário para CASA/APARTAMENTO e true/false da API
 │   ├── cep.service.ts           ← cepService.buscarPorCep (objeto) — API pública do ViaCEP, usa `fetch` direto (não é a API do Afetto, não passa pelo cliente Axios)
 │   ├── pet.service.ts           ← petService.{listar,buscarPorId,criar,atualizar,remover} (objeto)
@@ -175,7 +175,8 @@ src/
 │   ├── notificacao.service.test.ts ← o que o service pede ao expo-notifications (mockado)
 │   ├── useVacinas.test.tsx      ← salvar/editar/excluir vacina agenda/reagenda/cancela o lembrete
 │   ├── api.test.ts              ← endereço da API (computador do Expo na 8080, localhost, .env)
-│   ├── autenticacao.service.test.ts ← login busca quem entrou em GET /usuario/me
+│   ├── autenticacao.service.test.ts ← login busca quem entrou em GET /usuario/me; editar os dados não manda senha; trocar senha (PUT /usuario/me/senha, senha atual errada)
+│   ├── alterar-senha.test.tsx   ← "Alterar senha" do Perfil: manda a atual e a nova, senha atual errada (mensagem da API), confirmação diferente / nova igual à atual
 │   ├── sessao.test.tsx          ← revalidação da sessão salva no boot (GET /usuario/me) e cache limpo ao trocar de conta
 │   ├── vacina.service.test.ts   ← vacinas do pet via GET /vacina?idPet=
 │   ├── esqueci-senha.test.tsx   ← redefinir senha: payload, sucesso, 400/429 com a mensagem da API, confirmação diferente
@@ -362,7 +363,7 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 - Botão de submit usa `isPending` do `useMutation` (nunca `isSubmitting` do `react-hook-form`) e, sempre que possível, o componente `BotaoEnviar`.
 - Erros de API aparecem via `setError("root", { message })` do `react-hook-form`, renderizado como texto na tela — nunca silenciados.
 - `/perfil` (edição de dados pessoais) segue o padrão padrão desde que ganhou modo visualização/edição: `react-hook-form` + `zodResolver(EditarPerfilSchema)`, com `CampoTexto` nos campos e alternância entre `DadosPessoaisCard` (leitura) e `FormDadosPessoais` (edição) controlada por um `editando` local — mesmo padrão de toggle usado em `pet/[id]/index.tsx` → `pet/[id]/editar.tsx`.
-- **Exceção que continua real:** o modal de troca de senha (`AlterarSenhaModal` + `useAlterarSenha`) usa inputs controlados manualmente, sem Zod — validação imperativa de senha (tamanho mínimo, confirmação igual). Isso é aceitável por ser um fluxo pequeno e isolado (3 campos, sem máscara, sem reuso de schema).
+- **Exceção que continua real:** o modal de troca de senha (`AlterarSenhaModal` + `useAlterarSenha`) usa inputs controlados manualmente, sem Zod — validação imperativa de senha (tamanho mínimo, confirmação igual, nova diferente da atual). Isso é aceitável por ser um fluxo pequeno e isolado (3 campos, sem máscara, sem reuso de schema). A senha atual é conferida pela API (`PUT /usuario/me/senha`); errada → o modal mostra "A senha atual está incorreta".
 - Ao adicionar um campo, use as máscaras de `utils/mascaras.ts` via a prop `transformarTexto` do `CampoTexto` (não crie uma máscara nova inline).
 
 ---
@@ -373,6 +374,7 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 - `SessaoContext` (`src/context/SessaoContext.tsx`) é a **única** fonte de verdade da sessão.
 - Sessão persistida via `AsyncStorage` com a chave **`@afetto:session`** (não `@afetto:token` — o cookie de sessão é gerenciado pelo navegador/WebView, o AsyncStorage guarda só os dados de UI: `id`, `email`, `nome` — o progresso do onboarding vem da API). A preferência de tema usa outra chave, **`@afetto:tema`** (ver seção 4, `TemaContext`) — são dois valores independentes, não misture.
 - Falha de login: a API devolve a senha errada (ou a conta que não existe — o H2 é zerado a cada reinício da API) como **403**, não 401, porque não trata a exceção do `/login`. `autenticar` trata 400/401/403 do `POST /login` como "E-mail ou senha incorretos" (o `/login` é liberado e sem CSRF, então 403 ali só pode ser isso).
+- **Senha:** trocar logado é `PUT /usuario/me/senha` com a senha atual (a API confere; errada → 400). A edição de dados (`PUT /usuario/{id}`) **não mexe mais na senha** — antes ela gravava como senha o que viesse no corpo, e a tela de editar perfil pedia a "senha atual" para isso (podia desfazer uma troca de senha). Esqueci a senha continua em `POST /senha/redefinir`.
 - **Cadastro já entra:** `useCadastrar` faz `POST /usuario` e, em seguida, o mesmo `autenticar` do login (`POST /login` + `GET /usuario/me`); a tela chama `entrar()` e vai para `/(tabs)`. Se esse login automático falhar, a conta continua criada e a tela vai para `/cadastro-sucesso`, que leva ao `/login`.
 - O `POST /login` não devolve os dados do usuário: logo depois dele, `autenticar` busca quem entrou em `GET /usuario/me` (o backend identifica pelo cookie). Se essa chamada falhar, o login não segue — entrar sem `id` deixaria a sessão quebrada. No boot do app, o `SessaoProvider` revalida a sessão salva com o mesmo `GET /usuario/me` (`buscarUsuarioLogado`): se não responder ou for de outra conta, a sessão local é descartada; se responder, nome e e-mail são atualizados. O resto da app continua usando `buscarUsuarioPorId(id)` onde precisa do detalhe.
 - Um `401` de qualquer chamada dispara o tratador registrado por `SessaoContext` via `definirTratadorSessaoExpirada` (em `api.ts`), que limpa o AsyncStorage e zera a sessão — o `<RotaProtegida>` reage sozinho e redireciona para `/login`.
