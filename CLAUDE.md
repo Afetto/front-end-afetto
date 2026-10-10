@@ -78,7 +78,7 @@ src/
 │   │           └── calendario.tsx      → /pet/{id}/calendario (mês a mês: grade com pontos por tipo + cuidados do dia; GET /calendario; tocar abre a edição)
 │   └── (tabs)/                 ← app principal (protegido por <RotaProtegida>)
 │       ├── _layout.tsx  ← abas: Início, Pets, Assistente, Clínica
-│       ├── index.tsx    ← Início (Home / checklist de onboarding)
+│       ├── index.tsx    ← Início (Home): checklist de onboarding; concluído, mostra `AgendaInicio`
 │       ├── pets.tsx
 │       ├── clinica.tsx    ← Clínicas Parceiras: busca por nome (espera 400 ms), Todas/Favoritas, mais perto primeiro
 │       └── assistente.tsx ← placeholder ("Em breve")
@@ -94,7 +94,8 @@ src/
 │   ├── CardClinica.tsx            ← card da clínica na lista (foto, local, nota, distância, "perto de você", coração de favorita)
 │   ├── Estrelas.tsx               ← estrelas de 0 a 5 (meia estrela na exibição); com `onChange` vira escolha da nota
 │   ├── clinica/
-│   │   └── AvaliacoesClinica.tsx  ← "Sua avaliação" (estrelas + comentário, atualizar/apagar) e as dos outros tutores — só da tela /clinica/{id}
+│   │   └── AvaliacoesClinica.tsx  ← "Sua avaliação" (estrelas + comentário, atualizar/apagar) e, abaixo, a caixa "Comentários (N)" com todos — o do tutor em destaque ("VOCÊ"), nome, data e hora — só da tela /clinica/{id}
+│   ├── AgendaInicio.tsx           ← corpo da Home pós-onboarding: atalhos, próximos 14 dias de todos os pets (GET /calendario sem idPet) e remédios em tratamento hoje
 │   ├── CalendarioMes.tsx          ← grade do mês (domingo a sábado) com pontos coloridos por tipo de cuidado (+ `COR_TIPO_CALENDARIO`)
 │   ├── CardPet.tsx                ← card de pet na listagem (pets.tsx)
 │   ├── CardPetResumo.tsx          ← card de pet que sobrepõe o header verde — usado em pet/[id]/index.tsx e historico.tsx
@@ -102,6 +103,7 @@ src/
 │   ├── perfil/                    ← componentes específicos da tela /perfil (não reutilizados fora dela)
 │   │   ├── PerfilHeader.tsx         ← header com toggle visualização/edição (pencil ↔ "Cancelar")
 │   │   ├── DadosPessoaisCard.tsx    ← modo visualização (somente leitura, com ícones)
+│   │   ├── MoradiaEnderecoCard.tsx  ← "Moradia e endereço" (Finalize seu cadastro) com Editar → /completar-perfil
 │   │   ├── FormDadosPessoais.tsx    ← modo edição (CampoTexto + react-hook-form)
 │   │   ├── SegurancaCard.tsx
 │   │   ├── AparenciaCard.tsx        ← seletor de tema Claro/Escuro/Sistema — usa useTema() (TemaContext)
@@ -117,7 +119,7 @@ src/
 │   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet (+ `CHAVE_CONSULTA_PETS`, a chave do cache)
 │   ├── useVacinas.ts          ← useVacinasPet, useVacina, useCriarVacina, useAtualizarVacina, useDeletarVacina — as três mutations agendam/reagendam/cancelam o lembrete
 │   ├── useRemedios.ts         ← useRemediosPet, useRemedio, useCriarRemedio, useAtualizarRemedio, useDeletarRemedio (+ `CHAVE_REMEDIOS`)
-│   ├── useCalendario.ts       ← useCalendarioPet (+ `CHAVE_CALENDARIO`, invalidada ao salvar/excluir vacina, remédio ou consulta)
+│   ├── useCalendario.ts       ← useCalendarioPet, useAgendaDoTutor (+ `CHAVE_CALENDARIO`, invalidada ao salvar/excluir vacina, remédio ou consulta)
 │   ├── useClinicas.ts         ← useClinicas, useClinica, useAvaliacoesClinica, useAlternarFavorita, useAvaliarClinica, useApagarAvaliacao, useHorariosClinica, useAgendarConsulta (+ `CHAVE_CLINICAS`; agendar invalida as consultas do pet, o calendário e os horários)
 │   ├── useConsultas.ts        ← useConsultasPet, useConsulta, useCriarConsulta, useAtualizarConsulta, useCancelarConsulta, useDeletarConsulta (+ `CHAVE_CONSULTAS`)
 │   ├── useAutenticacao.ts     ← useCadastrar, useEntrar, useRedefinirSenha (logout fica inline — ver seção 8)
@@ -160,7 +162,7 @@ src/
 │   ├── remedio.ts               ← situacaoRemedio (futuro / em uso / terminado), descreverPeriodo, descreverDose
 │   ├── historico.ts             ← montarHistorico — vacinas, remédios e consultas numa linha do tempo só (em andamento → próximos → passados)
 │   ├── clinica.ts               ← formatarDistancia ("850 m"/"3,2 km"), formatarNota, localDaClinica, enderecoCompleto, LABEL_TURNO
-│   ├── calendario.ts            ← celulasDoMes, periodoDoMes, somarMeses, diaInicial, agruparPorData, formatarDataISO (dia local, sem UTC)
+│   ├── calendario.ts            ← celulasDoMes, periodoDoMes, somarMeses, diaInicial, agruparPorData, formatarDataISO (dia local, sem UTC), rotuloDia (Hoje/Amanhã/seg 13/10), resumirAgenda (Home)
 │   └── cuidados.ts              ← proximosCuidados — "Próximos cuidados" do pet (remédios em uso/que vão começar, consultas agendadas e vacinas agendadas)
 ├── __tests__/
 │   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado)
@@ -181,6 +183,7 @@ src/
 │   ├── remedio-tela.test.tsx    ← criar (datas ISO), fim antes do início, erro da API, editar com PUT
 │   ├── historico.test.tsx       ← vacinas, remédios e consultas juntos; filtros; consulta cancelada sem Editar
 │   ├── clinica.test.tsx         ← lista (nota, distância, perto, favoritar, busca, favoritas, aviso sem endereço) e detalhe (contato, horário, equipe, avaliar)
+│   ├── ajustes.test.tsx         ← card Moradia e endereço do /perfil e as contas da agenda da Home
 │   ├── agendamento.test.tsx     ← agendar: só pets da conta, dias lotados/fechados, payload, histórico do pet, horário ocupado (409)
 │   ├── calendario.test.tsx      ← contas do mês e a tela (busca do período, cuidados do dia, abrir edição, trocar de mês)
 │   └── consulta.test.tsx        ← registrar (tipo, ISO, hora), hora inválida, editar com erro da API, consultas no histórico e nos próximos cuidados
@@ -469,6 +472,8 @@ De onde vem cada etapa (`utils/onboarding.ts`, tipo `EtapasOnboarding`):
 - **Perfil completo** também é derivado da API: a Home chama `usePerfilCompleto()` (`GET /usuario/me/perfil`) e usa o campo `perfilCompleto` (moradia, tela de proteção e endereço salvos). Salvar em `/completar-perfil` atualiza o cache com o perfil que o `PUT` devolve, então a Home muda na volta. Não existe mais flag local de progresso na sessão. A Home só mostra checklist e barra depois que as duas respostas (pets e perfil) chegam.
 - O item "Vincular sua clínica" saiu do checklist porque nunca podia ser concluído (a API não tem endpoint de clínica). A aba Clínica continua existindo.
 - O botão "Seus Pets" da Home (`BotaoSeusPets`) mostra a quantidade de pets vinda de `usePets()`.
+- Com as etapas obrigatórias concluídas, o checklist some e a Home mostra `AgendaInicio`: atalhos (Agendar consulta, Adicionar cuidado), os próximos compromissos de todos os pets nos próximos 14 dias e os remédios em tratamento hoje. Agenda vazia mostra um aviso, nunca a Home em branco.
+- `/completar-perfil` também é a tela de edição: aberta pelo card "Moradia e endereço" do `/perfil`, vem preenchida, com título "Moradia e endereço" e botão "Salvar alterações".
 
 ---
 

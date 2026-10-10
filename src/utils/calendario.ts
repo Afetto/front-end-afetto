@@ -65,3 +65,49 @@ export function diaInicial(mes: MesCalendario, hoje: Date = new Date()): string 
     ? formatarDataISO(hoje)
     : periodoDoMes(mes).inicio;
 }
+
+const DIAS_CURTOS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+
+/** "Hoje", "Amanhã" ou "seg 13/10" para uma data "YYYY-MM-DD". */
+export function rotuloDia(dataIso: string, hoje: Date = new Date()): string {
+  const [ano, mes, dia] = dataIso.split("-").map(Number);
+  const data = new Date(ano, mes - 1, dia);
+  const base = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const diferenca = Math.round((data.getTime() - base.getTime()) / 86_400_000);
+
+  if (diferenca === 0) return "Hoje";
+  if (diferenca === 1) return "Amanhã";
+  return `${DIAS_CURTOS[data.getDay()]} ${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}`;
+}
+
+type EventoDaAgenda = {
+  tipo: string;
+  data: string;
+  hora?: string;
+  idReferencia: string;
+};
+
+/**
+ * Agenda da Home: os próximos compromissos (consultas, vacinas e próximas
+ * doses, em ordem de data e hora) e os remédios em tratamento hoje — o
+ * calendário manda um evento por dia de remédio, então cada um aparece uma vez só.
+ */
+export function resumirAgenda<T extends EventoDaAgenda>(
+  eventos: T[],
+  hoje: string,
+  limite = 5
+): { proximos: T[]; emTratamento: T[] } {
+  const proximos = eventos
+    .filter((evento) => evento.tipo !== "REMEDIO" && evento.data >= hoje)
+    .sort((a, b) => (a.data + (a.hora ?? "")).localeCompare(b.data + (b.hora ?? "")))
+    .slice(0, limite);
+
+  const vistos = new Set<string>();
+  const emTratamento = eventos.filter((evento) => {
+    if (evento.tipo !== "REMEDIO" || evento.data !== hoje || vistos.has(evento.idReferencia)) return false;
+    vistos.add(evento.idReferencia);
+    return true;
+  });
+
+  return { proximos, emTratamento };
+}

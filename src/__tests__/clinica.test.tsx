@@ -148,7 +148,8 @@ describe("TelaClinicaDetalhe (HTTP mockado)", () => {
     expect(screen.getByText("08:00 – 18:00")).toBeTruthy();
     expect(screen.getByText("Clínica geral · Manhã")).toBeTruthy();
     expect(await screen.findByText("Equipe atenciosa")).toBeTruthy();
-    expect(screen.getByText("01/10/2026")).toBeTruthy();
+    expect(screen.getByText("01/10/2026 às 10:00")).toBeTruthy();
+    expect(screen.getByText("Comentários (1)")).toBeTruthy();
 
     fireEvent.press(screen.getByText("Agendar consulta"));
     expect(router.push).toHaveBeenCalledWith("/agendamento/cli-1");
@@ -170,5 +171,42 @@ describe("TelaClinicaDetalhe (HTTP mockado)", () => {
     await waitFor(() =>
       expect(mockPut).toHaveBeenCalledWith("/clinica/cli-1/avaliacao", { nota: 4, comentario: "Ótimo atendimento" })
     );
+  });
+
+  it("depois de avaliar, o comentário do tutor aparece na caixa, com 'Você', nome, data e hora", async () => {
+    let avaliou = false;
+    responderApi();
+    const respostaPadrao = mockGet.getMockImplementation()!;
+    mockGet.mockImplementation((url: string, config?: unknown) => {
+      if (url === "/clinica/cli-1/avaliacao" && avaliou) {
+        return Promise.resolve({
+          data: {
+            content: [
+              { id: "av-2", nota: 4, comentario: "Ótimo atendimento", autor: "Ana L.", data: "2026-10-09T21:10:00", minha: true },
+              ...AVALIACOES.content,
+            ],
+          },
+        });
+      }
+      return respostaPadrao(url, config);
+    });
+    mockPut.mockImplementation(() => {
+      avaliou = true;
+      return Promise.resolve({ data: {} });
+    });
+
+    render(<TelaClinicaDetalhe />, { wrapper });
+    await screen.findByText("Avalie esta clínica");
+
+    fireEvent.press(screen.getByLabelText("4 estrelas"));
+    fireEvent.changeText(screen.getByPlaceholderText("Conte como foi o atendimento (opcional)"), "Ótimo atendimento");
+    fireEvent.press(screen.getByText("Enviar avaliação"));
+
+    expect(await screen.findByText("Avaliação salva! Ela já aparece nos comentários abaixo.")).toBeTruthy();
+    expect(await screen.findByText("VOCÊ")).toBeTruthy();
+    expect(screen.getByText("Ana L.")).toBeTruthy();
+    expect(screen.getByText("09/10/2026 às 21:10")).toBeTruthy();
+    expect(screen.getByText("Comentários (2)")).toBeTruthy();
+    expect(screen.getByText("Sua avaliação")).toBeTruthy();
   });
 });

@@ -2,15 +2,66 @@ import { mensagemDaApi } from "@/api/erros";
 import { Estrelas } from "@/components/Estrelas";
 import CampoTexto from "@/components/ui/CampoTexto";
 import { useApagarAvaliacao, useAvaliacoesClinica, useAvaliarClinica } from "@/hooks/useClinicas";
-import { FormAvaliacao, FormAvaliacaoSchema } from "@/schemas/clinica.schema";
+import { Avaliacao, FormAvaliacao, FormAvaliacaoSchema } from "@/schemas/clinica.schema";
 import { converterDataParaBR } from "@/utils/data";
+import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from "react-native";
 
+// "09/10/2026 às 21:10"
+function quando(avaliacao: Avaliacao): string {
+  if (!avaliacao.data) return "";
+  return converterDataParaBR(avaliacao.data) + (avaliacao.hora ? ` às ${avaliacao.hora}` : "");
+}
+
+function CardComentario({ avaliacao }: { avaliacao: Avaliacao }) {
+  return (
+    <View
+      className={`rounded-2xl p-4 gap-1.5 ${
+        avaliacao.minha ? "bg-golden-pale" : "bg-white dark:bg-gray-800 shadow-sm"
+      }`}
+    >
+      <View className="flex-row items-center gap-3">
+        <View className="w-9 h-9 rounded-full bg-primary items-center justify-center">
+          <Text className="text-white font-bold">{avaliacao.autor.charAt(0).toUpperCase()}</Text>
+        </View>
+        <View className="flex-1">
+          <View className="flex-row items-center gap-2">
+            <Text
+              className={`text-sm font-semibold ${avaliacao.minha ? "text-primary-dark" : "text-gray-900 dark:text-white"}`}
+            >
+              {avaliacao.autor}
+            </Text>
+            {avaliacao.minha && (
+              <View className="bg-primary rounded-full px-2 py-0.5">
+                <Text className="text-[10px] font-bold text-white">VOCÊ</Text>
+              </View>
+            )}
+          </View>
+          <Text className={`text-[11px] ${avaliacao.minha ? "text-primary-dark" : "text-muted dark:text-gray-400"}`}>
+            {quando(avaliacao)}
+          </Text>
+        </View>
+        <Estrelas nota={avaliacao.nota} tamanho={12} />
+      </View>
+      {avaliacao.comentario ? (
+        <Text className={`text-sm ${avaliacao.minha ? "text-primary-dark" : "text-gray-700 dark:text-gray-300"}`}>
+          {avaliacao.comentario}
+        </Text>
+      ) : (
+        <Text className={`text-xs italic ${avaliacao.minha ? "text-primary-dark" : "text-muted dark:text-gray-400"}`}>
+          Só a nota, sem comentário.
+        </Text>
+      )}
+    </View>
+  );
+}
+
 // Seção "Avaliações" do detalhe da clínica: a avaliação do tutor (nota de 1 a
-// 5 + comentário, avaliar de novo substitui) e as dos outros tutores.
+// 5 + comentário, avaliar de novo substitui) e, logo abaixo, a caixa com todos
+// os comentários (o do tutor em destaque, com "Você"), com nome, data e hora.
 // Específico da tela /clinica/{id}.
 export function AvaliacoesClinica({ idClinica }: { idClinica: string }) {
   const { data: avaliacoes, isLoading } = useAvaliacoesClinica(idClinica);
@@ -18,7 +69,9 @@ export function AvaliacoesClinica({ idClinica }: { idClinica: string }) {
   const { mutate: apagar, isPending: apagando } = useApagarAvaliacao(idClinica);
 
   const minha = avaliacoes?.find((avaliacao) => avaliacao.minha);
-  const outras = (avaliacoes ?? []).filter((avaliacao) => !avaliacao.minha);
+  // O do tutor primeiro; os outros na ordem da API (mais recentes primeiro)
+  const comentarios = [...(minha ? [minha] : []), ...(avaliacoes ?? []).filter((avaliacao) => !avaliacao.minha)];
+  const [acabouDeSalvar, setAcabouDeSalvar] = useState(false);
 
   const {
     control,
@@ -36,7 +89,11 @@ export function AvaliacoesClinica({ idClinica }: { idClinica: string }) {
   }, [minha?.id, minha?.nota, minha?.comentario, reset]);
 
   function salvar(dados: FormAvaliacao) {
-    avaliar(dados, { onError: (erro) => setError("root", { message: mensagemDaApi(erro) }) });
+    setAcabouDeSalvar(false);
+    avaliar(dados, {
+      onSuccess: () => setAcabouDeSalvar(true),
+      onError: (erro) => setError("root", { message: mensagemDaApi(erro) }),
+    });
   }
 
   function aoApagar() {
@@ -45,7 +102,11 @@ export function AvaliacoesClinica({ idClinica }: { idClinica: string }) {
       {
         text: "Apagar",
         style: "destructive",
-        onPress: () => apagar(undefined, { onError: (erro) => setError("root", { message: mensagemDaApi(erro) }) }),
+        onPress: () =>
+          apagar(undefined, {
+            onSuccess: () => setAcabouDeSalvar(false),
+            onError: (erro) => setError("root", { message: mensagemDaApi(erro) }),
+          }),
       },
     ]);
   }
@@ -81,6 +142,15 @@ export function AvaliacoesClinica({ idClinica }: { idClinica: string }) {
 
         {errors.root && <Text className="text-red-500 text-sm">{errors.root.message}</Text>}
 
+        {acabouDeSalvar && (
+          <View className="flex-row items-center gap-2">
+            <Ionicons name="checkmark-circle" size={16} color="#1E3A2F" />
+            <Text className="flex-1 text-sm text-primary dark:text-green-medium">
+              Avaliação salva! Ela já aparece nos comentários abaixo.
+            </Text>
+          </View>
+        )}
+
         <View className="flex-row gap-3">
           <TouchableOpacity
             onPress={handleSubmit(salvar)}
@@ -108,29 +178,21 @@ export function AvaliacoesClinica({ idClinica }: { idClinica: string }) {
         </View>
       </View>
 
-      {/* Dos outros tutores */}
-      {isLoading ? (
-        <ActivityIndicator color="#E8A838" />
-      ) : outras.length === 0 ? (
-        <Text className="text-sm text-muted dark:text-gray-400">
-          {minha ? "Nenhum outro tutor avaliou ainda." : "Ninguém avaliou esta clínica ainda."}
+      {/* Caixa de comentários: todos, com o do tutor em destaque */}
+      <View className="gap-2">
+        <Text className="text-sm font-semibold text-gray-900 dark:text-white">
+          Comentários{comentarios.length > 0 ? ` (${comentarios.length})` : ""}
         </Text>
-      ) : (
-        outras.map((avaliacao) => (
-          <View key={avaliacao.id} className="bg-white dark:bg-gray-800 rounded-2xl p-4 gap-1 shadow-sm">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-sm font-semibold text-gray-900 dark:text-white">{avaliacao.autor}</Text>
-              {!!avaliacao.data && (
-                <Text className="text-[11px] text-muted dark:text-gray-400">{converterDataParaBR(avaliacao.data)}</Text>
-              )}
-            </View>
-            <Estrelas nota={avaliacao.nota} tamanho={12} />
-            {avaliacao.comentario && (
-              <Text className="text-sm text-gray-700 dark:text-gray-300 mt-1">{avaliacao.comentario}</Text>
-            )}
-          </View>
-        ))
-      )}
+        {isLoading ? (
+          <ActivityIndicator color="#E8A838" />
+        ) : comentarios.length === 0 ? (
+          <Text className="text-sm text-muted dark:text-gray-400">
+            Ninguém avaliou esta clínica ainda. Seja o primeiro!
+          </Text>
+        ) : (
+          comentarios.map((avaliacao) => <CardComentario key={avaliacao.id} avaliacao={avaliacao} />)
+        )}
+      </View>
     </View>
   );
 }

@@ -1,3 +1,4 @@
+import { AgendaInicio } from "@/components/AgendaInicio";
 import { BarraProgresso } from "@/components/BarraProgresso";
 import { BotaoSeusPets } from "@/components/BotaoSeusPets";
 import { ItemChecklist } from "@/components/ItemChecklist";
@@ -120,6 +121,14 @@ export default function TelaInicio() {
               <Text className="text-amber font-semibold">Tentar novamente</Text>
             </TouchableOpacity>
           </View>
+        )}
+
+        {/* Onboarding concluído: atalhos, agenda dos pets e remédios em tratamento */}
+        {carregouProgresso && obrigatoriosConcluidos && sessao && (
+          <AgendaInicio
+            idUsuario={sessao.id}
+            idPetUnico={pets && pets.length === 1 ? pets[0].id : undefined}
+          />
         )}
 
         {/* Checklist — some quando os passos obrigatórios estão completos */}

@@ -129,6 +129,8 @@ export default function TelaCompletarPerfil() {
     );
   }
 
+  const jaCompleto = !!perfilSalvo?.perfilCompleto;
+
   if (carregandoPerfil) {
     return (
       <View className="flex-1 items-center justify-center bg-surface dark:bg-gray-900">
@@ -153,11 +155,14 @@ export default function TelaCompletarPerfil() {
 
           {/* Título */}
           <View className="gap-1">
+            {/* Já salvo antes (aberto pelo /perfil para editar) ou primeira vez (Home) */}
             <Text className="text-4xl font-bold text-gray-900 dark:text-white leading-tight">
-              Complete seu{"\n"}Cadastro!
+              {jaCompleto ? "Moradia e\nendereço" : "Complete seu\nCadastro!"}
             </Text>
             <Text className="text-sm text-muted dark:text-gray-400 mt-1">
-              Essas informações nos ajudam a personalizar sua experiência.
+              {jaCompleto
+                ? "Atualize suas informações quando algo mudar."
+                : "Essas informações nos ajudam a personalizar sua experiência."}
             </Text>
           </View>
 
@@ -319,7 +324,7 @@ export default function TelaCompletarPerfil() {
           <BotaoEnviar
             enviando={enviando}
             onPress={handleSubmit(aoEnviar)}
-            texto="Concluir"
+            texto={jaCompleto ? "Salvar alterações" : "Concluir"}
             textoLoading="Salvando..."
           />
         </View>

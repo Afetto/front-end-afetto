@@ -4,6 +4,7 @@ import { AparenciaCard } from "@/components/perfil/AparenciaCard";
 import { ContaCard } from "@/components/perfil/ContaCard";
 import { DadosPessoaisCard } from "@/components/perfil/DadosPessoaisCard";
 import { FormDadosPessoais } from "@/components/perfil/FormDadosPessoais";
+import { MoradiaEnderecoCard } from "@/components/perfil/MoradiaEnderecoCard";
 import { PerfilHeader } from "@/components/perfil/PerfilHeader";
 import { SegurancaCard } from "@/components/perfil/SegurancaCard";
 import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
@@ -11,6 +12,7 @@ import { ToastSucesso } from "@/components/ui/ToastSucesso";
 import { useSessao } from "@/context/SessaoContext";
 import { useAlterarSenha } from "@/hooks/perfil/useAlterarSenha";
 import { usePerfil } from "@/hooks/perfil/usePerfil";
+import { usePerfilCompleto } from "@/hooks/usePerfilCompleto";
 import { EditarPerfilInput, EditarPerfilSchema } from "@/schemas/editar-perfil.schema";
 import { converterDataParaBR } from "@/utils/data";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,6 +66,9 @@ export default function TelaPerfil() {
     fecharModal,
     alterarSenha,
   } = useAlterarSenha();
+
+  // Moradia, tela de proteção, pets e endereço do "Finalize seu cadastro"
+  const { data: perfilCompleto, isLoading: carregandoPerfilCompleto } = usePerfilCompleto();
 
   const [notifWhatsapp, setNotifWhatsapp] = useState(true);
   const [editando, setEditando] = useState(false);
@@ -223,6 +228,14 @@ export default function TelaPerfil() {
               <Text className="px-1 text-center text-xs text-red-500">
                 {errors.root.message}
               </Text>
+            )}
+
+            {!editando && (
+              <MoradiaEnderecoCard
+                perfil={perfilCompleto}
+                carregando={carregandoPerfilCompleto}
+                onEditar={() => router.push("/completar-perfil")}
+              />
             )}
 
             <SegurancaCard

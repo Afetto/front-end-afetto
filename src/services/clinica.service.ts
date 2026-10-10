@@ -91,8 +91,9 @@ function mapearAvaliacao(dados: AvaliacaoApi): Avaliacao {
     nota: dados.nota,
     comentario: dados.comentario || undefined,
     autor: dados.autor || "Tutor",
-    // A API manda data e hora ("2026-10-09T10:00:00"); o app mostra só o dia
+    // A API manda data e hora juntas ("2026-10-09T21:10:00")
     data: (dados.data ?? "").slice(0, 10),
+    hora: (dados.data ?? "").slice(11, 16) || undefined,
     minha: dados.minha,
   };
 }

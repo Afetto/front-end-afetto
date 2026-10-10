@@ -50,8 +50,9 @@ export type Avaliacao = {
   comentario?: string;
   // Só o primeiro nome e a inicial (ex.: "Ana S.")
   autor: string;
-  // Data da última alteração (YYYY-MM-DD)
+  // Data e hora da última alteração (YYYY-MM-DD e HH:mm)
   data: string;
+  hora?: string;
   // É a avaliação do usuário logado
   minha: boolean;
 };

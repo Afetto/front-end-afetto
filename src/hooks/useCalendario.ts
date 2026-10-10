@@ -12,3 +12,15 @@ export function useCalendarioPet(idPet: string, inicio: string, fim: string) {
     enabled: !!idPet,
   });
 }
+
+/**
+ * Agenda de todos os pets do tutor (GET /calendario sem idPet) — usada na Home.
+ * O id do usuário vai na chave: trocar de conta no aparelho não mostra a agenda da anterior.
+ */
+export function useAgendaDoTutor(idUsuario: string | undefined, inicio: string, fim: string) {
+  return useQuery({
+    queryKey: [CHAVE_CALENDARIO, "todos", idUsuario, inicio, fim],
+    queryFn: () => calendarioService.buscar({ inicio, fim }),
+    enabled: !!idUsuario,
+  });
+}
