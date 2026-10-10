@@ -63,3 +63,30 @@ export const FormAvaliacaoSchema = z.object({
 });
 
 export type FormAvaliacao = z.infer<typeof FormAvaliacaoSchema>;
+
+// Agendamento (GET /clinica/{id}/horarios e POST /clinica/{id}/agendamento)
+
+export type DiaDisponivel = {
+  data: string; // YYYY-MM-DD
+  diaSemana: string; // ex.: "segunda-feira"
+  // A clínica abre nesse dia da semana
+  aberta: boolean;
+  // Horários livres "HH:mm" (sem os que já passaram ou já foram agendados)
+  horarios: string[];
+};
+
+export type HorariosClinica = {
+  nomeClinica: string;
+  duracaoMinutos: number;
+  dias: DiaDisponivel[];
+};
+
+export const FormAgendamentoSchema = z.object({
+  idPet: z.string({ message: "Escolha o pet" }).min(1, "Escolha o pet"),
+  data: z.string({ message: "Escolha o dia" }).min(1, "Escolha o dia"),
+  hora: z.string({ message: "Escolha um horário" }).min(1, "Escolha um horário"),
+  descricao: z.string().trim().max(255, "Use no máximo 255 caracteres").optional(),
+  observacoes: z.string().trim().max(255, "Use no máximo 255 caracteres").optional(),
+});
+
+export type FormAgendamento = z.infer<typeof FormAgendamentoSchema>;

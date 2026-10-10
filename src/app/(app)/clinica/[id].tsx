@@ -49,7 +49,7 @@ function Secao({ titulo, children }: { titulo: string; children: React.ReactNode
   );
 }
 
-// Detalhe da clínica parceira: contatos, endereço, horário, equipe e avaliações
+// Detalhe da clínica parceira: agendar consulta, contatos, endereço, horário, equipe e avaliações
 export default function TelaClinicaDetalhe() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: clinica, isLoading, isError, refetch } = useClinica(id);
@@ -138,6 +138,17 @@ export default function TelaClinicaDetalhe() {
             )}
           </View>
         </View>
+
+        {/* Agendar: escolhe o pet, o dia e um horário livre da clínica */}
+        <TouchableOpacity
+          // `as any`: rota gerada por template literal, fora do que o typedRoutes infere.
+          onPress={() => router.push(`/agendamento/${clinica.id}` as any)}
+          activeOpacity={0.85}
+          className="flex-row items-center justify-center gap-2 rounded-2xl py-4 bg-primary"
+        >
+          <Ionicons name="calendar-outline" size={18} color="#FFFFFF" />
+          <Text className="text-base font-semibold text-white">Agendar consulta</Text>
+        </TouchableOpacity>
 
         {clinica.descricao && (
           <Text className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{clinica.descricao}</Text>

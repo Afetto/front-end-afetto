@@ -6,12 +6,15 @@ import {
   ClinicaResumo,
   EnderecoClinica,
   Expediente,
+  FormAgendamento,
   FormAvaliacao,
+  HorariosClinica,
   Veterinario,
 } from "@/schemas/clinica.schema";
 
-// Clínicas parceiras (/clinica), favoritas (/clinica/{id}/favorito) e
-// avaliações (/clinica/{id}/avaliacao).
+// Clínicas parceiras (/clinica), favoritas (/clinica/{id}/favorito),
+// avaliações (/clinica/{id}/avaliacao) e agendamento (/clinica/{id}/horarios e
+// /clinica/{id}/agendamento).
 //
 // "Perto de você": o app não manda a localização do aparelho (não há
 // biblioteca de GPS no projeto). A API usa então as coordenadas do endereço
@@ -135,5 +138,28 @@ export const clinicaService = {
 
   apagarAvaliacao: async (idClinica: string): Promise<void> => {
     await api.delete(`/clinica/${idClinica}/avaliacao`);
+  },
+
+  // Próximos dias (a partir de hoje) com os horários livres de cada um
+  horariosLivres: async (idClinica: string, dias = 14): Promise<HorariosClinica> => {
+    const response = await api.get<HorariosClinica>(`/clinica/${idClinica}/horarios`, { params: { dias } });
+    return {
+      nomeClinica: response.data.nomeClinica,
+      duracaoMinutos: response.data.duracaoMinutos,
+      dias: (response.data.dias ?? []).map((dia) => ({ ...dia, horarios: dia.horarios ?? [] })),
+    };
+  },
+
+  // A consulta vai para o histórico do pet (agendada, com a clínica). Horário
+  // ocupado nesse meio-tempo → 409 "Esse horário já foi agendado. Escolha outro".
+  agendar: async (idClinica: string, dados: FormAgendamento): Promise<{ id: string; idPet: string }> => {
+    const response = await api.post<{ id: string; idPet: string }>(`/clinica/${idClinica}/agendamento`, {
+      idPet: dados.idPet,
+      data: dados.data,
+      hora: dados.hora,
+      descricao: dados.descricao?.trim() || null,
+      observacoes: dados.observacoes?.trim() || null,
+    });
+    return { id: response.data.id, idPet: response.data.idPet };
   },
 };

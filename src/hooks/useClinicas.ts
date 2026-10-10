@@ -1,10 +1,13 @@
-import { FormAvaliacao } from "@/schemas/clinica.schema";
+import { CHAVE_CALENDARIO } from "@/hooks/useCalendario";
+import { CHAVE_CONSULTAS } from "@/hooks/useConsultas";
+import { FormAgendamento, FormAvaliacao } from "@/schemas/clinica.schema";
 import { clinicaService } from "@/services/clinica.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Hooks de dados das clínicas parceiras, favoritas e avaliações
 export const CHAVE_CLINICAS = "clinicas";
 const CHAVE_AVALIACOES = "avaliacoes-clinica";
+const CHAVE_HORARIOS = "horarios-clinica";
 
 // ─── LEITURA ─────────────────────────────────────────────────────────────────
 
@@ -68,5 +71,31 @@ export function useApagarAvaliacao(idClinica: string) {
       queryClient.invalidateQueries({ queryKey: [CHAVE_AVALIACOES, idClinica] });
       queryClient.invalidateQueries({ queryKey: [CHAVE_CLINICAS] });
     },
+  });
+}
+
+// ─── AGENDAMENTO ─────────────────────────────────────────────────────────────
+
+export function useHorariosClinica(idClinica: string) {
+  return useQuery({
+    queryKey: [CHAVE_HORARIOS, idClinica],
+    queryFn: () => clinicaService.horariosLivres(idClinica),
+    enabled: !!idClinica,
+  });
+}
+
+/** Agenda e atualiza o histórico/próximos cuidados do pet, o calendário e os horários livres. */
+export function useAgendarConsulta(idClinica: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (dados: FormAgendamento) => clinicaService.agendar(idClinica, dados),
+    onSuccess: (_consulta, dados) => {
+      queryClient.invalidateQueries({ queryKey: [CHAVE_CONSULTAS, dados.idPet] });
+      queryClient.invalidateQueries({ queryKey: [CHAVE_CALENDARIO] });
+      queryClient.invalidateQueries({ queryKey: [CHAVE_HORARIOS, idClinica] });
+    },
+    // Horário ocupado por outra pessoa: a lista de livres precisa ser buscada de novo
+    onError: () => queryClient.invalidateQueries({ queryKey: [CHAVE_HORARIOS, idClinica] }),
   });
 }

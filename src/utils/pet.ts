@@ -29,3 +29,16 @@ export const ICONE_ESPECIE: Record<string, string> = {
   INSETO: "🦗",
   OUTRO: "🐾",
 };
+
+/**
+ * O pet é do usuário logado? ⚠️ CONTORNO DE LACUNA DA API: GET /pet devolve os
+ * pets de todas as contas, e a listagem só traz o dono no link HATEOAS
+ * `linkUsuario.href` (".../usuario/{id}"). Sem esse link, considera que é.
+ * Usado onde um pet de outra conta quebraria a ação (ex.: agendar consulta,
+ * que a API recusa com 404).
+ */
+export function petEhDoUsuario(pet: object, idUsuario: string): boolean {
+  const href = (pet as { linkUsuario?: { href?: string } }).linkUsuario?.href;
+  if (!href) return true;
+  return href.split("/").filter(Boolean).pop() === idUsuario;
+}

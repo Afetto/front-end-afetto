@@ -63,7 +63,9 @@ src/
 │   │   ├── completar-perfil.tsx     → /completar-perfil ("Finalize seu cadastro": GET/PUT /usuario/me/perfil, já vem preenchido se salvo antes)
 │   │   ├── perfil.tsx                → /perfil
 │   │   ├── clinica/
-│   │   │   └── [id].tsx               → /clinica/{id} (foto, favorita, contato, endereço, horário, equipe e avaliações)
+│   │   │   └── [id].tsx               → /clinica/{id} (foto, favorita, "Agendar consulta", contato, endereço, horário, equipe e avaliações)
+│   │   ├── agendamento/
+│   │   │   └── [idClinica].tsx        → /agendamento/{idClinica} (pet → dia → horário livre → motivo; POST /clinica/{id}/agendamento; abre o histórico do pet)
 │   │   └── pet/
 │   │       ├── cadastrar.tsx          → /pet/cadastrar
 │   │       └── [id]/                  ← hub de detalhe do pet
@@ -116,7 +118,7 @@ src/
 │   ├── useVacinas.ts          ← useVacinasPet, useVacina, useCriarVacina, useAtualizarVacina, useDeletarVacina — as três mutations agendam/reagendam/cancelam o lembrete
 │   ├── useRemedios.ts         ← useRemediosPet, useRemedio, useCriarRemedio, useAtualizarRemedio, useDeletarRemedio (+ `CHAVE_REMEDIOS`)
 │   ├── useCalendario.ts       ← useCalendarioPet (+ `CHAVE_CALENDARIO`, invalidada ao salvar/excluir vacina, remédio ou consulta)
-│   ├── useClinicas.ts         ← useClinicas, useClinica, useAvaliacoesClinica, useAlternarFavorita, useAvaliarClinica, useApagarAvaliacao (+ `CHAVE_CLINICAS`)
+│   ├── useClinicas.ts         ← useClinicas, useClinica, useAvaliacoesClinica, useAlternarFavorita, useAvaliarClinica, useApagarAvaliacao, useHorariosClinica, useAgendarConsulta (+ `CHAVE_CLINICAS`; agendar invalida as consultas do pet, o calendário e os horários)
 │   ├── useConsultas.ts        ← useConsultasPet, useConsulta, useCriarConsulta, useAtualizarConsulta, useCancelarConsulta, useDeletarConsulta (+ `CHAVE_CONSULTAS`)
 │   ├── useAutenticacao.ts     ← useCadastrar, useEntrar, useRedefinirSenha (logout fica inline — ver seção 8)
 │   ├── usePerfilCompleto.ts   ← usePerfilCompleto, useSalvarPerfilCompleto (+ `CHAVE_PERFIL_COMPLETO`; a chave leva o id do usuário)
@@ -133,7 +135,7 @@ src/
 │   ├── editar-perfil.schema.ts ← edição de dados pessoais em /perfil (nome, email, telefone, dataNascimento)
 │   ├── esqueci-senha.schema.ts ← e-mail, CPF, nascimento, senha nova + confirmação
 │   ├── remedio.schema.ts       ← tipos Remedio/DadosRemedio + FormRemedioSchema (fim não pode ser antes do início)
-│   ├── clinica.schema.ts       ← tipos ClinicaResumo/ClinicaDetalhe/Avaliacao + FormAvaliacaoSchema (nota 1 a 5, comentário até 500)
+│   ├── clinica.schema.ts       ← tipos ClinicaResumo/ClinicaDetalhe/Avaliacao/DiaDisponivel + FormAvaliacaoSchema (nota 1 a 5, comentário até 500) e FormAgendamentoSchema (pet, dia e horário obrigatórios)
 │   └── consulta.schema.ts      ← tipos Consulta/DadosConsulta, TIPOS_CONSULTA + LABEL_TIPO_CONSULTA, FormConsultaSchema (hora HH:MM opcional)
 ├── services/
 │   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioLogado, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, redefinirSenha, sair (funções nomeadas)
@@ -143,7 +145,7 @@ src/
 │   ├── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
 │   ├── remedio.service.ts       ← remedioService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto) — GET /remedio?idPet=
 │   ├── calendario.service.ts    ← calendarioService.buscar({inicio, fim, idPet}) — GET /calendario (eventos VACINA, PROXIMA_DOSE, REMEDIO, CONSULTA)
-│   ├── clinica.service.ts       ← clinicaService.{listar,buscarPorId,favoritar,desfavoritar,listarAvaliacoes,avaliar,apagarAvaliacao} (objeto) — não manda GPS: "perto" vem do endereço do Finalize seu cadastro
+│   ├── clinica.service.ts       ← clinicaService.{listar,buscarPorId,favoritar,desfavoritar,listarAvaliacoes,avaliar,apagarAvaliacao,horariosLivres,agendar} (objeto) — não manda GPS: "perto" vem do endereço do Finalize seu cadastro
 │   ├── consulta.service.ts      ← consultaService.{listarPorPet,buscarPorId,criar,atualizar,cancelar,remover} (objeto) — PATCH /consulta/{id}/cancelar; hora da API vira HH:MM
 │   └── notificacao.service.ts   ← notificacaoService.{configurar,agendarLembreteVacina,cancelarLembreteVacina,cancelarLembretesDoPet,...} — único arquivo que agenda/cancela via `expo-notifications`
 ├── types/
@@ -151,7 +153,7 @@ src/
 ├── utils/
 │   ├── mascaras.ts              ← mascararCPF, mascararCelular, mascararData, mascararCEP, mascararHora
 │   ├── data.ts                  ← converterDataParaISO, converterDataParaBR, normalizarData, calcularIdade
-│   ├── pet.ts                   ← LABEL_ESPECIE, ICONE_ESPECIE (rótulo e emoji por espécie)
+│   ├── pet.ts                   ← LABEL_ESPECIE, ICONE_ESPECIE (rótulo e emoji por espécie), petEhDoUsuario (GET /pet traz pets de todas as contas — filtra pelo `linkUsuario`)
 │   ├── onboarding.ts            ← calcularProgressoOnboarding — checklist e progresso da Home (ver "Fluxo de Onboarding")
 │   ├── lembrete.ts              ← calcularLembreteVacina, proximaDataDoCuidado — regra pura de quando lembrar de uma vacina
 │   ├── validacao.ts             ← cpfValido, dataValida, dataExiste — usadas pelos schemas
@@ -179,6 +181,7 @@ src/
 │   ├── remedio-tela.test.tsx    ← criar (datas ISO), fim antes do início, erro da API, editar com PUT
 │   ├── historico.test.tsx       ← vacinas, remédios e consultas juntos; filtros; consulta cancelada sem Editar
 │   ├── clinica.test.tsx         ← lista (nota, distância, perto, favoritar, busca, favoritas, aviso sem endereço) e detalhe (contato, horário, equipe, avaliar)
+│   ├── agendamento.test.tsx     ← agendar: só pets da conta, dias lotados/fechados, payload, histórico do pet, horário ocupado (409)
 │   ├── calendario.test.tsx      ← contas do mês e a tela (busca do período, cuidados do dia, abrir edição, trocar de mês)
 │   └── consulta.test.tsx        ← registrar (tipo, ISO, hora), hora inválida, editar com erro da API, consultas no histórico e nos próximos cuidados
 └── global.css                   ← @tailwind base/components/utilities

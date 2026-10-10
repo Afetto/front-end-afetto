@@ -149,6 +149,9 @@ describe("TelaClinicaDetalhe (HTTP mockado)", () => {
     expect(screen.getByText("Clínica geral · Manhã")).toBeTruthy();
     expect(await screen.findByText("Equipe atenciosa")).toBeTruthy();
     expect(screen.getByText("01/10/2026")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Agendar consulta"));
+    expect(router.push).toHaveBeenCalledWith("/agendamento/cli-1");
   });
 
   it("avalia com estrelas e comentário (PUT), e exige a nota", async () => {
