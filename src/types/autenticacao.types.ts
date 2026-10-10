@@ -34,6 +34,16 @@ export type ResultadoAutenticacao =
   | { ok: true; usuario: UsuarioArmazenado }
   | { ok: false; motivo: "credenciais_invalidas" | TipoErroApi };
 
+/**
+ * Cadastro seguido do login automático (useCadastrar): `usuario` vem
+ * preenchido quando o login logo depois do cadastro deu certo, e `null`
+ * quando a conta foi criada mas esse login falhou (aí o tutor entra pela
+ * tela de login, como antes).
+ */
+export type ResultadoCadastroComEntrada =
+  | { ok: true; usuario: UsuarioArmazenado | null }
+  | { ok: false; error: "email_taken" | "unknown" };
+
 export type DadosAtualizacaoUsuario = {
   nome?: string;
   email?: string;

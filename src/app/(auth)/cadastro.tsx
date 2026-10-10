@@ -1,5 +1,6 @@
 import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 import CampoTexto from "@/components/ui/CampoTexto";
+import { useSessao } from "@/context/SessaoContext";
 import { useCadastrar } from "@/hooks/useAutenticacao";
 import { CadastroInput, CadastroSchema } from "@/schemas/cadastro.schema";
 import { mascararCelular, mascararCPF, mascararData } from "@/utils/mascaras";
@@ -35,11 +36,12 @@ export default function TelaCadastro() {
     mode: "onTouched",
   });
 
+  const { entrar } = useSessao();
   const { mutate: enviarCadastro, isPending: enviando } = useCadastrar();
 
   function fazerCadastro(data: CadastroInput) {
     enviarCadastro(data, {
-      onSuccess: (resultado) => {
+      onSuccess: async (resultado) => {
         if (!resultado.ok) {
           if (resultado.error === "email_taken") {
             setError("email", { message: "Este e-mail já está cadastrado" });
@@ -51,6 +53,18 @@ export default function TelaCadastro() {
           return;
         }
 
+        // Conta criada e login automático feito: direto para a Home
+        if (resultado.usuario) {
+          await entrar({
+            id: resultado.usuario.id,
+            email: resultado.usuario.email,
+            nome: resultado.usuario.nome || resultado.usuario.email,
+          });
+          router.replace("/(tabs)");
+          return;
+        }
+
+        // Conta criada, mas o login automático falhou: entra pela tela de login
         router.replace("/cadastro-sucesso");
       },
       onError: () => {

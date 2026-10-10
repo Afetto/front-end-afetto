@@ -55,8 +55,8 @@ src/
 │   ├── (auth)/                 ← telas PRÉ-login (grupo não aparece na URL)
 │   │   ├── _layout.tsx
 │   │   ├── login.tsx                → /login
-│   │   ├── cadastro.tsx              → /cadastro
-│   │   ├── cadastro-sucesso.tsx      → /cadastro-sucesso (modal transparente — cadastro.tsx navega pra cá no sucesso)
+│   │   ├── cadastro.tsx              → /cadastro (cria a conta e já entra: vai direto para a Home)
+│   │   ├── cadastro-sucesso.tsx      → /cadastro-sucesso (modal transparente — só quando a conta foi criada mas o login automático falhou; leva ao /login)
 │   │   └── esqueci-senha.tsx         → /esqueci-senha (confirma e-mail, CPF e nascimento e define a senha nova — POST /senha/redefinir, sem login)
 │   ├── (app)/                  ← telas PÓS-login fora das tabs (Stack, protegido por <RotaProtegida>)
 │   │   ├── _layout.tsx
@@ -122,7 +122,7 @@ src/
 │   ├── useCalendario.ts       ← useCalendarioPet, useAgendaDoTutor (+ `CHAVE_CALENDARIO`, invalidada ao salvar/excluir vacina, remédio ou consulta)
 │   ├── useClinicas.ts         ← useClinicas, useClinica, useAvaliacoesClinica, useAlternarFavorita, useAvaliarClinica, useApagarAvaliacao, useHorariosClinica, useAgendarConsulta (+ `CHAVE_CLINICAS`; agendar invalida as consultas do pet, o calendário e os horários)
 │   ├── useConsultas.ts        ← useConsultasPet, useConsulta, useCriarConsulta, useAtualizarConsulta, useCancelarConsulta, useDeletarConsulta (+ `CHAVE_CONSULTAS`)
-│   ├── useAutenticacao.ts     ← useCadastrar, useEntrar, useRedefinirSenha (logout fica inline — ver seção 8)
+│   ├── useAutenticacao.ts     ← useCadastrar (cria a conta e já faz o login), useEntrar, useRedefinirSenha (logout fica inline — ver seção 8)
 │   ├── usePerfilCompleto.ts   ← usePerfilCompleto, useSalvarPerfilCompleto (+ `CHAVE_PERFIL_COMPLETO`; a chave leva o id do usuário)
 │   ├── useBuscarCep.ts        ← useQuery reativo, chama `cepService.buscarPorCep`
 │   ├── useNotificacoes.ts     ← liga as notificações locais ao app (configuração + toque); chamado só no `_layout.tsx` raiz
@@ -165,7 +165,7 @@ src/
 │   ├── calendario.ts            ← celulasDoMes, periodoDoMes, somarMeses, diaInicial, agruparPorData, formatarDataISO (dia local, sem UTC), rotuloDia (Hoje/Amanhã/seg 13/10), resumirAgenda (Home)
 │   └── cuidados.ts              ← proximosCuidados — "Próximos cuidados" do pet (remédios em uso/que vão começar, consultas agendadas e vacinas agendadas)
 ├── __tests__/
-│   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado)
+│   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado): payload, login automático e ida para a Home, login automático que falha, e-mail em uso
 │   ├── inicio.test.tsx          ← teste da Home: progresso (pets e perfil completo) e quantidade de pets vindos da API (HTTP mockado)
 │   ├── completar-perfil.test.tsx ← payload do PUT /usuario/me/perfil, formulário preenchido com o que já foi salvo, erro da API
 │   ├── perfil-completo.service.test.ts ← conversão API ↔ formulário e mensagem de erro por campo
@@ -373,6 +373,7 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 - `SessaoContext` (`src/context/SessaoContext.tsx`) é a **única** fonte de verdade da sessão.
 - Sessão persistida via `AsyncStorage` com a chave **`@afetto:session`** (não `@afetto:token` — o cookie de sessão é gerenciado pelo navegador/WebView, o AsyncStorage guarda só os dados de UI: `id`, `email`, `nome` — o progresso do onboarding vem da API). A preferência de tema usa outra chave, **`@afetto:tema`** (ver seção 4, `TemaContext`) — são dois valores independentes, não misture.
 - Falha de login: a API devolve a senha errada (ou a conta que não existe — o H2 é zerado a cada reinício da API) como **403**, não 401, porque não trata a exceção do `/login`. `autenticar` trata 400/401/403 do `POST /login` como "E-mail ou senha incorretos" (o `/login` é liberado e sem CSRF, então 403 ali só pode ser isso).
+- **Cadastro já entra:** `useCadastrar` faz `POST /usuario` e, em seguida, o mesmo `autenticar` do login (`POST /login` + `GET /usuario/me`); a tela chama `entrar()` e vai para `/(tabs)`. Se esse login automático falhar, a conta continua criada e a tela vai para `/cadastro-sucesso`, que leva ao `/login`.
 - O `POST /login` não devolve os dados do usuário: logo depois dele, `autenticar` busca quem entrou em `GET /usuario/me` (o backend identifica pelo cookie). Se essa chamada falhar, o login não segue — entrar sem `id` deixaria a sessão quebrada. No boot do app, o `SessaoProvider` revalida a sessão salva com o mesmo `GET /usuario/me` (`buscarUsuarioLogado`): se não responder ou for de outra conta, a sessão local é descartada; se responder, nome e e-mail são atualizados. O resto da app continua usando `buscarUsuarioPorId(id)` onde precisa do detalhe.
 - Um `401` de qualquer chamada dispara o tratador registrado por `SessaoContext` via `definirTratadorSessaoExpirada` (em `api.ts`), que limpa o AsyncStorage e zera a sessão — o `<RotaProtegida>` reage sozinho e redireciona para `/login`.
 - Um `403` **não** é tratado como sessão inválida (pode ser regra de negócio, ex. e-mail em uso) — cada tela trata seu próprio `isError`/`onError`. Não adicione um interceptor global de 403.
