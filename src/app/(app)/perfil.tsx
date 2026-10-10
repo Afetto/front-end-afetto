@@ -7,6 +7,7 @@ import { FormDadosPessoais } from "@/components/perfil/FormDadosPessoais";
 import { MoradiaEnderecoCard } from "@/components/perfil/MoradiaEnderecoCard";
 import { PerfilHeader } from "@/components/perfil/PerfilHeader";
 import { SegurancaCard } from "@/components/perfil/SegurancaCard";
+import { SobreAppCard } from "@/components/perfil/SobreAppCard";
 import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 import { ToastSucesso } from "@/components/ui/ToastSucesso";
 import { useSessao } from "@/context/SessaoContext";
@@ -15,7 +16,9 @@ import { usePerfil } from "@/hooks/perfil/usePerfil";
 import { usePerfilCompleto } from "@/hooks/usePerfilCompleto";
 import { EditarPerfilInput, EditarPerfilSchema } from "@/schemas/editar-perfil.schema";
 import { converterDataParaBR } from "@/utils/data";
+import { versaoDoApp } from "@/utils/versao";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -237,6 +240,8 @@ export default function TelaPerfil() {
             <SegurancaCard onAlterarSenha={abrirModal} />
 
             <AparenciaCard />
+
+            <SobreAppCard versao={versaoDoApp(Constants.expoConfig).versao} onAbrir={() => router.push("/sobre")} />
 
             <ContaCard onSair={handleSair} />
           </View>

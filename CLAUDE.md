@@ -62,6 +62,7 @@ src/
 │   │   ├── _layout.tsx
 │   │   ├── completar-perfil.tsx     → /completar-perfil ("Finalize seu cadastro": GET/PUT /usuario/me/perfil, já vem preenchido se salvo antes)
 │   │   ├── perfil.tsx                → /perfil
+│   │   ├── sobre.tsx                 → /sobre ("Sobre o App": versão do app.json e hash do commit injetado no build pelo `app.config.ts`, equipe)
 │   │   ├── clinica/
 │   │   │   └── [id].tsx               → /clinica/{id} (foto, favorita, "Agendar consulta", contato, endereço, horário, equipe e avaliações)
 │   │   ├── agendamento/
@@ -107,6 +108,7 @@ src/
 │   │   ├── FormDadosPessoais.tsx    ← modo edição (CampoTexto + react-hook-form)
 │   │   ├── SegurancaCard.tsx      ← "Alterar senha" (abre o AlterarSenhaModal)
 │   │   ├── AparenciaCard.tsx        ← seletor de tema Claro/Escuro/Sistema — usa useTema() (TemaContext)
+│   │   ├── SobreAppCard.tsx       ← "Sobre o App" com a versão → /sobre
 │   │   ├── ContaCard.tsx          ← "Sair da conta"
 │   │   └── AlterarSenhaModal.tsx
 │   ├── RotaProtegida.tsx          ← guard de rotas privadas
@@ -163,6 +165,7 @@ src/
 │   ├── historico.ts             ← montarHistorico — vacinas, remédios e consultas numa linha do tempo só (em andamento → próximos → passados)
 │   ├── clinica.ts               ← formatarDistancia ("850 m"/"3,2 km"), formatarNota, localDaClinica, enderecoCompleto, LABEL_TURNO
 │   ├── calendario.ts            ← celulasDoMes, periodoDoMes, somarMeses, diaInicial, agruparPorData, formatarDataISO (dia local, sem UTC), rotuloDia (Hoje/Amanhã/seg 13/10), resumirAgenda (Home)
+│   ├── versao.ts                ← versaoDoApp — versão e commit (de `Constants.expoConfig.extra`) para a tela Sobre o App; sem hash, devolve null (nunca inventa)
 │   └── cuidados.ts              ← proximosCuidados — "Próximos cuidados" do pet (remédios em uso/que vão começar, consultas agendadas e vacinas agendadas)
 ├── __tests__/
 │   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado): payload, login automático e ida para a Home, login automático que falha, e-mail em uso
@@ -185,7 +188,8 @@ src/
 │   ├── historico.test.tsx       ← vacinas, remédios e consultas juntos; filtros; consulta cancelada sem Editar
 │   ├── clinica.test.tsx         ← lista (nota, distância, perto, favoritar, busca, favoritas, aviso sem endereço) e detalhe (contato, horário, equipe, avaliar)
 │   ├── ajustes.test.tsx         ← card Moradia e endereço do /perfil e as contas da agenda da Home
-│   ├── perfil-cards.test.tsx    ← cards Segurança e Conta do /perfil: só ações reais (Alterar senha, Sair da conta)
+│   ├── perfil-cards.test.tsx    ← cards Segurança, Aplicativo e Conta do /perfil: só ações reais (Alterar senha, Sobre o App, Sair da conta)
+│   ├── sobre.test.tsx           ← Sobre o App: hash do EAS ou do git (`app.config.ts`), aviso de alterações fora do commit, "não informado" sem hash
 │   ├── agendamento.test.tsx     ← agendar: só pets da conta, dias lotados/fechados, payload, histórico do pet, horário ocupado (409)
 │   ├── calendario.test.tsx      ← contas do mês e a tela (busca do período, cuidados do dia, abrir edição, trocar de mês)
 │   └── consulta.test.tsx        ← registrar (tipo, ISO, hora), hora inválida, editar com erro da API, consultas no histórico e nos próximos cuidados
@@ -499,9 +503,22 @@ Lembrete de vacina com `expo-notifications`, agendado no próprio aparelho (sem 
 
 ---
 
+## ℹ️ Sobre o App e versão
+
+A tela `/sobre` (Perfil → "Sobre o App") mostra a versão e o **hash do commit da versão instalada** — exigência da avaliação da Sprint 4.
+
+- **O hash nunca é escrito à mão.** O `app.config.ts` (na raiz, junto do `app.json`) descobre o commit quando o Expo lê a configuração e coloca em `extra.commitHash`, `extra.commitData` e `extra.commitComAlteracoes`; a tela lê de `Constants.expoConfig.extra` via `utils/versao.ts`.
+- **De onde vem:** no build do EAS (o que vai para o Firebase App Distribution), da variável `EAS_BUILD_GIT_COMMIT_HASH`; no computador (`npx expo start` ou build local), do `git rev-parse HEAD`. Sem git, a tela mostra "não informado".
+- **Depois de um commit novo, reinicie o `npx expo start`** — o Expo só lê o `app.config.ts` quando inicia.
+- **Aviso amarelo "Gerado com alterações..."**: o app foi gerado com mudanças fora de qualquer commit (`git status` não vazio). Antes de publicar: commit, build, e conferir na tela que o hash é o mesmo de `git log -1`.
+- Para conferir sem abrir o app: `npx expo config --type public` mostra o `extra` com o hash.
+
+---
+
 ## 📌 Notas Importantes
 
 - O projeto usa **Node 22 LTS**.
+- A configuração do Expo é o `app.json` (base) + o `app.config.ts`, que soma o commit em `extra` (ver "Sobre o App e versão").
 - O `app/` fica dentro de `src/` — `tsconfig.json` tem `paths: { "@/*": ["./src/*"] }`.
 - O alias `@/` aponta para `src/`.
 - O `QueryClient` é importado diretamente apenas no `_layout.tsx` raiz, para o `QueryClientProvider`.
