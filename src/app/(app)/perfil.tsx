@@ -70,7 +70,6 @@ export default function TelaPerfil() {
   // Moradia, tela de proteção, pets e endereço do "Finalize seu cadastro"
   const { data: perfilCompleto, isLoading: carregandoPerfilCompleto } = usePerfilCompleto();
 
-  const [notifWhatsapp, setNotifWhatsapp] = useState(true);
   const [editando, setEditando] = useState(false);
 
   const {
@@ -235,11 +234,7 @@ export default function TelaPerfil() {
               />
             )}
 
-            <SegurancaCard
-              notifWhatsapp={notifWhatsapp}
-              onNotifWhatsappChange={setNotifWhatsapp}
-              onAlterarSenha={abrirModal}
-            />
+            <SegurancaCard onAlterarSenha={abrirModal} />
 
             <AparenciaCard />
 

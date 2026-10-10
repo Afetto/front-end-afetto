@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import {
   Text,
   TouchableOpacity,
@@ -9,6 +8,7 @@ type Props = {
   onSair: () => void;
 };
 
+// O botão "Upgrade para Afetto Plus" saiu: não tinha ação (não existe plano pago)
 export function ContaCard({ onSair }: Props) {
   return (
     <View className="gap-2">
@@ -17,21 +17,6 @@ export function ContaCard({ onSair }: Props) {
       </Text>
 
       <View className="rounded-2xl bg-white dark:bg-gray-800 px-4 shadow-sm">
-        <TouchableOpacity
-          activeOpacity={0.8}
-          className="my-2 flex-row items-center justify-center gap-2 rounded-xl border-[1.5px] border-amber py-3.5"
-        >
-          <Ionicons
-            name="star"
-            size={16}
-            color="#E8A838"
-          />
-
-          <Text className="text-[15px] font-semibold text-amber">
-            Upgrade para Afetto Plus
-          </Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           onPress={onSair}
           activeOpacity={0.7}

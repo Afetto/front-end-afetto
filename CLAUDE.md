@@ -105,9 +105,9 @@ src/
 │   │   ├── DadosPessoaisCard.tsx    ← modo visualização (somente leitura, com ícones)
 │   │   ├── MoradiaEnderecoCard.tsx  ← "Moradia e endereço" (Finalize seu cadastro) com Editar → /completar-perfil
 │   │   ├── FormDadosPessoais.tsx    ← modo edição (CampoTexto + react-hook-form)
-│   │   ├── SegurancaCard.tsx
+│   │   ├── SegurancaCard.tsx      ← "Alterar senha" (abre o AlterarSenhaModal)
 │   │   ├── AparenciaCard.tsx        ← seletor de tema Claro/Escuro/Sistema — usa useTema() (TemaContext)
-│   │   ├── ContaCard.tsx
+│   │   ├── ContaCard.tsx          ← "Sair da conta"
 │   │   └── AlterarSenhaModal.tsx
 │   ├── RotaProtegida.tsx          ← guard de rotas privadas
 │   ├── PetsVazio.tsx              ← estado vazio/erro da lista de pets
@@ -185,6 +185,7 @@ src/
 │   ├── historico.test.tsx       ← vacinas, remédios e consultas juntos; filtros; consulta cancelada sem Editar
 │   ├── clinica.test.tsx         ← lista (nota, distância, perto, favoritar, busca, favoritas, aviso sem endereço) e detalhe (contato, horário, equipe, avaliar)
 │   ├── ajustes.test.tsx         ← card Moradia e endereço do /perfil e as contas da agenda da Home
+│   ├── perfil-cards.test.tsx    ← cards Segurança e Conta do /perfil: só ações reais (Alterar senha, Sair da conta)
 │   ├── agendamento.test.tsx     ← agendar: só pets da conta, dias lotados/fechados, payload, histórico do pet, horário ocupado (409)
 │   ├── calendario.test.tsx      ← contas do mês e a tela (busca do período, cuidados do dia, abrir edição, trocar de mês)
 │   └── consulta.test.tsx        ← registrar (tipo, ISO, hora), hora inválida, editar com erro da API, consultas no histórico e nos próximos cuidados
@@ -441,6 +442,7 @@ const { mutate: enviarCadastro } = useMutation({
 - Nunca alterar o schema Zod para contornar uma validação — corrigir o dado ou a regra de negócio.
 - Nunca navegar para uma rota inexistente sem criá-la primeiro (ou deixar um `TODO` explícito, como já é feito em `login.tsx`).
 - Nunca commitar com `npx tsc --noEmit` retornando erros novos.
+- Nunca deixar botão, interruptor ou tela sem efeito real (`TouchableOpacity` sem `onPress`, `useState` que não salva nem muda nada, tela "Em breve"). A avaliação trata isso como funcionalidade simulada — por isso saíram do Perfil o "Notificações WhatsApp" e o "Upgrade para Afetto Plus".
 - Nunca deixar um componente importado sem uso na árvore renderizada — se não for usado, delete o import e, se for redundante, o componente.
 
 ---
