@@ -15,6 +15,7 @@ export default function LayoutApp() {
         <Stack.Screen name="pet/[id]/remedio" options={{ headerShown: false }} />
         <Stack.Screen name="pet/[id]/consulta" options={{ headerShown: false }} />
         <Stack.Screen name="pet/[id]/calendario" options={{ headerShown: false }} />
+        <Stack.Screen name="clinica/[id]" options={{ headerShown: false }} />
       </Stack>
     </RotaProtegida>
   );

@@ -1,4 +1,4 @@
-// Validações puras reaproveitadas pelos schemas (cadastro e esqueci a senha)
+// Validações puras reaproveitadas pelos schemas (cadastro, esqueci a senha, remédio)
 
 // Dígitos verificadores do CPF (aceita com ou sem máscara)
 export function cpfValido(cpf: string) {
@@ -29,4 +29,13 @@ export function dataValida(data: string) {
     d.getDate() === dia &&
     d < new Date()
   );
+}
+
+// Data DD/MM/AAAA que existe no calendário (pode ser passada ou futura — ex.: início de um remédio)
+export function dataExiste(data: string) {
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(data)) return false;
+  const [dia, mes, ano] = data.split("/").map(Number);
+  if (ano < 1900) return false;
+  const d = new Date(ano, mes - 1, dia);
+  return d.getFullYear() === ano && d.getMonth() === mes - 1 && d.getDate() === dia;
 }

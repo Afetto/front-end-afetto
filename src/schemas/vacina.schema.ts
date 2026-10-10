@@ -34,7 +34,7 @@ export type DadosVacina = {
 export const FormCuidadoSchema = z.object({
   nomeVacina: z
     .string()
-    .min(2, "Informe o nome da vacina ou medicamento")
+    .min(2, "Informe o nome da vacina")
     .trim(),
   dataAplicacao: z
     .string()

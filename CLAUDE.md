@@ -62,6 +62,8 @@ src/
 │   │   ├── _layout.tsx
 │   │   ├── completar-perfil.tsx     → /completar-perfil ("Finalize seu cadastro": GET/PUT /usuario/me/perfil, já vem preenchido se salvo antes)
 │   │   ├── perfil.tsx                → /perfil
+│   │   ├── clinica/
+│   │   │   └── [id].tsx               → /clinica/{id} (foto, favorita, contato, endereço, horário, equipe e avaliações)
 │   │   └── pet/
 │   │       ├── cadastrar.tsx          → /pet/cadastrar
 │   │       └── [id]/                  ← hub de detalhe do pet
@@ -71,12 +73,12 @@ src/
 │   │           ├── cuidados.tsx        → /pet/{id}/cuidados (criar/editar vacina; ao adicionar, `SeletorTipoCuidado` troca para remédio ou consulta)
 │   │           ├── remedio.tsx         → /pet/{id}/remedio (criar/editar remédio — `?remedioId=` para editar)
 │   │           ├── consulta.tsx        → /pet/{id}/consulta (registrar/editar consulta — `?consultaId=` para editar; futura = agendada)
-│   │           └── calendario.tsx      → /pet/{id}/calendario (placeholder "Em breve")
+│   │           └── calendario.tsx      → /pet/{id}/calendario (mês a mês: grade com pontos por tipo + cuidados do dia; GET /calendario; tocar abre a edição)
 │   └── (tabs)/                 ← app principal (protegido por <RotaProtegida>)
 │       ├── _layout.tsx  ← abas: Início, Pets, Assistente, Clínica
 │       ├── index.tsx    ← Início (Home / checklist de onboarding)
 │       ├── pets.tsx
-│       ├── clinica.tsx
+│       ├── clinica.tsx    ← Clínicas Parceiras: busca por nome (espera 400 ms), Todas/Favoritas, mais perto primeiro
 │       └── assistente.tsx ← placeholder ("Em breve")
 ├── components/
 │   ├── ui/                        ← componentes de UI genéricos, reutilizáveis entre telas
@@ -87,6 +89,11 @@ src/
 │   ├── FormPet.tsx                ← campos + botão de submit do formulário de pet — usado em pet/cadastrar.tsx e pet/[id]/editar.tsx
 │   ├── SeletorEspecie.tsx         ← grid de cards (emoji + nome) para escolher a espécie do pet — usado dentro de FormPet
 │   ├── SeletorTipoCuidado.tsx     ← Vacina | Remédio | Consulta no topo das telas de adicionar cuidado (troca de uma para a outra)
+│   ├── CardClinica.tsx            ← card da clínica na lista (foto, local, nota, distância, "perto de você", coração de favorita)
+│   ├── Estrelas.tsx               ← estrelas de 0 a 5 (meia estrela na exibição); com `onChange` vira escolha da nota
+│   ├── clinica/
+│   │   └── AvaliacoesClinica.tsx  ← "Sua avaliação" (estrelas + comentário, atualizar/apagar) e as dos outros tutores — só da tela /clinica/{id}
+│   ├── CalendarioMes.tsx          ← grade do mês (domingo a sábado) com pontos coloridos por tipo de cuidado (+ `COR_TIPO_CALENDARIO`)
 │   ├── CardPet.tsx                ← card de pet na listagem (pets.tsx)
 │   ├── CardPetResumo.tsx          ← card de pet que sobrepõe o header verde — usado em pet/[id]/index.tsx e historico.tsx
 │   ├── EstadoVazio.tsx / EstadoErro.tsx ← estados genéricos reutilizáveis (lista vazia / erro de carregamento)
@@ -108,6 +115,8 @@ src/
 │   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet (+ `CHAVE_CONSULTA_PETS`, a chave do cache)
 │   ├── useVacinas.ts          ← useVacinasPet, useVacina, useCriarVacina, useAtualizarVacina, useDeletarVacina — as três mutations agendam/reagendam/cancelam o lembrete
 │   ├── useRemedios.ts         ← useRemediosPet, useRemedio, useCriarRemedio, useAtualizarRemedio, useDeletarRemedio (+ `CHAVE_REMEDIOS`)
+│   ├── useCalendario.ts       ← useCalendarioPet (+ `CHAVE_CALENDARIO`, invalidada ao salvar/excluir vacina, remédio ou consulta)
+│   ├── useClinicas.ts         ← useClinicas, useClinica, useAvaliacoesClinica, useAlternarFavorita, useAvaliarClinica, useApagarAvaliacao (+ `CHAVE_CLINICAS`)
 │   ├── useConsultas.ts        ← useConsultasPet, useConsulta, useCriarConsulta, useAtualizarConsulta, useCancelarConsulta, useDeletarConsulta (+ `CHAVE_CONSULTAS`)
 │   ├── useAutenticacao.ts     ← useCadastrar, useEntrar, useRedefinirSenha (logout fica inline — ver seção 8)
 │   ├── usePerfilCompleto.ts   ← usePerfilCompleto, useSalvarPerfilCompleto (+ `CHAVE_PERFIL_COMPLETO`; a chave leva o id do usuário)
@@ -124,6 +133,7 @@ src/
 │   ├── editar-perfil.schema.ts ← edição de dados pessoais em /perfil (nome, email, telefone, dataNascimento)
 │   ├── esqueci-senha.schema.ts ← e-mail, CPF, nascimento, senha nova + confirmação
 │   ├── remedio.schema.ts       ← tipos Remedio/DadosRemedio + FormRemedioSchema (fim não pode ser antes do início)
+│   ├── clinica.schema.ts       ← tipos ClinicaResumo/ClinicaDetalhe/Avaliacao + FormAvaliacaoSchema (nota 1 a 5, comentário até 500)
 │   └── consulta.schema.ts      ← tipos Consulta/DadosConsulta, TIPOS_CONSULTA + LABEL_TIPO_CONSULTA, FormConsultaSchema (hora HH:MM opcional)
 ├── services/
 │   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioLogado, buscarUsuarioPorId, atualizarUsuario, atualizarSenha, redefinirSenha, sair (funções nomeadas)
@@ -132,6 +142,8 @@ src/
 │   ├── pet.service.ts           ← petService.{listar,buscarPorId,criar,atualizar,remover} (objeto)
 │   ├── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
 │   ├── remedio.service.ts       ← remedioService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto) — GET /remedio?idPet=
+│   ├── calendario.service.ts    ← calendarioService.buscar({inicio, fim, idPet}) — GET /calendario (eventos VACINA, PROXIMA_DOSE, REMEDIO, CONSULTA)
+│   ├── clinica.service.ts       ← clinicaService.{listar,buscarPorId,favoritar,desfavoritar,listarAvaliacoes,avaliar,apagarAvaliacao} (objeto) — não manda GPS: "perto" vem do endereço do Finalize seu cadastro
 │   ├── consulta.service.ts      ← consultaService.{listarPorPet,buscarPorId,criar,atualizar,cancelar,remover} (objeto) — PATCH /consulta/{id}/cancelar; hora da API vira HH:MM
 │   └── notificacao.service.ts   ← notificacaoService.{configurar,agendarLembreteVacina,cancelarLembreteVacina,cancelarLembretesDoPet,...} — único arquivo que agenda/cancela via `expo-notifications`
 ├── types/
@@ -145,6 +157,8 @@ src/
 │   ├── validacao.ts             ← cpfValido, dataValida, dataExiste — usadas pelos schemas
 │   ├── remedio.ts               ← situacaoRemedio (futuro / em uso / terminado), descreverPeriodo, descreverDose
 │   ├── historico.ts             ← montarHistorico — vacinas, remédios e consultas numa linha do tempo só (em andamento → próximos → passados)
+│   ├── clinica.ts               ← formatarDistancia ("850 m"/"3,2 km"), formatarNota, localDaClinica, enderecoCompleto, LABEL_TURNO
+│   ├── calendario.ts            ← celulasDoMes, periodoDoMes, somarMeses, diaInicial, agruparPorData, formatarDataISO (dia local, sem UTC)
 │   └── cuidados.ts              ← proximosCuidados — "Próximos cuidados" do pet (remédios em uso/que vão começar, consultas agendadas e vacinas agendadas)
 ├── __tests__/
 │   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado)
@@ -164,6 +178,8 @@ src/
 │   ├── remedio.test.ts          ← situação do remédio, textos, ordem da linha do tempo e próximos cuidados
 │   ├── remedio-tela.test.tsx    ← criar (datas ISO), fim antes do início, erro da API, editar com PUT
 │   ├── historico.test.tsx       ← vacinas, remédios e consultas juntos; filtros; consulta cancelada sem Editar
+│   ├── clinica.test.tsx         ← lista (nota, distância, perto, favoritar, busca, favoritas, aviso sem endereço) e detalhe (contato, horário, equipe, avaliar)
+│   ├── calendario.test.tsx      ← contas do mês e a tela (busca do período, cuidados do dia, abrir edição, trocar de mês)
 │   └── consulta.test.tsx        ← registrar (tipo, ISO, hora), hora inválida, editar com erro da API, consultas no histórico e nos próximos cuidados
 └── global.css                   ← @tailwind base/components/utilities
 ```
@@ -243,7 +259,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 
 **Inconsistências reais encontradas na auditoria (corrigir ao tocar no código, não replicar):**
 - `pets.tsx` define sua própria função local `renderizarCartao` para o item da lista (usa `CardPet`). Se uma nova listagem desse tipo aparecer, extraia um `Card*` dedicado em vez de repetir a função — já existe o precedente (`CardPet`, `CardPetResumo`).
-- `clinica.tsx` é uma tela estática de "Em breve": a API não tem endpoint de clínica (confirmado em `GET /v3/api-docs`). O código de integração que existia sem uso (service, schema, hooks e `CardClinica`) foi removido — quando o backend expuser o recurso, recrie service, schema e hooks no mesmo padrão de pets (`pet.service.ts`, `pet.schema.ts`, `usePets.ts`).
+- `clinica.tsx` consome a API de clínicas (`/clinica`) no mesmo padrão de pets: `clinica.service.ts`, `clinica.schema.ts`, `useClinicas.ts` e o card `CardClinica`. O app não pede a localização do aparelho (não há biblioteca de GPS — instalar uma precisa ser combinado com o time); o "perto de você" usa o endereço salvo em "Finalize seu cadastro", e a tela avisa quando ele falta.
 
 ---
 
@@ -291,7 +307,7 @@ Documentando os padrões que **de fato** existem hoje, incluindo onde eles diver
   <Text className="text-white ...">...</Text>
 </View>
 ```
-`pets.tsx` e `PetsVazio.tsx` usam esse padrão via o componente `CabecalhoOla`; `clinica.tsx` e `assistente.tsx` escrevem o header inline (`className="px-5 pt-14 pb-5 bg-primary"`) por serem telas estáticas sem o resto do layout de `CabecalhoOla` (sem avatar/voltar). Ambas as formas são `className`, sem `style` hardcoded — o bug antigo de `style={{ backgroundColor: "#1F3B30" }}` (ver seção 4) já foi corrigido nessas três telas.
+`pets.tsx` e `PetsVazio.tsx` usam esse padrão via o componente `CabecalhoOla`; `clinica.tsx` e `assistente.tsx` escrevem o header inline (`className="px-5 pt-14 pb-5 bg-primary"`) porque não usam o resto do layout de `CabecalhoOla` (sem avatar/voltar; a de clínica tem a busca dentro do header). Ambas as formas são `className`, sem `style` hardcoded — o bug antigo de `style={{ backgroundColor: "#1F3B30" }}` (ver seção 4) já foi corrigido nessas três telas.
 
 **Header de tela de formulário:**
 ```tsx
@@ -307,7 +323,7 @@ Usado em `login.tsx`, `cadastro.tsx`, `completar-perfil.tsx`.
   <ActivityIndicator color="#E8A838" size="large" />
 </View>
 ```
-Consistente em `RotaProtegida`, `pets.tsx`, `perfil.tsx`, `pet/[id]/*` (fundo `bg-surface`). `index.tsx` raiz (onboarding) usa o mesmo padrão mas com `bg-primary` em vez de `bg-surface`, de propósito — a tela inteira é verde. `clinica.tsx` não tem estado de loading: é uma tela estática sem nenhum hook (ver seção 6), então não há nada para carregar.
+Consistente em `RotaProtegida`, `pets.tsx`, `perfil.tsx`, `pet/[id]/*` (fundo `bg-surface`). `index.tsx` raiz (onboarding) usa o mesmo padrão mas com `bg-primary` em vez de `bg-surface`, de propósito — a tela inteira é verde. `clinica.tsx` e `clinica/[id].tsx` seguem o mesmo padrão de loading/erro/vazio (`EstadoErro`, `EstadoVazio`).
 
 **Estado de erro (dados remotos):** use o componente `EstadoErro` (ícone + mensagem + "Tentar novamente" chamando `refetch()`) — usado em `pet/[id]/index.tsx`, `pet/[id]/editar.tsx`, `pet/[id]/historico.tsx`, `perfil.tsx`. Em `pets.tsx` o erro é tratado dentro de `PetsVazio` (prop `erro`) — é um caso legítimo à parte, porque lista vazia e erro de carregamento levam à mesma tela ali.
 

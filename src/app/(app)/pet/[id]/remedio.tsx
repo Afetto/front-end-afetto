@@ -1,8 +1,9 @@
+import { mensagemDaApi } from "@/api/erros";
 import { SeletorTipoCuidado } from "@/components/SeletorTipoCuidado";
 import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 import CampoTexto from "@/components/ui/CampoTexto";
-import { useAtualizarVacina, useCriarVacina, useVacina } from "@/hooks/useVacinas";
-import { FormCuidado, FormCuidadoSchema } from "@/schemas/vacina.schema";
+import { useAtualizarRemedio, useCriarRemedio, useRemedio } from "@/hooks/useRemedios";
+import { DadosRemedio, FormRemedio, FormRemedioSchema } from "@/schemas/remedio.schema";
 import { converterDataParaBR, converterDataParaISO } from "@/utils/data";
 import { mascararData } from "@/utils/mascaras";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,13 +21,14 @@ import {
   View,
 } from "react-native";
 
-export default function TelaCuidados() {
-  const { id, vacinaId } = useLocalSearchParams<{ id: string; vacinaId?: string }>();
-  const editando = !!vacinaId;
+// Adicionar ou editar (?remedioId=) um remédio do pet
+export default function TelaRemedio() {
+  const { id, remedioId } = useLocalSearchParams<{ id: string; remedioId?: string }>();
+  const editando = !!remedioId;
 
-  const { data: vacina, isLoading: carregandoVacina } = useVacina(vacinaId ?? "");
-  const { mutate: criarVacina, isPending: criando } = useCriarVacina(id);
-  const { mutate: atualizarVacina, isPending: atualizando } = useAtualizarVacina(id);
+  const { data: remedio, isLoading: carregandoRemedio } = useRemedio(remedioId ?? "");
+  const { mutate: criarRemedio, isPending: criando } = useCriarRemedio(id);
+  const { mutate: atualizarRemedio, isPending: atualizando } = useAtualizarRemedio(id);
   const enviando = criando || atualizando;
 
   const {
@@ -35,59 +37,57 @@ export default function TelaCuidados() {
     reset,
     setError,
     formState: { errors },
-  } = useForm<FormCuidado>({
-    resolver: zodResolver(FormCuidadoSchema),
+  } = useForm<FormRemedio>({
+    resolver: zodResolver(FormRemedioSchema),
     mode: "onTouched",
     defaultValues: {
-      nomeVacina: "",
-      dataAplicacao: "",
-      proximaDose: "",
-      fabricante: "",
-      lote: "",
+      nomeRemedio: "",
+      dosagem: "",
+      frequencia: "",
+      dataInicio: "",
+      dataFim: "",
       observacoes: "",
     },
   });
 
   useEffect(() => {
-    if (!vacina) return;
+    if (!remedio) return;
     reset({
-      nomeVacina: vacina.nomeVacina,
-      dataAplicacao: converterDataParaBR(vacina.dataAplicacao),
-      proximaDose: vacina.proximaDose ? converterDataParaBR(vacina.proximaDose) : "",
-      fabricante: vacina.fabricante ?? "",
-      lote: vacina.lote ?? "",
-      observacoes: vacina.observacoes ?? "",
+      nomeRemedio: remedio.nomeRemedio,
+      dosagem: remedio.dosagem ?? "",
+      frequencia: remedio.frequencia ?? "",
+      dataInicio: converterDataParaBR(remedio.dataInicio),
+      dataFim: remedio.dataFim ? converterDataParaBR(remedio.dataFim) : "",
+      observacoes: remedio.observacoes ?? "",
     });
-  }, [vacina, reset]);
+  }, [remedio, reset]);
 
-  function aoSalvar(form: FormCuidado) {
-    const dados = {
-      nomeVacina: form.nomeVacina,
-      dataAplicacao: converterDataParaISO(form.dataAplicacao),
-      proximaDose: form.proximaDose ? converterDataParaISO(form.proximaDose) : undefined,
-      fabricante: form.fabricante?.trim() || undefined,
-      lote: form.lote?.trim() || undefined,
-      observacoes: form.observacoes?.trim() || undefined,
+  function aoSalvar(form: FormRemedio) {
+    const dados: DadosRemedio = {
+      nomeRemedio: form.nomeRemedio,
+      dosagem: form.dosagem || undefined,
+      frequencia: form.frequencia || undefined,
+      dataInicio: converterDataParaISO(form.dataInicio),
+      dataFim: form.dataFim ? converterDataParaISO(form.dataFim) : undefined,
+      observacoes: form.observacoes || undefined,
       idPet: id,
     };
 
     const aoConcluir = {
       // `as any`: rota gerada por template literal, fora do que o typedRoutes infere.
       onSuccess: () => router.replace(`/pet/${id}/historico` as any),
-      onError: () =>
-        setError("root", {
-          message: "Erro ao salvar o cuidado. Tente novamente.",
-        }),
+      // Mensagem da API quando ela recusa (ex.: fim antes do início) ou de conexão
+      onError: (erro: unknown) => setError("root", { message: mensagemDaApi(erro) }),
     };
 
-    if (editando && vacinaId) {
-      atualizarVacina({ id: vacinaId, data: dados }, aoConcluir);
+    if (editando && remedioId) {
+      atualizarRemedio({ id: remedioId, dados }, aoConcluir);
     } else {
-      criarVacina(dados, aoConcluir);
+      criarRemedio(dados, aoConcluir);
     }
   }
 
-  if (editando && carregandoVacina) {
+  if (editando && carregandoRemedio) {
     return (
       <View className="flex-1 items-center justify-center bg-surface dark:bg-gray-900">
         <ActivityIndicator color="#E8A838" size="large" />
@@ -112,53 +112,60 @@ export default function TelaCuidados() {
               <Ionicons name="chevron-back" size={24} color="#1E3A2F" />
             </TouchableOpacity>
             <Text className="text-2xl font-bold text-gray-900 dark:text-white">
-              {editando ? "Editar vacina" : "Adicionar cuidado"}
+              {editando ? "Editar remédio" : "Adicionar cuidado"}
             </Text>
           </View>
 
-          {/* Vacina ou remédio — cada um tem o seu formulário */}
-          {!editando && <SeletorTipoCuidado idPet={id} atual="vacina" />}
+          {!editando && <SeletorTipoCuidado idPet={id} atual="remedio" />}
 
           <View className="gap-5">
             <CampoTexto
-              name="nomeVacina"
+              name="nomeRemedio"
               control={control}
-              label="Nome da vacina"
-              placeholder="V10, Antirrábica..."
+              label="Nome do remédio"
+              placeholder="Amoxicilina, Vermífugo..."
               autoCapitalize="words"
             />
 
             <CampoTexto
-              name="dataAplicacao"
+              name="dosagem"
               control={control}
-              label="Data de aplicação"
+              label="Dosagem (opcional)"
+              placeholder="1 comprimido, 5 gotas..."
+              autoCapitalize="sentences"
+            />
+
+            <CampoTexto
+              name="frequencia"
+              control={control}
+              label="Frequência (opcional)"
+              placeholder="A cada 12 horas, 1 vez ao dia..."
+              autoCapitalize="sentences"
+            />
+
+            <CampoTexto
+              name="dataInicio"
+              control={control}
+              label="Início"
               placeholder="DD/MM/AAAA"
               keyboardType="numeric"
               transformarTexto={mascararData}
             />
 
             <CampoTexto
-              name="proximaDose"
+              name="dataFim"
               control={control}
-              label="Próxima dose (opcional)"
+              label="Fim (opcional — deixe vazio se for de uso contínuo)"
               placeholder="DD/MM/AAAA"
               keyboardType="numeric"
               transformarTexto={mascararData}
             />
-
-            <CampoTexto
-              name="fabricante"
-              control={control}
-              label="Fabricante (opcional)"
-              autoCapitalize="words"
-            />
-
-            <CampoTexto name="lote" control={control} label="Lote (opcional)" />
 
             <CampoTexto
               name="observacoes"
               control={control}
               label="Observação (opcional)"
+              placeholder="Dar junto com a comida..."
               autoCapitalize="sentences"
             />
 

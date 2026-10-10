@@ -1,5 +1,6 @@
 import { DadosConsulta } from "@/schemas/consulta.schema";
 import { consultaService } from "@/services/consulta.service";
+import { CHAVE_CALENDARIO } from "@/hooks/useCalendario";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Hooks de dados das consultas de um pet (/consulta)
@@ -24,14 +25,17 @@ export function useConsulta(id: string) {
 }
 
 // ─── ESCRITA ─────────────────────────────────────────────────────────────────
-// Cada uma atualiza a lista do pet (histórico e "Próximos cuidados").
+// Cada uma atualiza a lista do pet (histórico e "Próximos cuidados") e o calendário.
 
 export function useCriarConsulta(idPet: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (dados: DadosConsulta) => consultaService.criar(dados),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [CHAVE_CONSULTAS, idPet] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [CHAVE_CONSULTAS, idPet] });
+      queryClient.invalidateQueries({ queryKey: [CHAVE_CALENDARIO] });
+    },
   });
 }
 
@@ -44,6 +48,7 @@ export function useAtualizarConsulta(idPet: string) {
     onSuccess: (_consulta, { id }) => {
       queryClient.invalidateQueries({ queryKey: [CHAVE_CONSULTAS, idPet] });
       queryClient.invalidateQueries({ queryKey: [CHAVE_CONSULTAS, "detalhe", id] });
+      queryClient.invalidateQueries({ queryKey: [CHAVE_CALENDARIO] });
     },
   });
 }
@@ -56,6 +61,7 @@ export function useCancelarConsulta(idPet: string) {
     onSuccess: (_consulta, id) => {
       queryClient.invalidateQueries({ queryKey: [CHAVE_CONSULTAS, idPet] });
       queryClient.invalidateQueries({ queryKey: [CHAVE_CONSULTAS, "detalhe", id] });
+      queryClient.invalidateQueries({ queryKey: [CHAVE_CALENDARIO] });
     },
   });
 }
@@ -65,6 +71,9 @@ export function useDeletarConsulta(idPet: string) {
 
   return useMutation({
     mutationFn: (id: string) => consultaService.remover(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [CHAVE_CONSULTAS, idPet] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [CHAVE_CONSULTAS, idPet] });
+      queryClient.invalidateQueries({ queryKey: [CHAVE_CALENDARIO] });
+    },
   });
 }
