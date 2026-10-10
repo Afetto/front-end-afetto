@@ -35,7 +35,7 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 | Notificações | `expo-notifications` `~0.32` — só notificações **locais** (lembrete de vacina, ver seção "Notificações Locais"); não há push remoto |
 | Testes | `jest` + `jest-expo` + `@testing-library/react-native` (instalados; `npm test` funciona) |
 
-**Endereço da API:** o app usa a **API Java local, na porta 8081** (a API do Render não é usada). Sem `.env`, `definirUrlDaApi()` em `src/api/api.ts` pega o endereço do computador que roda o Expo (`Constants.expoConfig.hostUri`) e monta `http://<esse computador>:8081` — assim funciona no celular (Expo Go na mesma rede), no emulador e no navegador; sem esse dado, usa `http://localhost:8081`. Para apontar para outro lugar, defina `EXPO_PUBLIC_API_URL` no `.env` (modelo em `.env.example`). Como a API ocupa a 8081, o Expo (que também usa 8081 por padrão) roda em outra porta, ex.: 8082. No navegador, o back end libera CORS para `localhost` em qualquer porta.
+**Endereço da API:** o app usa a **API Java local, na porta 8080** (a API do Render não é usada). Sem `.env`, `definirUrlDaApi()` em `src/api/api.ts` pega o endereço do computador que roda o Expo (`Constants.expoConfig.hostUri`) e monta `http://<esse computador>:8080` — assim funciona no celular (Expo Go na mesma rede), no emulador e no navegador; sem esse dado, usa `http://localhost:8080`. Para apontar para outro lugar, defina `EXPO_PUBLIC_API_URL` no `.env` (modelo em `.env.example`). O Expo fica na porta padrão dele (8081), sem conflito com a API. No navegador, o back end libera CORS para `localhost` em qualquer porta.
 
 ---
 
@@ -44,7 +44,7 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 ```
 src/
 ├── api/
-│   ├── api.ts          ← instância Axios (baseURL da API local na 8081 via `definirUrlDaApi`, withCredentials, interceptor de 401)
+│   ├── api.ts          ← instância Axios (baseURL da API local na 8080 via `definirUrlDaApi`, withCredentials, interceptor de 401)
 │   ├── erros.ts         ← classificarErro / mensagemPorTipo / mensagemErroApi (mensagens padronizadas de erro de API) / mensagemDaApi (usa o `{"erro": ...}` que a API manda nas regras de negócio)
 │   ├── paginacao.ts      ← extrairLista — normaliza resposta paginada (Spring Page) ou array puro
 │   └── queryClient.ts   ← instância do QueryClient (só importado no _layout.tsx raiz)
@@ -155,7 +155,7 @@ src/
 ├── utils/
 │   ├── mascaras.ts              ← mascararCPF, mascararCelular, mascararData, mascararCEP, mascararHora
 │   ├── data.ts                  ← converterDataParaISO, converterDataParaBR, normalizarData, calcularIdade
-│   ├── pet.ts                   ← LABEL_ESPECIE, ICONE_ESPECIE (rótulo e emoji por espécie), petEhDoUsuario (GET /pet traz pets de todas as contas — filtra pelo `linkUsuario`)
+│   ├── pet.ts                   ← LABEL_ESPECIE, ICONE_ESPECIE (rótulo e emoji por espécie), petEhDoUsuario (filtro de segurança pelo `linkUsuario`; GET /pet já devolve só os pets da conta)
 │   ├── onboarding.ts            ← calcularProgressoOnboarding — checklist e progresso da Home (ver "Fluxo de Onboarding")
 │   ├── lembrete.ts              ← calcularLembreteVacina, proximaDataDoCuidado — regra pura de quando lembrar de uma vacina
 │   ├── validacao.ts             ← cpfValido, dataValida, dataExiste — usadas pelos schemas
@@ -174,9 +174,9 @@ src/
 │   ├── lembrete.test.ts         ← regra de quando lembrar (véspera, no dia, na hora)
 │   ├── notificacao.service.test.ts ← o que o service pede ao expo-notifications (mockado)
 │   ├── useVacinas.test.tsx      ← salvar/editar/excluir vacina agenda/reagenda/cancela o lembrete
-│   ├── api.test.ts              ← endereço da API (computador do Expo na 8081, localhost, .env)
+│   ├── api.test.ts              ← endereço da API (computador do Expo na 8080, localhost, .env)
 │   ├── autenticacao.service.test.ts ← login busca quem entrou em GET /usuario/me
-│   ├── sessao.test.tsx          ← revalidação da sessão salva no boot (GET /usuario/me)
+│   ├── sessao.test.tsx          ← revalidação da sessão salva no boot (GET /usuario/me) e cache limpo ao trocar de conta
 │   ├── vacina.service.test.ts   ← vacinas do pet via GET /vacina?idPet=
 │   ├── esqueci-senha.test.tsx   ← redefinir senha: payload, sucesso, 400/429 com a mensagem da API, confirmação diferente
 │   ├── remedio.test.ts          ← situação do remédio, textos, ordem da linha do tempo e próximos cuidados
@@ -376,6 +376,7 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 - Um `401` de qualquer chamada dispara o tratador registrado por `SessaoContext` via `definirTratadorSessaoExpirada` (em `api.ts`), que limpa o AsyncStorage e zera a sessão — o `<RotaProtegida>` reage sozinho e redireciona para `/login`.
 - Um `403` **não** é tratado como sessão inválida (pode ser regra de negócio, ex. e-mail em uso) — cada tela trata seu próprio `isError`/`onError`. Não adicione um interceptor global de 403.
 - Páginas protegidas usam `<RotaProtegida>` — envolve tanto `(tabs)/_layout.tsx` quanto `(app)/_layout.tsx` (todas as rotas de `/perfil`, `/completar-perfil` e `/pet/*` passam pelo guard e redirecionam pra `/login` sem sessão).
+- **Trocar de conta limpa o cache do React Query** (`queryClient.clear()` em `entrar`, `sair` e na sessão expirada). Como o `staleTime` é de 5 min (`api/queryClient.ts`), sem isso a conta nova via dados da anterior (pets, "Sua avaliação" da clínica...). Por isso as chaves de cache não precisam levar o id do usuário.
 - Logout chama `sair()` do `SessaoContext`, que tenta `POST /logout` (pode não existir no backend ainda) e sempre limpa o AsyncStorage local, independente do resultado.
 
 ---
@@ -488,7 +489,7 @@ Lembrete de vacina com `expo-notifications`, agendado no próprio aparelho (sem 
 - **Identificador:** `vacina-{id}`, o que permite reagendar na edição e cancelar na exclusão.
 - **Permissão:** pedida na primeira vez que há um lembrete para agendar, não na abertura do app. Se o usuário negar, a vacina é salva normalmente e só o lembrete não é criado.
 - **Camadas:** `expo-notifications` só é importado em `services/notificacao.service.ts` (agendar, cancelar, permissão, canal) e em `hooks/useNotificacoes.ts` (o hook de toque da biblioteca). A chamada ao service dentro dos hooks de dados não bloqueia e ignora falha de propósito: notificação nunca pode transformar um salvamento que deu certo em erro.
-- **Limites conhecidos:** os lembretes vivem no aparelho — reinstalar o app ou entrar por outro aparelho não os recria. Na web tudo vira no-op. No Expo Go para Android a biblioteca escreve no console um aviso sobre push remoto; é esperado e não afeta as notificações locais.
+- **Limites conhecidos:** os lembretes vivem no aparelho — reinstalar o app ou entrar por outro aparelho não os recria. Na web tudo vira no-op. No Expo Go para Android a biblioteca escreve no console um aviso sobre push remoto; é esperado e não afeta as notificações locais — o `app/_layout.tsx` esconde esse aviso do LogBox (`LogBox.ignoreLogs`), então ele só aparece no terminal.
 
 ---
 

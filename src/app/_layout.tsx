@@ -4,7 +4,7 @@ import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { AppState } from "react-native";
+import { AppState, LogBox } from "react-native";
 import { useReactQueryDevTools } from "@dev-plugins/react-query";
 import { focusManager, QueryClientProvider } from "@tanstack/react-query";
 import { useColorScheme } from "nativewind";
@@ -15,6 +15,12 @@ import { queryClient } from "@/api/queryClient";
 import { SessaoProvider } from "@/context/SessaoContext";
 import { TemaProvider } from "@/context/TemaContext";
 import { useNotificacoes } from "@/hooks/useNotificacoes";
+
+// No Expo Go para Android (SDK 53+), o expo-notifications avisa com um console.error,
+// ao ser carregado, que o push REMOTO saiu do Expo Go. O app só usa notificações
+// locais (lembrete de vacina), que continuam funcionando — então o aviso não vira
+// a tela vermelha do LogBox. No terminal do Expo ele continua aparecendo.
+LogBox.ignoreLogs(["expo-notifications: Android Push notifications"]);
 
 export { ErrorBoundary } from "expo-router";
 

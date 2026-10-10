@@ -34,8 +34,8 @@ function wrapper({ children }: { children: ReactNode }) {
 // GET /pet traz pets de todas as contas: o Rex é de outra pessoa
 const PETS = {
   content: [
-    { id: "pet-1", nome: "Thor", especie: "CACHORRO", raca: "", linkUsuario: { href: "http://localhost:8081/usuario/usuario-1" } },
-    { id: "pet-2", nome: "Rex", especie: "CACHORRO", raca: "", linkUsuario: { href: "http://localhost:8081/usuario/outro" } },
+    { id: "pet-1", nome: "Thor", especie: "CACHORRO", raca: "", linkUsuario: { href: "http://localhost:8080/usuario/usuario-1" } },
+    { id: "pet-2", nome: "Rex", especie: "CACHORRO", raca: "", linkUsuario: { href: "http://localhost:8080/usuario/outro" } },
   ],
 };
 

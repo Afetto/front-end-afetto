@@ -8,13 +8,13 @@ import { Platform } from "react-native";
 
 // A API Java roda no computador de desenvolvimento, nesta porta
 // (`server.port` no application.properties do back end).
-export const PORTA_API_LOCAL = 8081;
+export const PORTA_API_LOCAL = 8080;
 
 /**
  * Endereço da API:
  * 1. `EXPO_PUBLIC_API_URL` do `.env`, quando definida (ex.: API em outro computador).
  * 2. Senão, a API local no mesmo computador que roda o Expo. O endereço desse
- *    computador vem do próprio Expo (`hostUri`, ex.: "192.168.0.10:8082"). Não dá
+ *    computador vem do próprio Expo (`hostUri`, ex.: "192.168.0.10:8081"). Não dá
  *    para fixar "localhost": no celular, localhost é o próprio celular.
  *    No navegador, usa o mesmo endereço da página: o cookie de sessão só vai
  *    junto quando a API está no mesmo site que o app.
