@@ -88,7 +88,7 @@ src/
 │       ├── index.tsx    ← Início (Home): checklist de onboarding (perfil, pet e clínica favorita, opcional); concluído, mostra `AgendaInicio`
 │       ├── pets.tsx
 │       ├── clinica.tsx    ← Clínicas Parceiras: busca por nome (espera 400 ms), Todas/Favoritas, mais perto primeiro
-│       └── assistente.tsx ← placeholder ("Em breve")
+│       └── assistente.tsx ← Assistente sem IA: perguntas prontas respondidas com os dados reais do pet (ver "Assistente")
 ├── components/
 │   ├── ui/                        ← componentes de UI genéricos, reutilizáveis entre telas
 │   │   ├── CampoTexto.tsx           ← input padrão com react-hook-form (Controller)
@@ -102,6 +102,8 @@ src/
 │   ├── Estrelas.tsx               ← estrelas de 0 a 5 (meia estrela na exibição); com `onChange` vira escolha da nota
 │   ├── clinica/
 │   │   └── AvaliacoesClinica.tsx  ← "Sua avaliação" (estrelas + comentário, atualizar/apagar) e, abaixo, a caixa "Comentários (N)" com todos — o do tutor em destaque ("VOCÊ"), nome, data e hora — só da tela /clinica/{id}
+│   ├── assistente/
+│   │   └── RespostaAssistente.tsx ← balão de resposta do Assistente (texto, detalhes e botão para a tela relacionada)
 │   ├── AgendaInicio.tsx           ← corpo da Home pós-onboarding: atalhos, próximos 14 dias de todos os pets (GET /calendario sem idPet) e remédios em tratamento hoje
 │   ├── CalendarioMes.tsx          ← grade do mês (domingo a sábado) com pontos coloridos por tipo de cuidado (+ `COR_TIPO_CALENDARIO`)
 │   ├── CardPet.tsx                ← card de pet na listagem (pets.tsx)
@@ -173,6 +175,7 @@ src/
 │   ├── historico.ts             ← montarHistorico — vacinas, remédios e consultas numa linha do tempo só (em andamento → próximos → passados)
 │   ├── clinica.ts               ← formatarDistancia ("850 m"/"3,2 km"), formatarNota, localDaClinica, enderecoCompleto, LABEL_TURNO
 │   ├── calendario.ts            ← celulasDoMes, periodoDoMes, somarMeses, diaInicial, agruparPorData, formatarDataISO (dia local, sem UTC), rotuloDia (Hoje/Amanhã/seg 13/10), resumirAgenda (Home)
+│   ├── assistente.ts            ← PERGUNTAS e `responder` — as respostas do Assistente a partir de vacinas, remédios e consultas do pet (função pura)
 │   ├── versao.ts                ← versaoDoApp — versão e commit (de `Constants.expoConfig.extra`) para a tela Sobre o App; sem hash, devolve null (nunca inventa)
 │   └── cuidados.ts              ← proximosCuidados — "Próximos cuidados" do pet (remédios em uso/que vão começar, consultas agendadas e vacinas agendadas)
 ├── __tests__/
@@ -199,6 +202,8 @@ src/
 │   ├── clinica.test.tsx         ← lista (nota, distância, perto, favoritar, busca, favoritas, aviso sem endereço) e detalhe (contato, horário, equipe, avaliar)
 │   ├── ajustes.test.tsx         ← card Moradia e endereço do /perfil e as contas da agenda da Home
 │   ├── perfil-cards.test.tsx    ← cards Segurança, Aplicativo e Conta do /perfil: só ações reais (Alterar senha, Sobre o App, Sair da conta)
+│   ├── assistente.test.ts       ← respostas do Assistente: próxima vacina, remédios de hoje, próxima consulta, vacinação em dia (dose renovada não conta como atraso)
+│   ├── assistente-tela.test.tsx ← tela do Assistente (HTTP mockado): resposta com dados da API, trocar de pet, botões para as telas, sem pet, erro ao carregar
 │   ├── sobre.test.tsx           ← Sobre o App: hash do EAS ou do git (`app.config.ts`), aviso de alterações fora do commit, "não informado" sem hash
 │   ├── agendamento.test.tsx     ← agendar: só pets da conta, dias lotados/fechados, payload, histórico do pet, horário ocupado (409)
 │   ├── calendario.test.tsx      ← contas do mês e a tela (busca do período, cuidados do dia, abrir edição, trocar de mês)
@@ -518,6 +523,19 @@ Lembrete de vacina com `expo-notifications`, agendado no próprio aparelho (sem 
 - **Permissão:** pedida na primeira vez que há um lembrete para agendar, não na abertura do app. Se o usuário negar, a vacina é salva normalmente e só o lembrete não é criado.
 - **Camadas:** `expo-notifications` só é importado em `services/notificacao.service.ts` (agendar, cancelar, permissão, canal) e em `hooks/useNotificacoes.ts` (o hook de toque da biblioteca). A chamada ao service dentro dos hooks de dados não bloqueia e ignora falha de propósito: notificação nunca pode transformar um salvamento que deu certo em erro.
 - **Limites conhecidos:** os lembretes vivem no aparelho — reinstalar o app ou entrar por outro aparelho não os recria. Na web tudo vira no-op. No Expo Go para Android a biblioteca escreve no console um aviso sobre push remoto; é esperado e não afeta as notificações locais — o `app/_layout.tsx` esconde esse aviso do LogBox (`LogBox.ignoreLogs`), então ele só aparece no terminal.
+
+---
+
+## 💬 Assistente (sem IA)
+
+A aba Assistente responde **perguntas prontas** com os dados reais do pet — sem IA, sem serviço pago e sem texto livre (decisão do time: a IA tem custo por uso).
+
+- **Perguntas** (`PERGUNTAS` em `utils/assistente.ts`): próxima vacina, remédios de hoje, próxima consulta e vacinação em dia. O botão mostra o `rotulo` curto; a conversa mostra o `texto` inteiro.
+- **Respostas:** `responder(pergunta, dados)` é uma função pura sobre as listas de `useVacinasPet`, `useRemediosPet` e `useConsultasPet` — a tela não calcula nada. Cada resposta tem um botão para a tela relacionada (`acao.destino`: histórico, registrar vacina, adicionar remédio ou a aba Clínica para agendar).
+- **Vacinação em dia:** vale o registro mais recente de cada vacina (pelo nome); vencendo em até 30 dias (`DIAS_VACINA_VENCENDO`, o mesmo limite do `GET /pet/{id}/status-vacinacao`) aparece como aviso.
+- **Mais de um pet:** botões com o nome no topo; as respostas trazem o nome do pet, então a conversa pode misturar pets.
+- **Estados:** sem pet → convite para cadastrar; cuidados carregando → os botões só aparecem quando as três listas chegam (nunca responde sem os dados); falha → mensagem e "Tentar novamente".
+- **Nova pergunta:** um item em `PERGUNTAS`, um `case` em `responder`, o ícone em `ICONE_PERGUNTA` (tela) e o teste em `assistente.test.ts`. Não escreva "IA" nem "inteligente" em textos do Assistente.
 
 ---
 
