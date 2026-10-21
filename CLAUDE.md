@@ -35,7 +35,12 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 | Notificações | `expo-notifications` `~0.32` — só notificações **locais** (lembrete de vacina, ver seção "Notificações Locais"); não há push remoto |
 | Testes | `jest` + `jest-expo` + `@testing-library/react-native` (instalados; `npm test` funciona) |
 
-**Endereço da API:** o app usa a **API Java local, na porta 8080** (a API do Render não é usada). Sem `.env`, `definirUrlDaApi()` em `src/api/api.ts` pega o endereço do computador que roda o Expo (`Constants.expoConfig.hostUri`) e monta `http://<esse computador>:8080` — assim funciona no celular (Expo Go na mesma rede), no emulador e no navegador; sem esse dado, usa `http://localhost:8080`. Para apontar para outro lugar, defina `EXPO_PUBLIC_API_URL` no `.env` (modelo em `.env.example`). O Expo fica na porta padrão dele (8081), sem conflito com a API. No navegador, o back end libera CORS para `localhost` em qualquer porta.
+**Endereço da API:** no desenvolvimento, o app usa a **API Java local, na porta 8080**. Sem `.env`, `definirUrlDaApi()` em `src/api/api.ts` pega o endereço do computador que roda o Expo (`Constants.expoConfig.hostUri`) e monta `http://<esse computador>:8080` — assim funciona no celular (Expo Go na mesma rede), no emulador e no navegador; sem esse dado, usa `http://localhost:8080`. Para apontar para outro lugar (ex.: a API no Render, `https://<servico>.onrender.com`), defina `EXPO_PUBLIC_API_URL` no `.env` (modelo em `.env.example`). O Expo fica na porta padrão dele (8081), sem conflito com a API. No navegador, o back end libera CORS para `localhost` em qualquer porta (no navegador, use a API local: o cookie de sessão não vai de `localhost` para outro site).
+
+**API no Render:**
+- **Espera maior:** `tempoLimiteDaApi(url)` dá 90 s para endereço `https://` (a instância gratuita do Render "dorme" depois de 15 min sem uso e leva cerca de 1 minuto para acordar) e 10 s para a API local (`http://`), para um endereço errado no `.env` aparecer logo.
+- **Aviso "Conectando ao servidor…":** toda chamada passa por `comAvisoDeConexaoLenta` (`api/conexaoLenta.ts`, que envolve o adaptador do axios). Passou de 4 s sem resposta, o `AvisoConexaoLenta` aparece por cima de qualquer tela (montado uma vez no `_layout.tsx` raiz, não bloqueia toques) e some quando a resposta — ou o erro — chega. Não crie outro indicador de "servidor lento" por tela.
+- **Build do celular:** o `.env` não sobe para o EAS (está no `.gitignore`). O `app.config.ts` (`conferirApiDoBuild`) para o build do EAS que não tiver `EXPO_PUBLIC_API_URL` com `https://` — sem ela o app chamaria `localhost` no celular. O perfil `development` fica de fora. Defina a variável no `env` do perfil no `eas.json` ou nas variáveis do projeto no EAS.
 
 ---
 
@@ -44,12 +49,13 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 ```
 src/
 ├── api/
-│   ├── api.ts          ← instância Axios (baseURL da API local na 8080 via `definirUrlDaApi`, withCredentials, interceptor de 401)
+│   ├── api.ts          ← instância Axios (baseURL via `definirUrlDaApi`, tempo limite por endereço via `tempoLimiteDaApi`, withCredentials, interceptor de 401)
+│   ├── conexaoLenta.ts  ← chamadas esperando há mais de 4 s (`acompanharChamada`, `comAvisoDeConexaoLenta`) — alimenta o aviso "Conectando ao servidor…"
 │   ├── erros.ts         ← classificarErro / mensagemPorTipo / mensagemErroApi (mensagens padronizadas de erro de API) / mensagemDaApi (usa o `{"erro": ...}` que a API manda nas regras de negócio)
 │   ├── paginacao.ts      ← extrairLista — normaliza resposta paginada (Spring Page) ou array puro
 │   └── queryClient.ts   ← instância do QueryClient (só importado no _layout.tsx raiz)
 ├── app/
-│   ├── _layout.tsx            ← raiz: fontes, QueryClientProvider + TemaProvider + SessaoProvider + Stack de grupos; chama `useNotificacoes` (toque em lembrete → histórico do pet)
+│   ├── _layout.tsx            ← raiz: fontes, QueryClientProvider + TemaProvider + SessaoProvider + Stack de grupos + `AvisoConexaoLenta`; chama `useNotificacoes` (toque em lembrete → histórico do pet)
 │   ├── index.tsx               ← onboarding + gate (sessão → tabs; sem sessão → onboarding)
 │   ├── +not-found.tsx          ← tela de erro 404 do Expo Router (rota inexistente) — nome de arquivo reservado, não renomear
 │   ├── (auth)/                 ← telas PRÉ-login (grupo não aparece na URL)
@@ -79,7 +85,7 @@ src/
 │   │           └── calendario.tsx      → /pet/{id}/calendario (mês a mês: grade com pontos por tipo + cuidados do dia; GET /calendario; tocar abre a edição)
 │   └── (tabs)/                 ← app principal (protegido por <RotaProtegida>)
 │       ├── _layout.tsx  ← abas: Início, Pets, Assistente, Clínica
-│       ├── index.tsx    ← Início (Home): checklist de onboarding; concluído, mostra `AgendaInicio`
+│       ├── index.tsx    ← Início (Home): checklist de onboarding (perfil, pet e clínica favorita, opcional); concluído, mostra `AgendaInicio`
 │       ├── pets.tsx
 │       ├── clinica.tsx    ← Clínicas Parceiras: busca por nome (espera 400 ms), Todas/Favoritas, mais perto primeiro
 │       └── assistente.tsx ← placeholder ("Em breve")
@@ -111,6 +117,7 @@ src/
 │   │   ├── SobreAppCard.tsx       ← "Sobre o App" com a versão → /sobre
 │   │   ├── ContaCard.tsx          ← "Sair da conta"
 │   │   └── AlterarSenhaModal.tsx
+│   ├── AvisoConexaoLenta.tsx      ← "Conectando ao servidor…" por cima das telas quando a API demora (ex.: Render acordando) — só no `_layout.tsx` raiz
 │   ├── RotaProtegida.tsx          ← guard de rotas privadas
 │   ├── PetsVazio.tsx              ← estado vazio/erro da lista de pets
 │   └── CirculosConcentricos.tsx   ← decoração da tela de onboarding
@@ -128,6 +135,7 @@ src/
 │   ├── usePerfilCompleto.ts   ← usePerfilCompleto, useSalvarPerfilCompleto (+ `CHAVE_PERFIL_COMPLETO`; a chave leva o id do usuário)
 │   ├── useBuscarCep.ts        ← useQuery reativo, chama `cepService.buscarPorCep`
 │   ├── useNotificacoes.ts     ← liga as notificações locais ao app (configuração + toque); chamado só no `_layout.tsx` raiz
+│   ├── useConexaoLenta.ts     ← `true` enquanto alguma chamada à API espera há mais de 4 s (usado pelo `AvisoConexaoLenta`)
 │   └── perfil/
 │       ├── usePerfil.ts        ← hook de dados: useQuery(usuario) + useMutation(salvarPerfil)
 │       └── useAlterarSenha.ts  ← estado + validação + mutation do modal de troca de senha
@@ -169,7 +177,7 @@ src/
 │   └── cuidados.ts              ← proximosCuidados — "Próximos cuidados" do pet (remédios em uso/que vão começar, consultas agendadas e vacinas agendadas)
 ├── __tests__/
 │   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado): payload, login automático e ida para a Home, login automático que falha, e-mail em uso
-│   ├── inicio.test.tsx          ← teste da Home: progresso (pets e perfil completo) e quantidade de pets vindos da API (HTTP mockado)
+│   ├── inicio.test.tsx          ← teste da Home: progresso (pets, perfil completo e clínica favorita) e quantidade de pets vindos da API (HTTP mockado)
 │   ├── completar-perfil.test.tsx ← payload do PUT /usuario/me/perfil, formulário preenchido com o que já foi salvo, erro da API
 │   ├── perfil-completo.service.test.ts ← conversão API ↔ formulário e mensagem de erro por campo
 │   ├── onboarding.test.ts       ← teste unitário de calcularProgressoOnboarding
@@ -177,8 +185,10 @@ src/
 │   ├── lembrete.test.ts         ← regra de quando lembrar (véspera, no dia, na hora)
 │   ├── notificacao.service.test.ts ← o que o service pede ao expo-notifications (mockado)
 │   ├── useVacinas.test.tsx      ← salvar/editar/excluir vacina agenda/reagenda/cancela o lembrete
-│   ├── api.test.ts              ← endereço da API (computador do Expo na 8080, localhost, .env)
-│   ├── autenticacao.service.test.ts ← login busca quem entrou em GET /usuario/me; editar os dados não manda senha; trocar senha (PUT /usuario/me/senha, senha atual errada)
+│   ├── api.test.ts              ← endereço da API (computador do Expo na 8080, localhost, .env) e tempo limite (90 s no Render/https, 10 s local)
+│   ├── conexao-lenta.test.tsx   ← aviso "Conectando ao servidor…": liga depois de 4 s, desliga na resposta e no erro, várias chamadas ao mesmo tempo
+│   ├── build-api.test.ts        ← o build do EAS exige EXPO_PUBLIC_API_URL com https (app.config.ts)
+│   ├── autenticacao.service.test.ts ← login busca quem entrou em GET /usuario/me (senha errada = 401); editar os dados não manda senha; e-mail de outra conta (409) no cadastro e na edição; trocar senha (PUT /usuario/me/senha, senha atual errada)
 │   ├── alterar-senha.test.tsx   ← "Alterar senha" do Perfil: manda a atual e a nova, senha atual errada (mensagem da API), confirmação diferente / nova igual à atual
 │   ├── sessao.test.tsx          ← revalidação da sessão salva no boot (GET /usuario/me) e cache limpo ao trocar de conta
 │   ├── vacina.service.test.ts   ← vacinas do pet via GET /vacina?idPet=
@@ -376,14 +386,20 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 ## 9. Autenticação e Sessão
 
 - Autenticação via **cookie de sessão** (`JSESSIONID`) — `withCredentials: true` no Axios (`src/api/api.ts`). Não há JWT/Bearer no projeto atual.
+- A sessão dura **7 dias** (back end: `server.servlet.session.timeout` e `server.servlet.session.cookie.max-age`). O `max-age` faz o celular guardar o cookie, então fechar e abrir o app não pede login. A sessão fica na memória da API: se a API reinicia (ex.: o Render gratuito "dormindo"), as sessões e o H2 somem e o app volta para o login.
 - `SessaoContext` (`src/context/SessaoContext.tsx`) é a **única** fonte de verdade da sessão.
 - Sessão persistida via `AsyncStorage` com a chave **`@afetto:session`** (não `@afetto:token` — o cookie de sessão é gerenciado pelo navegador/WebView, o AsyncStorage guarda só os dados de UI: `id`, `email`, `nome` — o progresso do onboarding vem da API). A preferência de tema usa outra chave, **`@afetto:tema`** (ver seção 4, `TemaContext`) — são dois valores independentes, não misture.
-- Falha de login: a API devolve a senha errada (ou a conta que não existe — o H2 é zerado a cada reinício da API) como **403**, não 401, porque não trata a exceção do `/login`. `autenticar` trata 400/401/403 do `POST /login` como "E-mail ou senha incorretos" (o `/login` é liberado e sem CSRF, então 403 ali só pode ser isso).
+- **Códigos da API para sessão e conta:**
+  - **401:** login errado (`POST /login` → `{"erro": "E-mail ou senha incorretos"}`, a mesma mensagem para senha errada e conta que não existe — o H2 é zerado a cada reinício da API), sem login, ou sessão expirada/perdida porque a API reiniciou. `autenticar` trata 400/401 do login como "E-mail ou senha incorretos".
+  - **403:** logado, mas sem permissão (rotas só de ADMIN: listar contas `GET /usuario`, trocar role, excluir usuário). A conta ADMIN é criada pelo back end a partir das variáveis `ADMIN_EMAIL`/`ADMIN_SENHA`; o app não tem tela de ADMIN.
+  - **404:** pet, vacina ou usuário de **outra conta** responde igual a um id que não existe — cada conta só acessa os próprios dados (o ADMIN acessa todos em `/pet`, `/vacina` e `/usuario`). O pet é sempre de quem está logado: `idUsuario` de outra conta no `POST`/`PUT /pet` dá 404.
+  - **409:** e-mail que já tem conta, no cadastro (`POST /usuario`) e na edição (`PUT /usuario/{id}`) — o `cadastrar`/`atualizarUsuario` devolvem `email_taken`.
 - **Senha:** trocar logado é `PUT /usuario/me/senha` com a senha atual (a API confere; errada → 400). A edição de dados (`PUT /usuario/{id}`) **não mexe mais na senha** — antes ela gravava como senha o que viesse no corpo, e a tela de editar perfil pedia a "senha atual" para isso (podia desfazer uma troca de senha). Esqueci a senha continua em `POST /senha/redefinir`.
 - **Cadastro já entra:** `useCadastrar` faz `POST /usuario` e, em seguida, o mesmo `autenticar` do login (`POST /login` + `GET /usuario/me`); a tela chama `entrar()` e vai para `/(tabs)`. Se esse login automático falhar, a conta continua criada e a tela vai para `/cadastro-sucesso`, que leva ao `/login`.
 - O `POST /login` não devolve os dados do usuário: logo depois dele, `autenticar` busca quem entrou em `GET /usuario/me` (o backend identifica pelo cookie). Se essa chamada falhar, o login não segue — entrar sem `id` deixaria a sessão quebrada. No boot do app, o `SessaoProvider` revalida a sessão salva com o mesmo `GET /usuario/me` (`buscarUsuarioLogado`): se não responder ou for de outra conta, a sessão local é descartada; se responder, nome e e-mail são atualizados. O resto da app continua usando `buscarUsuarioPorId(id)` onde precisa do detalhe.
 - Um `401` de qualquer chamada dispara o tratador registrado por `SessaoContext` via `definirTratadorSessaoExpirada` (em `api.ts`), que limpa o AsyncStorage e zera a sessão — o `<RotaProtegida>` reage sozinho e redireciona para `/login`.
-- Um `403` **não** é tratado como sessão inválida (pode ser regra de negócio, ex. e-mail em uso) — cada tela trata seu próprio `isError`/`onError`. Não adicione um interceptor global de 403.
+- Um `403` **não** é tratado como sessão inválida (é "sem permissão") — cada tela trata seu próprio `isError`/`onError`. Não adicione um interceptor global de 403.
+- **Trocar o próprio e-mail** (`PUT /usuario/{id}`) mantém a sessão: a API passa a sessão para o e-mail novo. Antes, as chamadas seguintes procuravam o e-mail antigo e respondiam "Usuário não encontrado" até um novo login.
 - Páginas protegidas usam `<RotaProtegida>` — envolve tanto `(tabs)/_layout.tsx` quanto `(app)/_layout.tsx` (todas as rotas de `/perfil`, `/completar-perfil` e `/pet/*` passam pelo guard e redirecionam pra `/login` sem sessão).
 - **Trocar de conta limpa o cache do React Query** (`queryClient.clear()` em `entrar`, `sair` e na sessão expirada). Como o `staleTime` é de 5 min (`api/queryClient.ts`), sem isso a conta nova via dados da anterior (pets, "Sua avaliação" da clínica...). Por isso as chaves de cache não precisam levar o id do usuário.
 - Logout chama `sair()` do `SessaoContext`, que tenta `POST /logout` (pode não existir no backend ainda) e sempre limpa o AsyncStorage local, independente do resultado.
@@ -475,15 +491,17 @@ const { mutate: enviarCadastro } = useMutation({
 Login/Cadastro
   └── Home (checklist)
         ├── /completar-perfil  → perfilCompleto (GET /usuario/me/perfil)
-        └── /(tabs)/pets       → concluído quando a API devolve ao menos um pet
+        ├── /(tabs)/pets       → concluído quando a API devolve ao menos um pet
+        └── /(tabs)/clinica    → opcional: concluído com ao menos uma clínica favorita (GET /clinica?favoritas=true)
 ```
 
 De onde vem cada etapa (`utils/onboarding.ts`, tipo `EtapasOnboarding`):
 - **Pet cadastrado** é derivado da API: a Home (`(tabs)/index.tsx`) chama `usePets()` e passa `pets.length > 0`. Não existe flag local nem botão "Concluir" — cadastrar ou excluir um pet invalida a query `["pets"]` e a Home se atualiza sozinha. Enquanto a lista não chega (ou se a busca falha), a Home não mostra checklist nem barra de progresso, só o indicador de carregamento ou "Tentar novamente".
-- **Perfil completo** também é derivado da API: a Home chama `usePerfilCompleto()` (`GET /usuario/me/perfil`) e usa o campo `perfilCompleto` (moradia, tela de proteção e endereço salvos). Salvar em `/completar-perfil` atualiza o cache com o perfil que o `PUT` devolve, então a Home muda na volta. Não existe mais flag local de progresso na sessão. A Home só mostra checklist e barra depois que as duas respostas (pets e perfil) chegam.
-- O item "Vincular sua clínica" saiu do checklist porque nunca podia ser concluído (a API não tem endpoint de clínica). A aba Clínica continua existindo.
+- **Perfil completo** também é derivado da API: a Home chama `usePerfilCompleto()` (`GET /usuario/me/perfil`) e usa o campo `perfilCompleto` (moradia, tela de proteção e endereço salvos). Salvar em `/completar-perfil` atualiza o cache com o perfil que o `PUT` devolve, então a Home muda na volta. Não existe mais flag local de progresso na sessão.
+- **Clínica vinculada** (item "Vincular sua clínica", **opcional**) também vem da API: a Home chama `useClinicas({ favoritas: true })` e o item fica concluído com ao menos uma favorita. Tocar no item pendente abre a aba Clínica; favoritar ou desfavoritar invalida `[CHAVE_CLINICAS]` e a Home se atualiza sozinha. Por ser opcional, não segura a agenda: `obrigatoriosConcluidos` continua sendo perfil + pet. Ele é o último da lista, então a barra sempre aponta para uma etapa obrigatória pendente.
+- A Home só mostra checklist e barra depois que as três respostas (pets, perfil e favoritas) chegam; se uma falhar, mostra qual e "Tentar novamente". A agenda pós-onboarding depende só de pets e perfil — se as favoritas falharem ali, a agenda aparece normalmente, só sem o item da clínica.
 - O botão "Seus Pets" da Home (`BotaoSeusPets`) mostra a quantidade de pets vinda de `usePets()`.
-- Com as etapas obrigatórias concluídas, o checklist some e a Home mostra `AgendaInicio`: atalhos (Agendar consulta, Adicionar cuidado), os próximos compromissos de todos os pets nos próximos 14 dias e os remédios em tratamento hoje. Agenda vazia mostra um aviso, nunca a Home em branco.
+- Com as etapas obrigatórias concluídas, o checklist some e a Home mostra `AgendaInicio`: atalhos (Agendar consulta, Adicionar cuidado), os próximos compromissos de todos os pets nos próximos 14 dias e os remédios em tratamento hoje. Agenda vazia mostra um aviso, nunca a Home em branco. Se ainda não há clínica favorita, o item "Vincular sua clínica" aparece sozinho acima da agenda (mesmo `ItemChecklist`), até o tutor favoritar uma.
 - `/completar-perfil` também é a tela de edição: aberta pelo card "Moradia e endereço" do `/perfil`, vem preenchida, com título "Moradia e endereço" e botão "Salvar alterações".
 
 ---
@@ -518,7 +536,7 @@ A tela `/sobre` (Perfil → "Sobre o App") mostra a versão e o **hash do commit
 ## 📌 Notas Importantes
 
 - O projeto usa **Node 22 LTS**.
-- A configuração do Expo é o `app.json` (base) + o `app.config.ts`, que soma o commit em `extra` (ver "Sobre o App e versão").
+- A configuração do Expo é o `app.json` (base) + o `app.config.ts`, que soma o commit em `extra` (ver "Sobre o App e versão") e confere a API do build (ver "API no Render", seção 2).
 - O `app/` fica dentro de `src/` — `tsconfig.json` tem `paths: { "@/*": ["./src/*"] }`.
 - O alias `@/` aponta para `src/`.
 - O `QueryClient` é importado diretamente apenas no `_layout.tsx` raiz, para o `QueryClientProvider`.

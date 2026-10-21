@@ -67,7 +67,8 @@ export async function cadastrar(dados: DadosCadastro): Promise<ResultadoCadastro
 
     return { ok: true };
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 403) {
+    // E-mail que já tem conta: a API responde 409 "Este e-mail já está cadastrado"
+    if (axios.isAxiosError(error) && error.response?.status === 409) {
       return { ok: false, error: "email_taken" };
     }
     return { ok: false, error: "unknown" };
@@ -88,13 +89,10 @@ export async function autenticar(
   try {
     await api.post("/login", { email: emailNormalizado, senha });
   } catch (error) {
-    // ⚠️ CONTORNO DE LACUNA DA API: com e-mail ou senha errados (ou uma conta
-    // que não existe mais — o banco H2 é zerado a cada reinício da API), o
-    // back end não trata a falha do login e ela chega como 403, não 401. O
-    // /login é liberado para todos e não tem CSRF, então um 403 aqui só pode
-    // ser isso. Sem tratar, a tela mostrava "Algo deu errado".
+    // E-mail ou senha errados (ou uma conta que não existe mais — o H2 é zerado
+    // a cada reinício da API): 401 "E-mail ou senha incorretos".
     const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-    if (status === 400 || status === 401 || status === 403) {
+    if (status === 400 || status === 401) {
       return { ok: false, motivo: "credenciais_invalidas" };
     }
     return { ok: false, motivo: classificarErro(error) };
@@ -163,7 +161,9 @@ export async function atualizarUsuario(
 
     return { ok: true, novoEmail };
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 403) {
+    // E-mail de outra conta: 409. A sessão continua valendo com o e-mail novo
+    // quando a troca dá certo (a API atualiza quem está logado).
+    if (axios.isAxiosError(error) && error.response?.status === 409) {
       return { ok: false, error: "email_taken" };
     }
     if (axios.isAxiosError(error) && error.response?.status === 404) {

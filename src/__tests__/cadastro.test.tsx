@@ -136,10 +136,10 @@ describe("TelaCadastro — cadastro end-to-end (HTTP mockado)", () => {
     expect(mockEntrar).not.toHaveBeenCalled();
   });
 
-  it("mostra erro no campo e-mail quando a API responde 403", async () => {
+  it("mostra erro no campo e-mail quando a API responde 409 (e-mail já cadastrado)", async () => {
     mockPost.mockRejectedValueOnce({
       isAxiosError: true,
-      response: { status: 403 },
+      response: { status: 409, data: { erro: "Este e-mail já está cadastrado" } },
     });
 
     render(<TelaCadastro />, { wrapper });

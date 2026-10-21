@@ -1,5 +1,12 @@
 import { api } from "@/api/api";
-import { atualizarSenha, atualizarUsuario, autenticar, buscarUsuarioLogado } from "@/services/autenticacao.service";
+import {
+  atualizarSenha,
+  atualizarUsuario,
+  autenticar,
+  buscarUsuarioLogado,
+  cadastrar,
+} from "@/services/autenticacao.service";
+import type { DadosCadastro } from "@/types/autenticacao.types";
 
 // Mocka só o boundary HTTP: o service roda de verdade.
 jest.mock("@/api/api", () => ({
@@ -52,12 +59,12 @@ describe("autenticar", () => {
     expect(mockGet).not.toHaveBeenCalled();
   });
 
-  it("senha errada ou conta inexistente que a API devolve como 403 vira 'E-mail ou senha incorretos'", async () => {
+  it("403 no login não é confundido com senha errada (a API responde 401 para isso)", async () => {
     mockPost.mockRejectedValueOnce(erroHttp(403));
 
-    const resultado = await autenticar("ana@afetto.com", "errada");
+    const resultado = await autenticar("ana@afetto.com", "senha123");
 
-    expect(resultado).toEqual({ ok: false, motivo: "credenciais_invalidas" });
+    expect(resultado).toEqual({ ok: false, motivo: "desconhecido" });
     expect(mockGet).not.toHaveBeenCalled();
   });
 
@@ -87,8 +94,8 @@ describe("buscarUsuarioLogado", () => {
     expect(mockGet).toHaveBeenCalledWith("/usuario/me");
   });
 
-  it("devolve null quando a sessão não vale mais", async () => {
-    mockGet.mockRejectedValueOnce(erroHttp(403));
+  it("devolve null quando a sessão não vale mais (401)", async () => {
+    mockGet.mockRejectedValueOnce(erroHttp(401));
 
     expect(await buscarUsuarioLogado()).toBeNull();
   });
@@ -106,6 +113,39 @@ describe("atualizarUsuario", () => {
     expect(url).toBe("/usuario/usuario-1");
     expect(corpo).not.toHaveProperty("senha");
     expect(corpo).toMatchObject({ nome: "Ana Paula", cpf: "12345678909", dataNascimento: "1995-05-20" });
+  });
+
+  it("e-mail de outra conta (409) vira 'email_taken'", async () => {
+    mockGet.mockResolvedValueOnce({ data: USUARIO_DA_API });
+    mockPut.mockRejectedValueOnce(erroHttp(409));
+
+    const resultado = await atualizarUsuario("usuario-1", { email: "bruno@afetto.com" });
+
+    expect(resultado).toEqual({ ok: false, error: "email_taken" });
+  });
+});
+
+describe("cadastrar", () => {
+  const DADOS: DadosCadastro = {
+    name: "Ana",
+    cpf: "123.456.789-09",
+    birthDate: "20/05/1995",
+    email: "ana@afetto.com",
+    phoneCode: "+55",
+    phone: "(11) 99999-9999",
+    password: "senha123",
+  };
+
+  it("e-mail que já tem conta (409) vira 'email_taken'", async () => {
+    mockPost.mockRejectedValueOnce(erroHttp(409));
+
+    expect(await cadastrar(DADOS)).toEqual({ ok: false, error: "email_taken" });
+  });
+
+  it("outro erro da API não é confundido com e-mail em uso", async () => {
+    mockPost.mockRejectedValueOnce(erroHttp(500));
+
+    expect(await cadastrar(DADOS)).toEqual({ ok: false, error: "unknown" });
   });
 });
 

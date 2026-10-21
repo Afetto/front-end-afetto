@@ -57,17 +57,12 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
 
         // ⚠️ O cookie de sessão (JSESSIONID) é uma HttpSession em memória no
         // backend: some quando o servidor reinicia (ex.: instância free do
-        // Render "dormindo"), e a API responde 403 (não 401) tanto para
-        // sessão inválida quanto para regra de negócio — por isso o
-        // interceptor global não consegue distinguir os dois casos (ver
-        // api.ts). Sem essa revalidação, um `id` de usuário salvo no
-        // AsyncStorage de uma sessão anterior ficava "fantasma": o app
-        // continuava mostrando as abas normalmente, mas toda chamada que
-        // dependia desse id (ex.: POST /pet com `idUsuario`) quebrava com
-        // 500 do backend. Revalidamos aqui, uma vez, no boot do app, com
-        // GET /usuario/me: ele só responde se o cookie ainda vale e diz de
-        // quem é a sessão. Se não responder, ou se for de outra conta, a
-        // sessão salva é descartada.
+        // Render "dormindo"). Durante o uso, o 401 que a API devolve nesse
+        // caso já leva ao login (interceptor em api.ts). No boot, revalidamos
+        // uma vez com GET /usuario/me antes de mostrar as abas: ele só
+        // responde se o cookie ainda vale e diz de quem é a sessão. Se não
+        // responder, ou se for de outra conta, a sessão salva é descartada —
+        // sem isso, um `id` salvo de uma sessão anterior ficava "fantasma".
         const usuario = await buscarUsuarioLogado();
         if (!usuario || usuario.id !== salva.id) {
           await AsyncStorage.removeItem(CHAVE_SESSAO);
