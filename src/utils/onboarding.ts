@@ -1,13 +1,7 @@
-/**
- * Etapas do onboarding e de onde vem cada uma:
- * - `perfilCompleto`: derivado da API — `perfilCompleto` de
- *   GET /usuario/me/perfil (moradia, tela de proteção e endereço salvos).
- * - `petCadastrado`: derivado da API — verdadeiro quando `usePets()` devolve
- *   ao menos um pet. Não é guardado em lugar nenhum.
- */
 export type EtapasOnboarding = {
   perfilCompleto: boolean;
   petCadastrado: boolean;
+  clinicaVinculada: boolean;
 };
 
 export type ItemOnboarding = {
@@ -26,10 +20,8 @@ export type ProgressoCalculado = {
   obrigatoriosConcluidos: boolean;
 };
 
-/** Deriva o checklist, a etapa atual e o percentual de progresso do onboarding. */
-export function calcularProgressoOnboarding(
-  etapas: EtapasOnboarding
-): ProgressoCalculado {
+/** Deriva o checklist, a etapa atual e o percentual de progresso do onboarding a partir dos dados da API. */
+export function calcularProgressoOnboarding(etapas: EtapasOnboarding): ProgressoCalculado {
   const checklist: ItemOnboarding[] = [
     {
       id: "cadastro",
@@ -46,6 +38,16 @@ export function calcularProgressoOnboarding(
       concluido: etapas.petCadastrado,
       opcional: false,
       rota: "/(tabs)/pets",
+    },
+    // Opcional e por último: enquanto houver etapa obrigatória pendente, o
+    // rótulo da barra sempre aponta para ela.
+    {
+      id: "clinica",
+      titulo: "Vincular sua clínica",
+      subtitulo: "Favorite a clínica do seu pet",
+      concluido: etapas.clinicaVinculada,
+      opcional: true,
+      rota: "/(tabs)/clinica",
     },
   ];
 

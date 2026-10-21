@@ -1,18 +1,21 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   fireEvent,
   render,
   screen,
   waitFor,
 } from "@testing-library/react-native";
+import { router } from "expo-router";
 import type { ReactNode } from "react";
 
 import { api } from "@/api/api";
 import TelaInicio from "@/app/(tabs)/index";
 import { formatarDataISO } from "@/utils/calendario";
 
-// Mocka o boundary HTTP: usePets -> petService.listar e usePerfilCompleto ->
-// perfilCompletoService.buscar continuam rodando de verdade.
+// Mocka o boundary HTTP: usePets -> petService.listar, usePerfilCompleto ->
+// perfilCompletoService.buscar e useClinicas -> clinicaService.listar
+// continuam rodando de verdade.
 jest.mock("@/api/api", () => ({
   api: { get: jest.fn() },
 }));
@@ -62,16 +65,42 @@ const PERFIL_COMPLETO = {
   },
 };
 
-// Cada rota responde o seu dado; `pets` pode ser uma função para simular falha
+// GET /clinica?favoritas=true — uma clínica favorita conclui "Vincular sua clínica"
+const CLINICA_FAVORITA = {
+  id: "cli-1",
+  nome: "Clínica Veterinária Bigode e Rabo",
+  imagemUrl: null,
+  endereco: {
+    logradouro: "Rua dos Pinheiros", numero: "100", complemento: null, bairro: "Pinheiros",
+    cidade: "São Paulo", uf: "SP", cep: "05422-000", latitude: -23.56, longitude: -46.68,
+  },
+  distanciaKm: 0.85,
+  perto: true,
+  favorita: true,
+  notaMedia: 4.5,
+  totalAvaliacoes: 2,
+};
+
+const SEM_FAVORITAS = () => Promise.resolve({ data: { content: [] } });
+const COM_FAVORITA = () => Promise.resolve({ data: { content: [CLINICA_FAVORITA] } });
+
+// Cada rota responde o seu dado; `pets` e `favoritas` podem simular falha
 function responderApi({
   pets = () => Promise.resolve({ data: PETS_DA_API }),
   perfil = PERFIL_INCOMPLETO,
   agenda = [] as unknown[],
-}: { pets?: () => Promise<unknown>; perfil?: unknown; agenda?: unknown[] } = {}) {
-  mockGet.mockImplementation((url: string) => {
+  favoritas = SEM_FAVORITAS,
+}: {
+  pets?: () => Promise<unknown>;
+  perfil?: unknown;
+  agenda?: unknown[];
+  favoritas?: () => Promise<unknown>;
+} = {}) {
+  mockGet.mockImplementation((url: string, config?: { params?: Record<string, unknown> }) => {
     if (url === "/pet") return pets();
     if (url === "/usuario/me/perfil") return Promise.resolve({ data: perfil });
     if (url === "/calendario") return Promise.resolve({ data: { eventos: agenda } });
+    if (url === "/clinica" && config?.params?.favoritas === true) return favoritas();
     return Promise.reject(new Error(`URL inesperada: ${url}`));
   });
 }
@@ -79,6 +108,7 @@ function responderApi({
 describe("TelaInicio — progresso vindo da API", () => {
   beforeEach(() => {
     mockGet.mockReset();
+    (router.push as jest.Mock).mockClear();
   });
 
   it("mostra a quantidade de pets da API e conclui a etapa do pet sozinha", async () => {
@@ -87,9 +117,12 @@ describe("TelaInicio — progresso vindo da API", () => {
     render(<TelaInicio />, { wrapper });
 
     expect(await screen.findByText("2 pets")).toBeTruthy();
-    expect(await screen.findByText("Etapa 2 de 2 — Finalize seu cadastro!")).toBeTruthy();
+    expect(await screen.findByText("Etapa 2 de 3 — Finalize seu cadastro!")).toBeTruthy();
     expect(mockGet).toHaveBeenCalledWith("/pet", expect.anything());
     expect(mockGet).toHaveBeenCalledWith("/usuario/me/perfil");
+    expect(mockGet).toHaveBeenCalledWith("/clinica", {
+      params: expect.objectContaining({ favoritas: true }),
+    });
   });
 
   it("mantém a etapa do pet pendente quando a API não devolve nenhum pet", async () => {
@@ -98,7 +131,7 @@ describe("TelaInicio — progresso vindo da API", () => {
     render(<TelaInicio />, { wrapper });
 
     expect(await screen.findByText("Nenhum pet")).toBeTruthy();
-    expect(await screen.findByText("Etapa 1 de 2 — Finalize seu cadastro!")).toBeTruthy();
+    expect(await screen.findByText("Etapa 1 de 3 — Finalize seu cadastro!")).toBeTruthy();
     expect(screen.getByText("Cadastrar seu Pet")).toBeTruthy();
   });
 
@@ -107,7 +140,7 @@ describe("TelaInicio — progresso vindo da API", () => {
 
     render(<TelaInicio />, { wrapper });
 
-    expect(await screen.findByText("Etapa 2 de 2 — Cadastrar seu Pet")).toBeTruthy();
+    expect(await screen.findByText("Etapa 2 de 3 — Cadastrar seu Pet")).toBeTruthy();
   });
 
   it("com perfil completo e pet cadastrado, some o checklist e entra a agenda dos pets", async () => {
@@ -139,6 +172,94 @@ describe("TelaInicio — progresso vindo da API", () => {
     expect(screen.getByText("Mia · 1 comprimido")).toBeTruthy();
     expect(screen.getByText("Agendar consulta")).toBeTruthy();
     expect(mockGet).toHaveBeenCalledWith("/calendario", { params: expect.objectContaining({ inicio: hoje }) });
+  });
+
+  it("checklist mostra \"Vincular sua clínica\" como opcional e leva à aba Clínica", async () => {
+    responderApi();
+
+    render(<TelaInicio />, { wrapper });
+
+    expect(await screen.findByText("Vincular sua clínica")).toBeTruthy();
+    expect(screen.getByText("Favorite a clínica do seu pet")).toBeTruthy();
+    expect(screen.getByText("opcional")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Vincular sua clínica"));
+    expect(router.push).toHaveBeenCalledWith("/(tabs)/clinica");
+  });
+
+  it("com uma clínica favorita na API, \"Vincular sua clínica\" fica concluído e conta no progresso", async () => {
+    responderApi({ pets: () => Promise.resolve({ data: { content: [] } }), favoritas: COM_FAVORITA });
+
+    render(<TelaInicio />, { wrapper });
+
+    expect(await screen.findByText("Etapa 2 de 3 — Finalize seu cadastro!")).toBeTruthy();
+
+    // Item concluído não navega ao tocar
+    fireEvent.press(screen.getByText("Vincular sua clínica"));
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("onboarding concluído sem clínica favorita: o item opcional aparece acima da agenda", async () => {
+    responderApi({ perfil: PERFIL_COMPLETO });
+
+    render(<TelaInicio />, { wrapper });
+
+    expect(await screen.findByText("Nada marcado por enquanto")).toBeTruthy();
+    expect(screen.queryByText("Sua configuração")).toBeNull();
+    expect(screen.getByText("Vincular sua clínica")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Vincular sua clínica"));
+    expect(router.push).toHaveBeenCalledWith("/(tabs)/clinica");
+  });
+
+  it("onboarding concluído com clínica favorita: não sobra nada do checklist", async () => {
+    let respondeu = false;
+    responderApi({
+      perfil: PERFIL_COMPLETO,
+      favoritas: () => COM_FAVORITA().finally(() => { respondeu = true; }),
+    });
+
+    render(<TelaInicio />, { wrapper });
+
+    expect(await screen.findByText("Nada marcado por enquanto")).toBeTruthy();
+    // Espera a resposta das favoritas chegar à tela antes de conferir
+    await waitFor(() => expect(respondeu).toBe(true));
+    await act(async () => {});
+    expect(screen.queryByText("Vincular sua clínica")).toBeNull();
+  });
+
+  it("se as favoritas falham depois do onboarding, a agenda continua e o item da clínica não aparece", async () => {
+    let respondeu = false;
+    responderApi({
+      perfil: PERFIL_COMPLETO,
+      favoritas: () => Promise.reject(new Error("falha de rede")).finally(() => { respondeu = true; }),
+    });
+
+    render(<TelaInicio />, { wrapper });
+
+    expect(await screen.findByText("Nada marcado por enquanto")).toBeTruthy();
+    await waitFor(() => expect(respondeu).toBe(true));
+    await act(async () => {});
+    expect(screen.queryByText("Vincular sua clínica")).toBeNull();
+    expect(screen.queryByText("Não foi possível carregar suas clínicas favoritas.")).toBeNull();
+  });
+
+  it("se as favoritas falham durante o onboarding, mostra erro e recupera ao tentar de novo", async () => {
+    let falhar = true;
+    responderApi({
+      favoritas: () => (falhar ? Promise.reject(new Error("falha de rede")) : COM_FAVORITA()),
+    });
+
+    render(<TelaInicio />, { wrapper });
+
+    expect(await screen.findByText("Não foi possível carregar suas clínicas favoritas.")).toBeTruthy();
+    expect(screen.queryByText("Sua configuração")).toBeNull();
+    expect(screen.queryByText(/Etapa \d de \d/)).toBeNull();
+
+    falhar = false;
+    fireEvent.press(screen.getByText("Tentar novamente"));
+
+    expect(await screen.findByText("Etapa 3 de 3 — Finalize seu cadastro!")).toBeTruthy();
   });
 
   it("agenda vazia mostra um aviso em vez de deixar a Home em branco", async () => {

@@ -3,6 +3,7 @@ import { BarraProgresso } from "@/components/BarraProgresso";
 import { BotaoSeusPets } from "@/components/BotaoSeusPets";
 import { ItemChecklist } from "@/components/ItemChecklist";
 import { useSessao } from "@/context/SessaoContext";
+import { useClinicas } from "@/hooks/useClinicas";
 import { usePerfilCompleto } from "@/hooks/usePerfilCompleto";
 import { usePets } from "@/hooks/usePets";
 import { calcularProgressoOnboarding } from "@/utils/onboarding";
@@ -32,24 +33,57 @@ export default function TelaInicio() {
     refetch: recarregarPerfil,
   } = usePerfilCompleto();
 
-  // O progresso depende de duas respostas da API: a lista de pets e o
-  // "Finalize seu cadastro" (GET /usuario/me/perfil). Enquanto elas não chegam
-  // (ou se uma falhar), a tela não mostra checklist nem barra — mostrar uma
-  // etapa pendente sem saber a resposta seria um dado falso.
+  // "Vincular sua clínica": concluído quando o tutor tem ao menos uma
+  // clínica favorita (GET /clinica?favoritas=true). Favoritar ou desfavoritar
+  // invalida as listas de clínicas e a Home se atualiza sozinha.
+  const {
+    data: clinicasFavoritas,
+    isFetching: carregandoClinicas,
+    refetch: recarregarClinicas,
+  } = useClinicas({ favoritas: true });
+
+  // O progresso depende das respostas da API: a lista de pets, o "Finalize seu
+  // cadastro" (GET /usuario/me/perfil) e as clínicas favoritas. Enquanto elas
+  // não chegam (ou se uma falhar), a tela não mostra checklist nem barra —
+  // mostrar uma etapa pendente sem saber a resposta seria um dado falso.
   const carregouPets = pets !== undefined;
-  const carregouProgresso = carregouPets && perfil !== undefined;
-  const carregandoProgresso = carregandoPets || carregandoPerfil;
+  const carregouPerfil = perfil !== undefined;
+  const carregouClinicas = clinicasFavoritas !== undefined;
+  const carregandoProgresso = carregandoPets || carregandoPerfil || carregandoClinicas;
 
   function recarregarProgresso() {
     if (!carregouPets) recarregarPets();
-    if (perfil === undefined) recarregarPerfil();
+    if (!carregouPerfil) recarregarPerfil();
+    if (!carregouClinicas) recarregarClinicas();
   }
 
   const { checklist, percentual, rotuloEtapa, obrigatoriosConcluidos } =
     calcularProgressoOnboarding({
       perfilCompleto: perfil?.perfilCompleto ?? false,
       petCadastrado: (pets?.length ?? 0) > 0,
+      clinicaVinculada: (clinicasFavoritas?.length ?? 0) > 0,
     });
+
+  // A agenda só depende das etapas obrigatórias (pets e perfil): se a busca das
+  // favoritas falhar, a Home pós-onboarding continua de pé, só sem o lembrete
+  // da clínica. O checklist precisa das três respostas.
+  const mostrarAgenda = carregouPets && carregouPerfil && obrigatoriosConcluidos;
+  const mostrarChecklist =
+    carregouPets && carregouPerfil && carregouClinicas && !obrigatoriosConcluidos;
+  const carregouProgresso = mostrarAgenda || mostrarChecklist;
+
+  const mensagemErro = !carregouPets
+    ? "Não foi possível carregar seus pets."
+    : !carregouPerfil
+      ? "Não foi possível carregar seu cadastro."
+      : "Não foi possível carregar suas clínicas favoritas.";
+
+  // Etapa opcional: depois das obrigatórias o checklist some, então a clínica
+  // pendente continua aparecendo sozinha acima da agenda até ser vinculada
+  // (só depois de a resposta das favoritas chegar).
+  const clinicaPendente = carregouClinicas
+    ? checklist.find((item) => item.id === "clinica" && !item.concluido)
+    : undefined;
 
   return (
     <ScrollView
@@ -89,7 +123,7 @@ export default function TelaInicio() {
         )}
 
         {/* Barra de progresso */}
-        {carregouProgresso && !obrigatoriosConcluidos && (
+        {mostrarChecklist && (
           <BarraProgresso rotulo={rotuloEtapa} percentual={percentual} />
         )}
       </View>
@@ -102,20 +136,18 @@ export default function TelaInicio() {
           onPress={() => router.push("/(tabs)/pets")}
         />
 
-        {/* Carregando pets e perfil */}
+        {/* Carregando pets, perfil e clínicas favoritas */}
         {!carregouProgresso && carregandoProgresso && (
           <View className="items-center py-6">
             <ActivityIndicator color="#E8A838" />
           </View>
         )}
 
-        {/* Falha ao carregar pets ou perfil */}
+        {/* Falha ao carregar pets, perfil ou clínicas favoritas */}
         {!carregouProgresso && !carregandoProgresso && (
           <View className="items-center gap-2 py-4">
             <Text className="text-sm text-muted dark:text-gray-400 text-center">
-              {carregouPets
-                ? "Não foi possível carregar seu cadastro."
-                : "Não foi possível carregar seus pets."}
+              {mensagemErro}
             </Text>
             <TouchableOpacity onPress={recarregarProgresso}>
               <Text className="text-amber font-semibold">Tentar novamente</Text>
@@ -123,8 +155,19 @@ export default function TelaInicio() {
           </View>
         )}
 
+        {/* Onboarding concluído, mas sem clínica favorita: o item opcional fica à vista */}
+        {mostrarAgenda && clinicaPendente && (
+          <ItemChecklist
+            titulo={clinicaPendente.titulo}
+            subtitulo={clinicaPendente.subtitulo}
+            concluido={false}
+            opcional
+            onPress={() => router.push("/(tabs)/clinica")}
+          />
+        )}
+
         {/* Onboarding concluído: atalhos, agenda dos pets e remédios em tratamento */}
-        {carregouProgresso && obrigatoriosConcluidos && sessao && (
+        {mostrarAgenda && sessao && (
           <AgendaInicio
             idUsuario={sessao.id}
             idPetUnico={pets && pets.length === 1 ? pets[0].id : undefined}
@@ -132,7 +175,7 @@ export default function TelaInicio() {
         )}
 
         {/* Checklist — some quando os passos obrigatórios estão completos */}
-        {carregouProgresso && !obrigatoriosConcluidos && (
+        {mostrarChecklist && (
           <View className="gap-3">
             <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
               Sua configuração
