@@ -53,9 +53,42 @@ export function infoDoCommit(
   };
 }
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
-  ...config,
-  name: config.name ?? "challenge-afetto",
-  slug: config.slug ?? "challenge-afetto",
-  extra: { ...config.extra, ...infoDoCommit() },
-});
+/*
+ * Endereço da API no build que vai para o celular (EAS — ex.: o que sobe para
+ * o Firebase App Distribution). Ali não há Expo rodando no computador para o
+ * app achar a API local: sem EXPO_PUBLIC_API_URL ele chamaria "localhost" — o
+ * próprio celular — e nenhuma tela carregaria. O Android também bloqueia
+ * http:// em build de produção. Por isso o build para com a explicação, em vez
+ * de gerar um app que não funciona. O perfil "development" (dev client) fica de
+ * fora: ele conversa com o Expo do computador.
+ */
+export function conferirApiDoBuild(
+  ambiente: Record<string, string | undefined> = process.env
+): void {
+  if (ambiente.EAS_BUILD !== "true" || ambiente.EAS_BUILD_PROFILE === "development") return;
+
+  const url = ambiente.EXPO_PUBLIC_API_URL?.trim();
+  if (!url) {
+    throw new Error(
+      "EXPO_PUBLIC_API_URL não definida para o build: informe a API do Render " +
+        "(https://<servico>.onrender.com) no \"env\" do perfil no eas.json ou nas " +
+        "variáveis de ambiente do projeto no EAS. O .env está no .gitignore e não sobe para o EAS."
+    );
+  }
+  if (!url.startsWith("https://")) {
+    throw new Error(
+      `EXPO_PUBLIC_API_URL precisa ser https:// no build (o Android bloqueia http://): ${url}`
+    );
+  }
+}
+
+export default ({ config }: ConfigContext): ExpoConfig => {
+  conferirApiDoBuild();
+
+  return {
+    ...config,
+    name: config.name ?? "challenge-afetto",
+    slug: config.slug ?? "challenge-afetto",
+    extra: { ...config.extra, ...infoDoCommit() },
+  };
+};

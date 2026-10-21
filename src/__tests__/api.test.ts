@@ -1,7 +1,13 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-import { definirUrlDaApi } from "@/api/api";
+import {
+  api,
+  definirUrlDaApi,
+  TEMPO_LIMITE_API_LOCAL_MS,
+  TEMPO_LIMITE_API_REMOTA_MS,
+  tempoLimiteDaApi,
+} from "@/api/api";
 
 // O Expo informa o endereço do computador que roda o Metro (hostUri)
 jest.mock("expo-constants", () => ({
@@ -48,5 +54,24 @@ describe("definirUrlDaApi", () => {
     process.env.EXPO_PUBLIC_API_URL = "http://10.0.0.5:8080";
 
     expect(definirUrlDaApi()).toBe("http://10.0.0.5:8080");
+  });
+});
+
+describe("tempoLimiteDaApi", () => {
+  it("API do Render (https) espera até 90 s: a instância gratuita leva cerca de 1 minuto para acordar", () => {
+    expect(tempoLimiteDaApi("https://afetto.onrender.com")).toBe(90_000);
+    expect(TEMPO_LIMITE_API_REMOTA_MS).toBe(90_000);
+  });
+
+  it("API local (http) continua com 10 s, para um endereço errado aparecer logo", () => {
+    expect(tempoLimiteDaApi("http://192.168.0.10:8080")).toBe(10_000);
+    expect(TEMPO_LIMITE_API_LOCAL_MS).toBe(10_000);
+  });
+
+  it("o cliente usa o limite do endereço configurado e passa pelo aviso de conexão lenta", () => {
+    // jest.setup.js define EXPO_PUBLIC_API_URL=https://api.test.local
+    expect(api.defaults.baseURL).toBe("https://api.test.local");
+    expect(api.defaults.timeout).toBe(90_000);
+    expect(typeof api.defaults.adapter).toBe("function");
   });
 });

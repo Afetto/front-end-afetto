@@ -12,6 +12,7 @@ import "react-native-reanimated";
 import "../global.css";
 
 import { queryClient } from "@/api/queryClient";
+import { AvisoConexaoLenta } from "@/components/AvisoConexaoLenta";
 import { SessaoProvider } from "@/context/SessaoContext";
 import { TemaProvider } from "@/context/TemaContext";
 import { useNotificacoes } from "@/hooks/useNotificacoes";
@@ -79,6 +80,8 @@ function LayoutRaizNav() {
             <Stack.Screen name="(app)" />
             <Stack.Screen name="(tabs)" />
           </Stack>
+          {/* Por cima de todas as telas: API demorando (ex.: Render acordando) */}
+          <AvisoConexaoLenta />
         </SessaoProvider>
       </TemaProvider>
     </QueryClientProvider>
