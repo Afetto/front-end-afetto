@@ -1,7 +1,11 @@
 import { api } from "@/api/api";
 import { extrairLista } from "@/api/paginacao";
-import { DadosCadastroPet, Pet } from "@/schemas/pet.schema";
+import { DadosCadastroPet, FormCadastroPet, Pet } from "@/schemas/pet.schema";
+import { converterDataParaBR, converterDataParaISO } from "@/utils/data";
 import axios from "axios";
+
+// O pet pode vir da API sem sexo (cadastros antigos): aí o formulário começa sem escolha
+type ValoresFormularioPet = Omit<FormCadastroPet, "sexo"> & { sexo: FormCadastroPet["sexo"] | undefined };
 
 export const petService = {
     listar: async (): Promise<Pet[]> => {
@@ -37,4 +41,29 @@ export const petService = {
     remover: async (id: string): Promise<void> => {
         await api.delete(`/pet/${id}`);
     },
+
+    // ─── Formulário ⇄ API (cadastrar e editar usam o mesmo FormPet) ──────────
+
+    /** Pet carregado para edição → valores do formulário (data DD/MM/AAAA, peso como texto). */
+    paraFormulario: (pet: Pet): ValoresFormularioPet => ({
+        nome: pet.nome,
+        especie: pet.especie,
+        sexo: pet.sexo,
+        raca: pet.raca ?? "",
+        peso: pet.peso != null ? String(pet.peso) : "",
+        dataNasc: pet.dataNasc ? converterDataParaBR(pet.dataNasc) : "",
+        descricao: pet.descricao ?? "",
+    }),
+
+    /** Formulário → corpo do POST/PUT /pet (data ISO, peso com ponto decimal). */
+    doFormulario: (form: FormCadastroPet, idUsuario: string): DadosCadastroPet => ({
+        nome: form.nome,
+        especie: form.especie,
+        sexo: form.sexo,
+        raca: form.raca?.trim() || "",
+        peso: form.peso ? Number(form.peso.replace(",", ".")) : undefined,
+        dataNasc: form.dataNasc ? converterDataParaISO(form.dataNasc) : "",
+        descricao: form.descricao?.trim() || "",
+        idUsuario,
+    }),
 };

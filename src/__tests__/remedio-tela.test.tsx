@@ -53,7 +53,9 @@ describe("TelaRemedio — adicionar e editar remédio (HTTP mockado)", () => {
     preencher();
     fireEvent.press(screen.getByText("Salvar"));
 
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/pet/pet-1/historico"));
+    await waitFor(() =>
+      expect(router.replace).toHaveBeenCalledWith({ pathname: "/pet/[id]/historico", params: { id: "pet-1" } })
+    );
     expect(mockPost).toHaveBeenCalledWith("/remedio", {
       nomeRemedio: "Amoxicilina",
       dosagem: "1 comprimido",

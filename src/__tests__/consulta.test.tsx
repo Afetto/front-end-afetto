@@ -55,7 +55,9 @@ describe("TelaConsulta — registrar e editar consulta (HTTP mockado)", () => {
     fireEvent.changeText(screen.getByPlaceholderText("Dra. Ana"), "Dra. Ana");
     fireEvent.press(screen.getByText("Salvar"));
 
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/pet/pet-1/historico"));
+    await waitFor(() =>
+      expect(router.replace).toHaveBeenCalledWith({ pathname: "/pet/[id]/historico", params: { id: "pet-1" } })
+    );
     expect(mockPost).toHaveBeenCalledWith("/consulta", {
       tipoEvento: "EXAME",
       descricao: "Hemograma",

@@ -3,7 +3,7 @@ import { FormPet } from "@/components/FormPet";
 import { useSessao } from "@/context/SessaoContext";
 import { useAtualizarPet, usePet } from "@/hooks/usePets";
 import { FormCadastroPet, FormCadastroPetSchema } from "@/schemas/pet.schema";
-import { converterDataParaBR, converterDataParaISO } from "@/utils/data";
+import { petService } from "@/services/pet.service";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, useLocalSearchParams } from "expo-router";
@@ -46,16 +46,7 @@ export default function TelaEditarPet() {
   });
 
   useEffect(() => {
-    if (!pet) return;
-    reset({
-      nome: pet.nome,
-      especie: pet.especie,
-      sexo: pet.sexo,
-      raca: pet.raca ?? "",
-      peso: pet.peso != null ? String(pet.peso) : "",
-      dataNasc: pet.dataNasc ? converterDataParaBR(pet.dataNasc) : "",
-      descricao: pet.descricao ?? "",
-    });
+    if (pet) reset(petService.paraFormulario(pet));
   }, [pet, reset]);
 
   function aoSalvar(form: FormCadastroPet) {
@@ -67,19 +58,7 @@ export default function TelaEditarPet() {
     }
 
     atualizarPet(
-      {
-        id,
-        data: {
-          nome: form.nome,
-          especie: form.especie,
-          sexo: form.sexo,
-          raca: form.raca?.trim() || "",
-          peso: form.peso ? Number(form.peso.replace(",", ".")) : undefined,
-          dataNasc: form.dataNasc ? converterDataParaISO(form.dataNasc) : "",
-          descricao: form.descricao?.trim() || "",
-          idUsuario: sessao.id,
-        },
-      },
+      { id, data: petService.doFormulario(form, sessao.id) },
       {
         onSuccess: () => router.back(),
         onError: () =>

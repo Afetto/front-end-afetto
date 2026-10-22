@@ -1,6 +1,13 @@
 import { api } from "@/api/api";
 import { extrairLista } from "@/api/paginacao";
-import { Consulta, DadosConsulta, StatusConsulta, TipoConsulta } from "@/schemas/consulta.schema";
+import {
+  Consulta,
+  DadosConsulta,
+  FormConsulta,
+  StatusConsulta,
+  TipoConsulta,
+} from "@/schemas/consulta.schema";
+import { converterDataParaBR, converterDataParaISO } from "@/utils/data";
 
 // Consultas de um pet (/consulta). A API só mostra consultas dos pets do
 // usuário logado: pet ou consulta de outra conta responde 404.
@@ -68,4 +75,27 @@ export const consultaService = {
   remover: async (id: string): Promise<void> => {
     await api.delete(`/consulta/${id}`);
   },
+
+  // ─── Formulário ⇄ API (data DD/MM/AAAA no formulário, YYYY-MM-DD na API) ───
+
+  /** Consulta carregada para edição → valores do formulário. */
+  paraFormulario: (consulta: Consulta): FormConsulta => ({
+    tipoEvento: consulta.tipoEvento,
+    descricao: consulta.descricao,
+    data: converterDataParaBR(consulta.data),
+    hora: consulta.hora ?? "",
+    nomeVeterinario: consulta.nomeVeterinario ?? "",
+    observacoes: consulta.observacoes ?? "",
+  }),
+
+  /** Formulário preenchido → corpo do POST/PUT /consulta. Campo vazio não vai. */
+  doFormulario: (form: FormConsulta, idPet: string): DadosConsulta => ({
+    tipoEvento: form.tipoEvento,
+    descricao: form.descricao,
+    data: converterDataParaISO(form.data),
+    hora: form.hora || undefined,
+    nomeVeterinario: form.nomeVeterinario || undefined,
+    observacoes: form.observacoes || undefined,
+    idPet,
+  }),
 };

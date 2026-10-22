@@ -1,6 +1,7 @@
 import { api } from "@/api/api";
 import { extrairLista } from "@/api/paginacao";
-import { DadosVacina, Vacina } from "@/schemas/vacina.schema";
+import { DadosVacina, FormCuidado, Vacina } from "@/schemas/vacina.schema";
+import { converterDataParaBR, converterDataParaISO } from "@/utils/data";
 
 // ⚠️ CONTORNO DE LACUNA DA API: `GET /vacina?idPet=` já filtra pelo pet no
 // servidor, mas a API nunca devolve `id` nem `idPet` como campos diretos, nem
@@ -80,4 +81,27 @@ export const vacinaService = {
   remover: async (id: string): Promise<void> => {
     await api.delete(`/vacina/${id}`);
   },
+
+  // ─── Formulário ⇄ API (datas DD/MM/AAAA no formulário, YYYY-MM-DD na API) ──
+
+  /** Vacina carregada para edição → valores do formulário. */
+  paraFormulario: (vacina: Vacina): FormCuidado => ({
+    nomeVacina: vacina.nomeVacina,
+    dataAplicacao: converterDataParaBR(vacina.dataAplicacao),
+    proximaDose: vacina.proximaDose ? converterDataParaBR(vacina.proximaDose) : "",
+    fabricante: vacina.fabricante ?? "",
+    lote: vacina.lote ?? "",
+    observacoes: vacina.observacoes ?? "",
+  }),
+
+  /** Formulário preenchido → corpo do POST/PUT /vacina. Campo vazio não vai. */
+  doFormulario: (form: FormCuidado, idPet: string): DadosVacina => ({
+    nomeVacina: form.nomeVacina,
+    dataAplicacao: converterDataParaISO(form.dataAplicacao),
+    proximaDose: form.proximaDose ? converterDataParaISO(form.proximaDose) : undefined,
+    fabricante: form.fabricante?.trim() || undefined,
+    lote: form.lote?.trim() || undefined,
+    observacoes: form.observacoes?.trim() || undefined,
+    idPet,
+  }),
 };

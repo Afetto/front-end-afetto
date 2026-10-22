@@ -2,7 +2,7 @@ import { FormPet } from "@/components/FormPet";
 import { useSessao } from "@/context/SessaoContext";
 import { useCriarPet } from "@/hooks/usePets";
 import { FormCadastroPet, FormCadastroPetSchema } from "@/schemas/pet.schema";
-import { converterDataParaISO } from "@/utils/data";
+import { petService } from "@/services/pet.service";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
@@ -50,16 +50,7 @@ export default function TelaCadastrarPet() {
     }
 
     criarPet(
-      {
-        nome: form.nome,
-        especie: form.especie,
-        sexo: form.sexo,
-        raca: form.raca?.trim() || "",
-        peso: form.peso ? Number(form.peso.replace(",", ".")) : undefined,
-        dataNasc: form.dataNasc ? converterDataParaISO(form.dataNasc) : "",
-        descricao: form.descricao?.trim() || "",
-        idUsuario,
-      },
+      petService.doFormulario(form, idUsuario),
       {
         onSuccess: () => router.back(),
         onError: () =>

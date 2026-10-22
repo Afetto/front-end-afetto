@@ -77,9 +77,9 @@ export function useAtualizarVacina(idPet: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: DadosVacina }) =>
-      vacinaService.atualizar(id, data),
-    onSuccess: (_vacina, { id, data }) => {
+    mutationFn: ({ id, dados }: { id: string; dados: DadosVacina }) =>
+      vacinaService.atualizar(id, dados),
+    onSuccess: (_vacina, { id, dados }) => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, idPet] });
       queryClient.invalidateQueries({ queryKey: [CHAVE_CALENDARIO] });
 
@@ -88,10 +88,10 @@ export function useAtualizarVacina(idPet: string) {
         .agendarLembreteVacina({
           idVacina: id,
           idPet,
-          nomeVacina: data.nomeVacina,
+          nomeVacina: dados.nomeVacina,
           nomePet: nomeDoPetEmCache(queryClient, idPet),
-          dataAplicacao: data.dataAplicacao,
-          proximaDose: data.proximaDose,
+          dataAplicacao: dados.dataAplicacao,
+          proximaDose: dados.proximaDose,
         })
         .catch(() => {});
     },

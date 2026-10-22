@@ -83,7 +83,7 @@ describe("hooks de vacina — lembretes", () => {
     const { result } = renderHook(() => useAtualizarVacina("pet-1"), {
       wrapper: criarWrapper(),
     });
-    result.current.mutate({ id: "vac-1", data: { ...DADOS, proximaDose: "2026-11-20" } });
+    result.current.mutate({ id: "vac-1", dados: { ...DADOS, proximaDose: "2026-11-20" } });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockAgendar).toHaveBeenCalledWith(

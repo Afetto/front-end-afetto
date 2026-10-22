@@ -98,6 +98,8 @@ src/
 │   ├── FormPet.tsx                ← campos + botão de submit do formulário de pet — usado em pet/cadastrar.tsx e pet/[id]/editar.tsx
 │   ├── SeletorEspecie.tsx         ← grid de cards (emoji + nome) para escolher a espécie do pet — usado dentro de FormPet
 │   ├── SeletorTipoCuidado.tsx     ← Vacina | Remédio | Consulta no topo das telas de adicionar cuidado (troca de uma para a outra)
+│   ├── cuidados/
+│   │   └── FormularioCuidado.tsx  ← estrutura das telas de vacina, remédio e consulta (carregando, erro ao carregar, título, seletor de tipo, erro, Salvar) — a tela só passa os campos
 │   ├── CardClinica.tsx            ← card da clínica na lista (foto, local, nota, distância, "perto de você", coração de favorita)
 │   ├── Estrelas.tsx               ← estrelas de 0 a 5 (meia estrela na exibição); com `onChange` vira escolha da nota
 │   ├── clinica/
@@ -129,6 +131,7 @@ src/
 ├── hooks/
 │   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet (+ `CHAVE_CONSULTA_PETS`, a chave do cache)
 │   ├── useVacinas.ts          ← useVacinasPet, useVacina, useCriarVacina, useAtualizarVacina, useDeletarVacina — as três mutations agendam/reagendam/cancelam o lembrete
+│   ├── useFormularioCuidado.ts ← hook de tela das telas de vacina, remédio e consulta: preencher na edição, criar ou atualizar, erro da API (ver seção 8)
 │   ├── useRemedios.ts         ← useRemediosPet, useRemedio, useCriarRemedio, useAtualizarRemedio, useDeletarRemedio (+ `CHAVE_REMEDIOS`)
 │   ├── useCalendario.ts       ← useCalendarioPet, useAgendaDoTutor (+ `CHAVE_CALENDARIO`, invalidada ao salvar/excluir vacina, remédio ou consulta)
 │   ├── useClinicas.ts         ← useClinicas, useClinica, useAvaliacoesClinica, useAlternarFavorita, useAvaliarClinica, useApagarAvaliacao, useHorariosClinica, useAgendarConsulta (+ `CHAVE_CLINICAS`; agendar invalida as consultas do pet, o calendário e os horários)
@@ -155,12 +158,12 @@ src/
 │   ├── autenticacao.service.ts ← cadastrar, autenticar, buscarUsuarioLogado, buscarUsuarioPorId, atualizarUsuario (sem senha), atualizarSenha (PUT /usuario/me/senha — a API confere a senha atual), redefinirSenha, sair (funções nomeadas)
 │   ├── perfil-completo.service.ts ← perfilCompletoService.{buscar,salvar} (objeto) — converte casa/apartamento e sim/não do formulário para CASA/APARTAMENTO e true/false da API
 │   ├── cep.service.ts           ← cepService.buscarPorCep (objeto) — API pública do ViaCEP, usa `fetch` direto (não é a API do Afetto, não passa pelo cliente Axios)
-│   ├── pet.service.ts           ← petService.{listar,buscarPorId,criar,atualizar,remover} (objeto)
-│   ├── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto)
-│   ├── remedio.service.ts       ← remedioService.{listarPorPet,buscarPorId,criar,atualizar,remover} (objeto) — GET /remedio?idPet=
+│   ├── pet.service.ts           ← petService.{listar,buscarPorId,criar,atualizar,remover,paraFormulario,doFormulario} (objeto)
+│   ├── vacina.service.ts        ← vacinaService.{listarPorPet,buscarPorId,criar,atualizar,remover,paraFormulario,doFormulario} (objeto)
+│   ├── remedio.service.ts       ← remedioService.{listarPorPet,buscarPorId,criar,atualizar,remover,paraFormulario,doFormulario} (objeto) — GET /remedio?idPet=
 │   ├── calendario.service.ts    ← calendarioService.buscar({inicio, fim, idPet}) — GET /calendario (eventos VACINA, PROXIMA_DOSE, REMEDIO, CONSULTA)
 │   ├── clinica.service.ts       ← clinicaService.{listar,buscarPorId,favoritar,desfavoritar,listarAvaliacoes,avaliar,apagarAvaliacao,horariosLivres,agendar} (objeto) — não manda GPS: "perto" vem do endereço do Finalize seu cadastro
-│   ├── consulta.service.ts      ← consultaService.{listarPorPet,buscarPorId,criar,atualizar,cancelar,remover} (objeto) — PATCH /consulta/{id}/cancelar; hora da API vira HH:MM
+│   ├── consulta.service.ts      ← consultaService.{listarPorPet,buscarPorId,criar,atualizar,cancelar,remover,paraFormulario,doFormulario} (objeto) — PATCH /consulta/{id}/cancelar; hora da API vira HH:MM
 │   └── notificacao.service.ts   ← notificacaoService.{configurar,agendarLembreteVacina,cancelarLembreteVacina,cancelarLembretesDoPet,...} — único arquivo que agenda/cancela via `expo-notifications`
 ├── types/
 │   └── autenticacao.types.ts   ← tipos globais de autenticação/usuário
@@ -198,6 +201,8 @@ src/
 │   ├── esqueci-senha.test.tsx   ← redefinir senha: payload, sucesso, 400/429 com a mensagem da API, confirmação diferente
 │   ├── remedio.test.ts          ← situação do remédio, textos, ordem da linha do tempo e próximos cuidados
 │   ├── remedio-tela.test.tsx    ← criar (datas ISO), fim antes do início, erro da API, editar com PUT
+│   ├── vacina-tela.test.tsx     ← criar (datas ISO, sem campos vazios), validação, erro da API, editar com PUT, erro ao carregar na edição
+│   ├── formularios.test.ts      ← paraFormulario/doFormulario de vacina, remédio, consulta e pet (DD/MM/AAAA ⇄ YYYY-MM-DD)
 │   ├── historico.test.tsx       ← vacinas, remédios e consultas juntos; filtros; consulta cancelada sem Editar
 │   ├── clinica.test.tsx         ← lista (nota, distância, perto, favoritar, busca, favoritas, aviso sem endereço) e detalhe (contato, horário, equipe, avaliar)
 │   ├── ajustes.test.tsx         ← card Moradia e endereço do /perfil e as contas da agenda da Home
@@ -282,7 +287,8 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 | `PetsVazio` | Estado vazio/erro da listagem de pets |
 | `ToastSucesso` | Feedback de sucesso animado após uma ação (⚠️ corrigir classe `bg-greenMedium` antes de reusar) |
 | `CirculosConcentricos` | Decoração exclusiva da tela de onboarding |
-| `SeletorTipoCuidado` | Escolha Vacina/Remédio nas telas de adicionar cuidado do pet |
+| `SeletorTipoCuidado` | Escolha Vacina/Remédio/Consulta nas telas de adicionar cuidado do pet |
+| `FormularioCuidado` | Estrutura de toda tela de cuidado do pet (vacina, remédio, consulta) — com `useFormularioCuidado` |
 
 **Inconsistências reais encontradas na auditoria (corrigir ao tocar no código, não replicar):**
 - `pets.tsx` define sua própria função local `renderizarCartao` para o item da lista (usa `CardPet`). Se uma nova listagem desse tipo aparecer, extraia um `Card*` dedicado em vez de repetir a função — já existe o precedente (`CardPet`, `CardPetResumo`).
@@ -301,7 +307,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 **Hooks (`src/hooks/`):**
 - Duas categorias reais no projeto, ambas válidas — documente qual está sendo usada em cada novo hook:
   1. **Hooks de dados** (`usePets.ts`, `useVacinas.ts`, `useAutenticacao.ts`): só `useQuery`/`useMutation` chamando o service, sem estado local próprio. Retornam o objeto do TanStack Query como está (`data`, `isLoading`, `isError`, `refetch`, `mutate`, `isPending`).
-  2. **Hooks de tela** (`hooks/perfil/useAlterarSenha.ts`): concentram estado local (`useState`), validação manual e a `useMutation` de um fluxo de UI específico (ex.: o modal de troca de senha), expondo um objeto próprio (`{ senhaAtual, setSenhaAtual, salvandoSenha, alterarSenha, ... }`) em vez do formato padrão do React Query. `hooks/perfil/usePerfil.ts` **não é mais desse tipo** — desde que `/perfil` ganhou modo visualização/edição, ele voltou a ser um hook de dados: expõe `usuario`/`carregando`/`temErro`/`refazer` do `useQuery` e `salvarPerfil`/`salvando` de um `useMutation` padrão (a tela usa `react-hook-form` para o estado dos campos em edição).
+  2. **Hooks de tela** (`hooks/perfil/useAlterarSenha.ts`, `hooks/useFormularioCuidado.ts`): concentram estado local (`useState`), validação manual e a `useMutation` de um fluxo de UI específico (ex.: o modal de troca de senha), expondo um objeto próprio (`{ senhaAtual, setSenhaAtual, salvandoSenha, alterarSenha, ... }`) em vez do formato padrão do React Query. `hooks/perfil/usePerfil.ts` **não é mais desse tipo** — desde que `/perfil` ganhou modo visualização/edição, ele voltou a ser um hook de dados: expõe `usuario`/`carregando`/`temErro`/`refazer` do `useQuery` e `salvarPerfil`/`salvando` de um `useMutation` padrão (a tela usa `react-hook-form` para o estado dos campos em edição).
 - Login, cadastro e esqueci a senha usam hooks dedicados em `useAutenticacao.ts` (`useEntrar`, `useCadastrar`, `useRedefinirSenha`); completar-perfil usa `usePerfilCompleto.ts` (`usePerfilCompleto`, `useSalvarPerfilCompleto`) — a tela só monta o `useForm`, passa `onSuccess`/`onError` pro `mutate()` e trata o resultado (`setError`, `entrar()` do `SessaoContext`, navegação). Logout **não** tem hook dedicado: chama `sair()` do `SessaoContext` direto em `perfil.tsx` (ação única, sem payload) — isso é intencional, documentado em `useAutenticacao.ts`.
 - Invalidação de cache sempre via `useQueryClient()` dentro do hook — nunca `import { queryClient } from "@/api/queryClient"`.
 - Não contêm JSX e não navegam (sem `router.push` dentro de um hook — isso fica na tela, no `onSuccess` do `useMutation`).
@@ -378,7 +384,9 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 
 - Formulários de **criação** (login, cadastro, completar perfil, cadastrar/editar pet, cuidados) usam `useForm` + `zodResolver` + schema Zod em `src/schemas/`.
 - Todo campo de texto usa `CampoTexto`; todo campo de seleção em botões usa `CampoSelecao`.
-- Formulário de pet (criar e editar) usa o componente `FormPet` — não repita os campos entre `pet/cadastrar.tsx` e `pet/[id]/editar.tsx`, ambos já compartilham o mesmo `FormCadastroPetSchema`/`FormCadastroPet`.
+- Formulário de pet (criar e editar) usa o componente `FormPet` — não repita os campos entre `pet/cadastrar.tsx` e `pet/[id]/editar.tsx`, ambos já compartilham o mesmo `FormCadastroPetSchema`/`FormCadastroPet`. A conversão formulário ⇄ API é `petService.paraFormulario`/`doFormulario`.
+- **Formulários de cuidado** (vacina `cuidados.tsx`, `remedio.tsx`, `consulta.tsx`): a tela chama `useFormularioCuidado` (schema, valores iniciais, id em edição, o cuidado carregado, as conversões do service e as mutations do hook de dados) e renderiza `FormularioCuidado` com os campos dentro. O hook preenche o formulário na edição, escolhe criar ou atualizar, mostra a mensagem da API (`mensagemDaApi`) no erro e chama `aoSalvar` (a tela navega para o histórico). O componente cuida de carregando, **erro ao carregar na edição** (`EstadoErro` com "Tentar novamente", nunca um formulário vazio), título, seletor de tipo, mensagem de erro e Salvar. Para um cuidado novo: schema + `paraFormulario`/`doFormulario` no service + tela com os campos.
+- **Datas nos formulários:** DD/MM/AAAA na tela, YYYY-MM-DD na API — a conversão fica **no service** (`paraFormulario`/`doFormulario`), nunca na tela.
 - Validação acontece no schema Zod — nunca inline na tela.
 - Botão de submit usa `isPending` do `useMutation` (nunca `isSubmitting` do `react-hook-form`) e, sempre que possível, o componente `BotaoEnviar`.
 - Erros de API aparecem via `setError("root", { message })` do `react-hook-form`, renderizado como texto na tela — nunca silenciados.

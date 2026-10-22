@@ -1,6 +1,7 @@
 import { api } from "@/api/api";
 import { extrairLista } from "@/api/paginacao";
-import { DadosRemedio, Remedio } from "@/schemas/remedio.schema";
+import { DadosRemedio, FormRemedio, Remedio } from "@/schemas/remedio.schema";
+import { converterDataParaBR, converterDataParaISO } from "@/utils/data";
 
 // Remédios de um pet (/remedio). A API só mostra remédios dos pets do usuário
 // logado: pet ou remédio de outra conta responde 404.
@@ -54,4 +55,27 @@ export const remedioService = {
   remover: async (id: string): Promise<void> => {
     await api.delete(`/remedio/${id}`);
   },
+
+  // ─── Formulário ⇄ API (datas DD/MM/AAAA no formulário, YYYY-MM-DD na API) ──
+
+  /** Remédio carregado para edição → valores do formulário. */
+  paraFormulario: (remedio: Remedio): FormRemedio => ({
+    nomeRemedio: remedio.nomeRemedio,
+    dosagem: remedio.dosagem ?? "",
+    frequencia: remedio.frequencia ?? "",
+    dataInicio: converterDataParaBR(remedio.dataInicio),
+    dataFim: remedio.dataFim ? converterDataParaBR(remedio.dataFim) : "",
+    observacoes: remedio.observacoes ?? "",
+  }),
+
+  /** Formulário preenchido → corpo do POST/PUT /remedio. Campo vazio não vai. */
+  doFormulario: (form: FormRemedio, idPet: string): DadosRemedio => ({
+    nomeRemedio: form.nomeRemedio,
+    dosagem: form.dosagem || undefined,
+    frequencia: form.frequencia || undefined,
+    dataInicio: converterDataParaISO(form.dataInicio),
+    dataFim: form.dataFim ? converterDataParaISO(form.dataFim) : undefined,
+    observacoes: form.observacoes || undefined,
+    idPet,
+  }),
 };
