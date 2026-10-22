@@ -118,8 +118,7 @@ export default function TelaClinica() {
           renderItem={({ item }) => (
             <CardClinica
               clinica={item}
-              // `as any`: rota gerada por template literal, fora do que o typedRoutes infere.
-              onPress={() => router.push(`/clinica/${item.id}` as any)}
+              onPress={() => router.push({ pathname: "/clinica/[id]", params: { id: item.id } })}
               onAlternarFavorita={() => aoAlternarFavorita(item.id, item.favorita)}
             />
           )}

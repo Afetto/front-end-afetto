@@ -46,13 +46,13 @@ function detalheDoEvento(evento: EventoCalendario, hoje: string): string {
 
 // Abre a edição do cuidado de onde o evento veio
 function abrirEvento(idPet: string, evento: EventoCalendario) {
-  // `as any`: expo-router typedRoutes não tipa querystring dinâmica.
+  // O id do cuidado vai como parâmetro de busca (?remedioId=...): a tela abre em modo edição
   if (evento.tipo === "REMEDIO") {
-    router.push(`/pet/${idPet}/remedio?remedioId=${evento.idReferencia}` as any);
+    router.push({ pathname: "/pet/[id]/remedio", params: { id: idPet, remedioId: evento.idReferencia } });
   } else if (evento.tipo === "CONSULTA") {
-    router.push(`/pet/${idPet}/consulta?consultaId=${evento.idReferencia}` as any);
+    router.push({ pathname: "/pet/[id]/consulta", params: { id: idPet, consultaId: evento.idReferencia } });
   } else {
-    router.push(`/pet/${idPet}/cuidados?vacinaId=${evento.idReferencia}` as any);
+    router.push({ pathname: "/pet/[id]/cuidados", params: { id: idPet, vacinaId: evento.idReferencia } });
   }
 }
 

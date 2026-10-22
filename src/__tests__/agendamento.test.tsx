@@ -77,7 +77,9 @@ describe("TelaAgendamento — agendar consulta na clínica (HTTP mockado)", () =
     fireEvent.changeText(screen.getByPlaceholderText("Check-up, vacina, retorno..."), "Check-up");
     fireEvent.press(screen.getByText("Confirmar agendamento"));
 
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/pet/pet-1/historico"));
+    await waitFor(() =>
+      expect(router.replace).toHaveBeenCalledWith({ pathname: "/pet/[id]/historico", params: { id: "pet-1" } })
+    );
     expect(mockPost).toHaveBeenCalledWith("/clinica/cli-1/agendamento", {
       idPet: "pet-1",
       data: "2099-01-02",

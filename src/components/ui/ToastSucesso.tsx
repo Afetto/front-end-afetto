@@ -1,13 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import Animated, {
-  AnimatedStyle,
-} from "react-native-reanimated";
+import type { ComponentProps } from "react";
+import Animated from "react-native-reanimated";
 import { Text } from "react-native";
 
 type Props = {
-  estilo: AnimatedStyle<{
-    opacity: number;
-  }>;
+  // O estilo animado (opacidade) vem de useAnimatedStyle na tela; o tipo é o
+  // mesmo que o Animated.View aceita em `style`
+  estilo: ComponentProps<typeof Animated.View>["style"];
 };
 
 export function ToastSucesso({ estilo }: Props) {

@@ -189,7 +189,7 @@ export default function TelaInicio() {
                 concluido={item.concluido}
                 opcional={item.opcional}
                 onPress={() => {
-                  if (!item.concluido) router.push(item.rota as any);
+                  if (!item.concluido) router.push(item.rota);
                 }}
               />
             ))}

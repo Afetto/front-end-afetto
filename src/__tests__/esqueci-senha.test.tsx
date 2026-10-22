@@ -37,23 +37,20 @@ describe("TelaEsqueciSenha — redefinir senha (HTTP mockado)", () => {
     jest.clearAllMocks();
   });
 
-  it("manda e-mail, CPF só com dígitos, data em ISO e a senha nova; depois oferece voltar ao login", async () => {
+  it("manda e-mail, CPF só com dígitos, data em ISO e a senha nova; depois abre o 'Senha alterada!'", async () => {
     mockPost.mockResolvedValueOnce({ status: 204, data: "" });
 
     render(<TelaEsqueciSenha />, { wrapper });
     preencher();
     fireEvent.press(screen.getByText("Redefinir senha"));
 
-    expect(await screen.findByText("Senha alterada!")).toBeTruthy();
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/senha-alterada"));
     expect(mockPost).toHaveBeenCalledWith("/senha/redefinir", {
       email: "ana@afetto.com",
       cpf: "52998224725",
       dataNascimento: "1995-05-20",
       novaSenha: "novaSenha123",
     });
-
-    fireEvent.press(screen.getByText("Ir para o login"));
-    expect(router.replace).toHaveBeenCalledWith("/login");
   });
 
   it("mostra a mensagem da API quando os dados não conferem (400)", async () => {

@@ -141,8 +141,7 @@ export default function TelaClinicaDetalhe() {
 
         {/* Agendar: escolhe o pet, o dia e um horário livre da clínica */}
         <TouchableOpacity
-          // `as any`: rota gerada por template literal, fora do que o typedRoutes infere.
-          onPress={() => router.push(`/agendamento/${clinica.id}` as any)}
+          onPress={() => router.push({ pathname: "/agendamento/[idClinica]", params: { idClinica: clinica.id } })}
           activeOpacity={0.85}
           className="flex-row items-center justify-center gap-2 rounded-2xl py-4 bg-primary"
         >

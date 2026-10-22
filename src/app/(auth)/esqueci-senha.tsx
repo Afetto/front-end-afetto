@@ -6,7 +6,6 @@ import { mascararCPF, mascararData } from "@/utils/mascaras";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   KeyboardAvoidingView,
@@ -20,8 +19,6 @@ import {
 // Esqueci a senha sem e-mail de recuperação: o tutor confirma os dados do
 // cadastro (e-mail, CPF e nascimento) e já define a senha nova.
 export default function TelaEsqueciSenha() {
-  const [senhaTrocada, setSenhaTrocada] = useState(false);
-
   const {
     control,
     handleSubmit,
@@ -43,35 +40,13 @@ export default function TelaEsqueciSenha() {
           setError("root", { message: resultado.mensagem });
           return;
         }
-        setSenhaTrocada(true);
+        // Sucesso: cartão "Senha alterada!" (rota modal), que leva ao login
+        router.replace("/senha-alterada");
       },
       onError: () => {
         setError("root", { message: "Erro de conexão. Tente novamente." });
       },
     });
-  }
-
-  if (senhaTrocada) {
-    return (
-      <View className="flex-1 bg-surface dark:bg-gray-900 px-6 items-center justify-center gap-4">
-        <View className="w-20 h-20 rounded-full bg-green-medium items-center justify-center">
-          <Ionicons name="checkmark" size={40} color="#1E3A2F" />
-        </View>
-        <Text className="text-2xl font-bold text-gray-900 dark:text-white text-center">
-          Senha alterada!
-        </Text>
-        <Text className="text-sm text-muted dark:text-gray-400 text-center">
-          Agora é só entrar com a sua senha nova.
-        </Text>
-        <TouchableOpacity
-          onPress={() => router.replace("/login")}
-          activeOpacity={0.85}
-          className="mt-4 self-stretch items-center rounded-2xl py-4 bg-primary"
-        >
-          <Text className="text-base font-semibold text-white">Ir para o login</Text>
-        </TouchableOpacity>
-      </View>
-    );
   }
 
   return (

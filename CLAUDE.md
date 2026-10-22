@@ -62,8 +62,9 @@ src/
 │   │   ├── _layout.tsx
 │   │   ├── login.tsx                → /login
 │   │   ├── cadastro.tsx              → /cadastro (cria a conta e já entra: vai direto para a Home)
-│   │   ├── cadastro-sucesso.tsx      → /cadastro-sucesso (modal transparente — só quando a conta foi criada mas o login automático falhou; leva ao /login)
-│   │   └── esqueci-senha.tsx         → /esqueci-senha (confirma e-mail, CPF e nascimento e define a senha nova — POST /senha/redefinir, sem login)
+│   │   ├── cadastro-sucesso.tsx      → /cadastro-sucesso (modal transparente `ModalSucesso` — só quando a conta foi criada mas o login automático falhou; leva ao /login)
+│   │   ├── esqueci-senha.tsx         → /esqueci-senha (confirma e-mail, CPF e nascimento e define a senha nova — POST /senha/redefinir, sem login)
+│   │   └── senha-alterada.tsx        → /senha-alterada (modal transparente `ModalSucesso` depois de redefinir a senha; leva ao /login)
 │   ├── (app)/                  ← telas PÓS-login fora das tabs (Stack, protegido por <RotaProtegida>)
 │   │   ├── _layout.tsx
 │   │   ├── completar-perfil.tsx     → /completar-perfil ("Finalize seu cadastro": GET/PUT /usuario/me/perfil, já vem preenchido se salvo antes)
@@ -94,7 +95,7 @@ src/
 │   │   ├── CampoTexto.tsx           ← input padrão com react-hook-form (Controller)
 │   │   ├── CampoSelecao.tsx         ← seletor de opções em botões (`tresPorLinha` para muitas opções)
 │   │   ├── BotaoEnviar.tsx          ← botão fixo no rodapé com estado de envio (isPending)
-│   │   └── ToastSucesso.tsx         ← toast animado de sucesso (usa classe Tailwind inválida — ver seção 4)
+│   │   └── ToastSucesso.tsx         ← toast animado de sucesso ("Salvo com sucesso!" no /perfil)
 │   ├── FormPet.tsx                ← campos + botão de submit do formulário de pet — usado em pet/cadastrar.tsx e pet/[id]/editar.tsx
 │   ├── SeletorEspecie.tsx         ← grid de cards (emoji + nome) para escolher a espécie do pet — usado dentro de FormPet
 │   ├── SeletorTipoCuidado.tsx     ← Vacina | Remédio | Consulta no topo das telas de adicionar cuidado (troca de uma para a outra)
@@ -122,6 +123,7 @@ src/
 │   │   ├── ContaCard.tsx          ← "Sair da conta"
 │   │   └── AlterarSenhaModal.tsx
 │   ├── AvisoConexaoLenta.tsx      ← "Conectando ao servidor…" por cima das telas quando a API demora (ex.: Render acordando) — só no `_layout.tsx` raiz
+│   ├── ModalSucesso.tsx           ← cartão de sucesso animado das rotas modais (/cadastro-sucesso, /senha-alterada)
 │   ├── RotaProtegida.tsx          ← guard de rotas privadas
 │   ├── PetsVazio.tsx              ← estado vazio/erro da lista de pets
 │   └── CirculosConcentricos.tsx   ← decoração da tela de onboarding
@@ -198,7 +200,8 @@ src/
 │   ├── alterar-senha.test.tsx   ← "Alterar senha" do Perfil: manda a atual e a nova, senha atual errada (mensagem da API), confirmação diferente / nova igual à atual
 │   ├── sessao.test.tsx          ← revalidação da sessão salva no boot (GET /usuario/me) e cache limpo ao trocar de conta
 │   ├── vacina.service.test.ts   ← vacinas do pet via GET /vacina?idPet=
-│   ├── esqueci-senha.test.tsx   ← redefinir senha: payload, sucesso, 400/429 com a mensagem da API, confirmação diferente
+│   ├── esqueci-senha.test.tsx   ← redefinir senha: payload, sucesso abre /senha-alterada, 400/429 com a mensagem da API, confirmação diferente
+│   ├── modal-sucesso.test.tsx   ← /senha-alterada e /cadastro-sucesso (botão e ida automática ao login)
 │   ├── remedio.test.ts          ← situação do remédio, textos, ordem da linha do tempo e próximos cuidados
 │   ├── remedio-tela.test.tsx    ← criar (datas ISO), fim antes do início, erro da API, editar com PUT
 │   ├── vacina-tela.test.tsx     ← criar (datas ISO, sem campos vazios), validação, erro da API, editar com PUT, erro ao carregar na edição
@@ -224,9 +227,7 @@ src/
 - Use **sempre** `className` com NativeWind.
 - Nunca use `StyleSheet.create` — exceção documentada hoje: animações com `react-native-reanimated` (`useAnimatedStyle` exige objeto de estilo, não `className`).
 - Nunca passe cor via `style={{ backgroundColor: "#hex" }}` / `style={{ color: "#hex" }}`. O projeto já teve esse bug (`pets.tsx`, `clinica.tsx`, `PetsVazio.tsx` usavam `style={{ backgroundColor: "#1F3B30" }}` em vez de `className="bg-primary"`, criando duas cores "verde escuro" quase iguais na mesma UI) — já foi corrigido (essas telas hoje usam `CabecalhoOla`/`className="bg-primary"`), mas a regra continua valendo para código novo.
-- **Antes de usar uma classe de cor, confirme que ela existe** no `tailwind.config.js` ou na paleta padrão do Tailwind. O projeto já tem duas classes inválidas em produção que não renderizam a cor pretendida:
-  - `bg-greenMedium` (`ToastSucesso.tsx`) — o token real é `green-medium` (kebab-case). Deveria ser `bg-green-medium`.
-  - `text-red` (`DadosPessoaisCard.tsx`, `ContaCard.tsx`, `AlterarSenhaModal.tsx`) — não existe token `red` no config nem na paleta padrão do Tailwind (que exige um shade, ex. `red-500`). O restante do app usa corretamente `text-red-500` (`login.tsx`, `cadastro.tsx`, `pet/cadastrar.tsx`). Ao corrigir, alinhe para `text-red-500` ou adicione um token `red` no `tailwind.config.js`.
+- **Antes de usar uma classe de cor, confirme que ela existe** no `tailwind.config.js` ou na paleta padrão do Tailwind. Classe inexistente não dá erro — a cor simplesmente não aparece. O projeto já teve dois casos, ambos corrigidos: `bg-greenMedium` no `ToastSucesso` (o token é `green-medium`, kebab-case → `bg-green-medium`) e `text-red` no Perfil (a paleta exige um tom → `text-red-500`).
 
 **Tokens de cor disponíveis** (`tailwind.config.js`):
 
@@ -285,7 +286,8 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 | `EstadoVazio` / `EstadoErro` | Estado vazio / erro genérico em telas com dados remotos |
 | `RotaProtegida` | Toda rota que requer sessão ativa |
 | `PetsVazio` | Estado vazio/erro da listagem de pets |
-| `ToastSucesso` | Feedback de sucesso animado após uma ação (⚠️ corrigir classe `bg-greenMedium` antes de reusar) |
+| `ToastSucesso` | Feedback de sucesso animado após uma ação na mesma tela |
+| `ModalSucesso` | Cartão de sucesso de uma rota modal (`presentation: "transparentModal"`) — `/cadastro-sucesso`, `/senha-alterada` |
 | `CirculosConcentricos` | Decoração exclusiva da tela de onboarding |
 | `SeletorTipoCuidado` | Escolha Vacina/Remédio/Consulta nas telas de adicionar cuidado do pet |
 | `FormularioCuidado` | Estrutura de toda tela de cuidado do pet (vacina, remédio, consulta) — com `useFormularioCuidado` |
@@ -358,7 +360,7 @@ Usado em `login.tsx`, `cadastro.tsx`, `completar-perfil.tsx`.
 ```
 Consistente em `RotaProtegida`, `pets.tsx`, `perfil.tsx`, `pet/[id]/*` (fundo `bg-surface`). `index.tsx` raiz (onboarding) usa o mesmo padrão mas com `bg-primary` em vez de `bg-surface`, de propósito — a tela inteira é verde. `clinica.tsx` e `clinica/[id].tsx` seguem o mesmo padrão de loading/erro/vazio (`EstadoErro`, `EstadoVazio`).
 
-**Estado de erro (dados remotos):** use o componente `EstadoErro` (ícone + mensagem + "Tentar novamente" chamando `refetch()`) — usado em `pet/[id]/index.tsx`, `pet/[id]/editar.tsx`, `pet/[id]/historico.tsx`, `perfil.tsx`. Em `pets.tsx` o erro é tratado dentro de `PetsVazio` (prop `erro`) — é um caso legítimo à parte, porque lista vazia e erro de carregamento levam à mesma tela ali.
+**Estado de erro (dados remotos):** use o componente `EstadoErro` (ícone + mensagem + "Tentar novamente" chamando `refetch()`) — usado em `pet/[id]/index.tsx`, `pet/[id]/editar.tsx`, `pet/[id]/historico.tsx`, `perfil.tsx`, `clinica.tsx`, `clinica/[id].tsx`, na aba Assistente e, via `FormularioCuidado`, na edição de vacina, remédio e consulta (cuidado que não carrega nunca vira formulário vazio). Em `pets.tsx` o erro é tratado dentro de `PetsVazio` (prop `erro`) — é um caso legítimo à parte, porque lista vazia e erro de carregamento levam à mesma tela ali.
 
 **Estado vazio:** use o componente `EstadoVazio` (ícone + título + subtítulo + CTA opcional) para casos genéricos; `PetsVazio` é a versão específica da listagem de pets (com seu próprio header).
 
@@ -424,7 +426,8 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
 - Toda navegação via `expo-router` (`router.push`, `router.replace`, `router.back`, `<Redirect>`).
 - Os grupos `(auth)` e `(app)` **não** aparecem na URL — `(auth)/login.tsx` é `/login`, não `/(auth)/login`. Nunca escreva `/(auth)/...` ou `/(app)/...` num `router.push`.
 - Rotas de tabs precisam do prefixo: `/(tabs)/pets`, `/(tabs)/clinica`.
-- `login.tsx` navega para `/esqueci-senha`. Sem e-mail de recuperação: o tutor confirma e-mail, CPF e data de nascimento do cadastro e define a senha nova (`POST /senha/redefinir`, não precisa de login). Erro de dados (400) ou bloqueio por tentativas (429) mostra a mensagem da API; no sucesso, a tela troca para "Senha alterada!" com o botão "Ir para o login".
+- `login.tsx` navega para `/esqueci-senha`. Sem e-mail de recuperação: o tutor confirma e-mail, CPF e data de nascimento do cadastro e define a senha nova (`POST /senha/redefinir`, não precisa de login). Erro de dados (400) ou bloqueio por tentativas (429) mostra a mensagem da API; no sucesso, abre a rota modal `/senha-alterada` ("Senha alterada!" → "Ir para o login"), no mesmo padrão do `/cadastro-sucesso`.
+- **Rotas tipadas (`typedRoutes`):** rota com parâmetro vai na forma de objeto — `router.push({ pathname: "/pet/[id]/historico", params: { id } })`; parâmetro de busca vai junto em `params` (`{ id, vacinaId }` abre `/pet/{id}/cuidados?vacinaId=`). Nunca monte a URL com template literal + `as any`: o `tsc` deixa de conferir se a rota existe. As definições ficam em `.expo/types/router.d.ts` (fora do Git), geradas pelo `npx expo start` — rode-o uma vez antes do `npx tsc --noEmit` num clone novo.
 
 **Onde criar uma tela nova (telas do Figma):**
 
@@ -470,10 +473,10 @@ const { mutate: enviarCadastro } = useMutation({
 - Nunca usar uma classe de cor Tailwind sem confirmar que ela existe no `tailwind.config.js` ou na paleta padrão (evita repetir bugs como `bg-greenMedium`/`text-red`).
 - Nunca duplicar um bloco de UI que já existe como componente ou como rota (ex.: recriar a tela de sucesso do cadastro dentro de um `Modal`).
 - Nunca criar um segundo context de autenticação/sessão — `SessaoContext` é o único.
-- Nunca usar `any` sem justificativa documentada em comentário (ex.: casts de rota para telas ainda não criadas devem ter um `// TODO` explicando o que falta).
+- Nunca usar `any` sem justificativa documentada em comentário. Em rotas não há exceção: use a forma tipada (ver seção 10), nunca `as any`.
 - Nunca instalar biblioteca nova sem discutir com o time.
 - Nunca alterar o schema Zod para contornar uma validação — corrigir o dado ou a regra de negócio.
-- Nunca navegar para uma rota inexistente sem criá-la primeiro (ou deixar um `TODO` explícito, como já é feito em `login.tsx`).
+- Nunca navegar para uma rota inexistente sem criá-la primeiro — com as rotas tipadas, o `tsc` acusa.
 - Nunca commitar com `npx tsc --noEmit` retornando erros novos.
 - Nunca deixar botão, interruptor ou tela sem efeito real (`TouchableOpacity` sem `onPress`, `useState` que não salva nem muda nada, tela "Em breve"). A avaliação trata isso como funcionalidade simulada — por isso saíram do Perfil o "Notificações WhatsApp" e o "Upgrade para Afetto Plus".
 - Nunca deixar um componente importado sem uso na árvore renderizada — se não for usado, delete o import e, se for redundante, o componente.

@@ -5,9 +5,9 @@ import { Text, TouchableOpacity, View } from "react-native";
 // Cada tipo de cuidado tem a sua tela de cadastro; este seletor fica no topo
 // delas (só ao adicionar, não ao editar) e troca de uma para a outra.
 const TIPOS = [
-  { chave: "vacina", label: "Vacina", icone: "shield-checkmark-outline", rota: "cuidados" },
-  { chave: "remedio", label: "Remédio", icone: "medkit-outline", rota: "remedio" },
-  { chave: "consulta", label: "Consulta", icone: "calendar-outline", rota: "consulta" },
+  { chave: "vacina", label: "Vacina", icone: "shield-checkmark-outline", rota: "/pet/[id]/cuidados" },
+  { chave: "remedio", label: "Remédio", icone: "medkit-outline", rota: "/pet/[id]/remedio" },
+  { chave: "consulta", label: "Consulta", icone: "calendar-outline", rota: "/pet/[id]/consulta" },
 ] as const;
 
 export type TipoCuidado = (typeof TIPOS)[number]["chave"];
@@ -26,8 +26,7 @@ export function SeletorTipoCuidado({ idPet, atual }: Props) {
           <TouchableOpacity
             key={tipo.chave}
             disabled={selecionado}
-            // `as any`: rota gerada por template literal, fora do que o typedRoutes infere.
-            onPress={() => router.replace(`/pet/${idPet}/${tipo.rota}` as any)}
+            onPress={() => router.replace({ pathname: tipo.rota, params: { id: idPet } })}
             activeOpacity={0.8}
             className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-2xl border ${
               selecionado

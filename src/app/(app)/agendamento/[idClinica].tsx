@@ -137,8 +137,7 @@ export default function TelaAgendamento() {
             agenda ? ` na ${agenda.nomeClinica}` : ""
           }. Ela já está no histórico do pet.`
         );
-        // `as any`: rota gerada por template literal, fora do que o typedRoutes infere.
-        router.replace(`/pet/${dados.idPet}/historico` as any);
+        router.replace({ pathname: "/pet/[id]/historico", params: { id: dados.idPet } });
       },
       onError: (erro) => {
         // Ex.: 409 "Esse horário já foi agendado. Escolha outro" — a lista de horários é atualizada

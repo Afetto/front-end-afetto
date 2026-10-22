@@ -31,7 +31,7 @@ export default function TelaPets() {
 
   function renderizarCartao({ item }: { item: Pet }) {
     return (
-      <CardPet pet={item} onPress={() => router.push(`/pet/${item.id}` as any)} />
+      <CardPet pet={item} onPress={() => router.push({ pathname: "/pet/[id]", params: { id: item.id } })} />
     );
   }
 
@@ -43,7 +43,7 @@ export default function TelaPets() {
       <View className="flex-row items-center justify-between px-6 pt-6 pb-2">
         <Text className="text-xl font-bold text-gray-900 dark:text-white">Meus Pets</Text>
         <TouchableOpacity
-          onPress={() => router.push("/pet/cadastrar" as any)}
+          onPress={() => router.push("/pet/cadastrar")}
           activeOpacity={0.85}
           className="w-10 h-10 rounded-full bg-amber items-center justify-center"
         >
@@ -63,7 +63,7 @@ export default function TelaPets() {
           Home conclui sozinha a partir desta mesma lista (usePets), sem botão. */}
       <View className="absolute bottom-0 left-0 right-0 px-6 pb-10 pt-3 bg-surface dark:bg-gray-900 border-t border-border dark:border-gray-700">
         <TouchableOpacity
-          onPress={() => router.push("/pet/cadastrar" as any)}
+          onPress={() => router.push("/pet/cadastrar")}
           activeOpacity={0.85}
           className="items-center justify-center py-3 rounded-2xl border border-amber"
         >

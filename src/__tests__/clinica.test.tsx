@@ -106,7 +106,7 @@ describe("TelaClinica — lista (HTTP mockado)", () => {
     await waitFor(() => expect(mockPut).toHaveBeenCalledWith("/clinica/cli-1/favorito"));
 
     fireEvent.press(screen.getByText("Clínica Veterinária Bigode e Rabo"));
-    expect(router.push).toHaveBeenCalledWith("/clinica/cli-1");
+    expect(router.push).toHaveBeenCalledWith({ pathname: "/clinica/[id]", params: { id: "cli-1" } });
   });
 
   it("busca pelo nome depois que o tutor para de digitar, e filtra favoritas", async () => {
@@ -152,7 +152,7 @@ describe("TelaClinicaDetalhe (HTTP mockado)", () => {
     expect(screen.getByText("Comentários (1)")).toBeTruthy();
 
     fireEvent.press(screen.getByText("Agendar consulta"));
-    expect(router.push).toHaveBeenCalledWith("/agendamento/cli-1");
+    expect(router.push).toHaveBeenCalledWith({ pathname: "/agendamento/[idClinica]", params: { idClinica: "cli-1" } });
   });
 
   it("avalia com estrelas e comentário (PUT), e exige a nota", async () => {

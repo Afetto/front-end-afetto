@@ -63,8 +63,12 @@ export function AgendaInicio({ idUsuario, idPetUnico }: Props) {
         <Atalho
           icone="add-circle-outline"
           texto="Adicionar cuidado"
-          // `as any`: rota gerada por template literal, fora do que o typedRoutes infere.
-          onPress={() => router.push((idPetUnico ? `/pet/${idPetUnico}/cuidados` : "/(tabs)/pets") as any)}
+          // Com um pet só, vai direto para os cuidados dele; com vários, para escolher o pet
+          onPress={() =>
+            router.push(
+              idPetUnico ? { pathname: "/pet/[id]/cuidados", params: { id: idPetUnico } } : "/(tabs)/pets"
+            )
+          }
         />
       </View>
 
@@ -93,8 +97,7 @@ export function AgendaInicio({ idUsuario, idPetUnico }: Props) {
             {proximos.map((evento, indice) => (
               <TouchableOpacity
                 key={`${evento.tipo}-${evento.idReferencia}-${indice}`}
-                // `as any`: rota gerada por template literal, fora do que o typedRoutes infere.
-                onPress={() => router.push(`/pet/${evento.idPet}/calendario` as any)}
+                onPress={() => router.push({ pathname: "/pet/[id]/calendario", params: { id: evento.idPet } })}
                 activeOpacity={0.85}
                 className="flex-row items-center gap-3 bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm"
               >

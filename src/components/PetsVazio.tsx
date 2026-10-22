@@ -28,7 +28,7 @@ export function PetsVazio({ erro, aoTentarNovamente }: PetsVazioProps = {}) {
           titulo="Você ainda não tem pets"
           subtitulo="Adicione seu primeiro pet para começar a acompanhar a saúde dele."
           textoAcao="Adicionar novo pet"
-          onAcao={() => router.push("/pet/cadastrar" as any)}
+          onAcao={() => router.push("/pet/cadastrar")}
         />
 
         {erro && (

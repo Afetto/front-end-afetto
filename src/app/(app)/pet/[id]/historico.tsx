@@ -68,13 +68,13 @@ export default function TelaHistorico() {
   }
 
   function aoEditar(evento: EventoHistorico) {
-    // `as any`: expo-router typedRoutes não tipa querystring dinâmica.
+    // O id do cuidado vai como parâmetro de busca (?vacinaId=...): a tela abre em modo edição
     if (evento.tipo === "vacina") {
-      router.push(`/pet/${id}/cuidados?vacinaId=${evento.id}` as any);
+      router.push({ pathname: "/pet/[id]/cuidados", params: { id, vacinaId: evento.id } });
     } else if (evento.tipo === "remedio") {
-      router.push(`/pet/${id}/remedio?remedioId=${evento.id}` as any);
+      router.push({ pathname: "/pet/[id]/remedio", params: { id, remedioId: evento.id } });
     } else {
-      router.push(`/pet/${id}/consulta?consultaId=${evento.id}` as any);
+      router.push({ pathname: "/pet/[id]/consulta", params: { id, consultaId: evento.id } });
     }
   }
 

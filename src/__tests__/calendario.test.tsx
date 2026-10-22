@@ -112,7 +112,7 @@ describe("TelaCalendarioPet (HTTP mockado)", () => {
     expect(screen.getByText("Amoxicilina")).toBeTruthy();
 
     fireEvent.press(screen.getByText("Check-up"));
-    expect(router.push).toHaveBeenCalledWith("/pet/pet-1/consulta?consultaId=con-1");
+    expect(router.push).toHaveBeenCalledWith({ pathname: "/pet/[id]/consulta", params: { id: "pet-1", consultaId: "con-1" } });
   });
 
   it("navega para o próximo mês e busca o período dele", async () => {

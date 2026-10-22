@@ -1,3 +1,5 @@
+import type { Href } from "expo-router";
+
 export type EtapasOnboarding = {
   perfilCompleto: boolean;
   petCadastrado: boolean;
@@ -10,7 +12,8 @@ export type ItemOnboarding = {
   subtitulo: string;
   concluido: boolean;
   opcional: boolean;
-  rota: string;
+  /** Para onde o item leva (rota tipada do expo-router). */
+  rota: Href;
 };
 
 export type ProgressoCalculado = {
