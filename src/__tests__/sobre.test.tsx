@@ -1,20 +1,27 @@
 import { render, screen } from "@testing-library/react-native";
-import Constants from "expo-constants";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 
 import TelaSobre from "@/app/(app)/sobre";
-import { versaoDoApp } from "@/utils/versao";
+import { buildDoApp, versaoDoApp } from "@/utils/versao";
 import configDoApp, { infoDoCommit } from "../../app.config";
 
 // O manifesto do app (Constants.expoConfig) é trocado em cada teste
 jest.mock("expo-constants", () => ({
   __esModule: true,
-  default: { expoConfig: null },
+  ExecutionEnvironment: { Bare: "bare", Standalone: "standalone", StoreClient: "storeClient" },
+  default: { expoConfig: null, executionEnvironment: "standalone" },
 }));
+
+// Número do build lido do APK instalado (no aparelho vem do versionCode do EAS)
+jest.mock("expo-application", () => ({ nativeBuildVersion: "3" }));
 
 const HASH = "66df52342d36b01ebd359505967d0ddf5659559f";
 
+const AMBIENTE_DO_ENV = process.env.EXPO_PUBLIC_APP_ENV;
+
 afterEach(() => {
   jest.restoreAllMocks();
+  process.env.EXPO_PUBLIC_APP_ENV = AMBIENTE_DO_ENV;
 });
 
 describe("versaoDoApp — o que a tela mostra", () => {
@@ -40,6 +47,27 @@ describe("versaoDoApp — o que a tela mostra", () => {
     expect(versao.commitCompleto).toBeNull();
     expect(versao.dataCommit).toBeNull();
     expect(versaoDoApp(null).versao).toBe("—");
+  });
+});
+
+describe("buildDoApp — número do build e ambiente", () => {
+  it("no APK do Firebase: o número que o EAS deu ao build e o ambiente do perfil", () => {
+    expect(buildDoApp({ numeroNativo: "3", noExpoGo: false, ambiente: "preview" })).toEqual({
+      numero: "3",
+      ambiente: "preview",
+    });
+  });
+
+  it("no Expo Go não mostra o número (seria o do próprio Expo Go)", () => {
+    expect(buildDoApp({ numeroNativo: "254", noExpoGo: true, ambiente: undefined })).toEqual({
+      numero: null,
+      ambiente: "desenvolvimento",
+    });
+  });
+
+  it("sem número nativo (navegador) não inventa valor", () => {
+    expect(buildDoApp({ numeroNativo: null, noExpoGo: false, ambiente: " " }).numero).toBeNull();
+    expect(buildDoApp({ numeroNativo: null, noExpoGo: false, ambiente: " " }).ambiente).toBe("desenvolvimento");
   });
 });
 
@@ -109,6 +137,39 @@ describe("TelaSobre (/sobre)", () => {
     expect(screen.getByText("10/10/2026")).toBeTruthy();
     expect(screen.getByText(HASH)).toBeTruthy();
     expect(screen.queryByText(/ainda não estão em nenhum commit/)).toBeNull();
+  });
+
+  it("mostra o número do build lido do APK e o ambiente do perfil do EAS", async () => {
+    process.env.EXPO_PUBLIC_APP_ENV = "preview";
+    jest.replaceProperty(Constants, "expoConfig", {
+      name: "Afetto",
+      slug: "challenge-afetto",
+      version: "1.0.0",
+      extra: { commitHash: HASH, commitComAlteracoes: false },
+    });
+
+    render(<TelaSobre />);
+
+    expect(await screen.findByText("Build")).toBeTruthy();
+    expect(screen.getByText("3")).toBeTruthy();
+    expect(screen.getByText("Ambiente")).toBeTruthy();
+    expect(screen.getByText("preview")).toBeTruthy();
+  });
+
+  it("no Expo Go esconde o número do build e mostra o ambiente de desenvolvimento", async () => {
+    delete process.env.EXPO_PUBLIC_APP_ENV;
+    jest.replaceProperty(Constants, "executionEnvironment", ExecutionEnvironment.StoreClient);
+    jest.replaceProperty(Constants, "expoConfig", {
+      name: "Afetto",
+      slug: "challenge-afetto",
+      version: "1.0.0",
+      extra: { commitHash: HASH, commitComAlteracoes: false },
+    });
+
+    render(<TelaSobre />);
+
+    expect(await screen.findByText("desenvolvimento")).toBeTruthy();
+    expect(screen.queryByText("Build")).toBeNull();
   });
 
   it("avisa quando o app foi gerado com alterações fora do commit", async () => {

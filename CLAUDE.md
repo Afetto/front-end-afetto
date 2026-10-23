@@ -32,6 +32,7 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 | Sessão/Storage | `@react-native-async-storage/async-storage` |
 | Ícones | `@expo/vector-icons` — **padrão real: `Ionicons`** (usado em todas as telas e componentes; `FontAwesome` só existe no boilerplate do `_layout.tsx` para os ícones de navegação padrão do template, sem uso funcional hoje) |
 | Animações | `react-native-reanimated` `~4` |
+| Versão instalada | `expo-application` `~7` — só `nativeBuildVersion` (número do build do APK) na tela Sobre o App |
 | Notificações | `expo-notifications` `~0.32` — só notificações **locais** (lembrete de vacina, ver seção "Notificações Locais"); não há push remoto |
 | Testes | `jest` + `jest-expo` + `@testing-library/react-native` (instalados; `npm test` funciona) |
 
@@ -40,7 +41,8 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 **API no Render:**
 - **Espera maior:** `tempoLimiteDaApi(url)` dá 90 s para endereço `https://` (a instância gratuita do Render "dorme" depois de 15 min sem uso e leva cerca de 1 minuto para acordar) e 10 s para a API local (`http://`), para um endereço errado no `.env` aparecer logo.
 - **Aviso "Conectando ao servidor…":** toda chamada passa por `comAvisoDeConexaoLenta` (`api/conexaoLenta.ts`, que envolve o adaptador do axios). Passou de 4 s sem resposta, o `AvisoConexaoLenta` aparece por cima de qualquer tela (montado uma vez no `_layout.tsx` raiz, não bloqueia toques) e some quando a resposta — ou o erro — chega. Não crie outro indicador de "servidor lento" por tela.
-- **Build do celular:** o `.env` não sobe para o EAS (está no `.gitignore`). O `app.config.ts` (`conferirApiDoBuild`) para o build do EAS que não tiver `EXPO_PUBLIC_API_URL` com `https://` — sem ela o app chamaria `localhost` no celular. O perfil `development` fica de fora. Defina a variável no `env` do perfil no `eas.json` ou nas variáveis do projeto no EAS.
+- **Build do celular:** o `.env` não sobe para o EAS (está no `.gitignore`). O `app.config.ts` (`conferirApiDoBuild`) para o build do EAS que não tiver `EXPO_PUBLIC_API_URL` com `https://` — sem ela o app chamaria `localhost` no celular. O perfil `development` fica de fora. A variável já está no `env` do perfil `preview` do `eas.json`.
+- **Publicação (Firebase App Distribution, como na aula 13 de MAD):** `npx eas-cli@latest build --platform android --profile preview` gera o APK (pacote `br.fiap.mad.afetto`, no padrão da aula; nome "Afetto"; o `versionCode` sobe sozinho no EAS — `appVersionSource: "remote"` + `autoIncrement`; `EXPO_PUBLIC_APP_ENV=preview` aparece como ambiente no Sobre o App). Não há perfil `development` nem `expo-dev-client`: com ele instalado, o `npx expo start` deixa de abrir no Expo Go, que é como o time testa. O APK vai para o App Distribution com o professor como tester. Gere o build **depois do último commit**: a rubrica exige que o app publicado seja o código do repositório, e o "Sobre o App" mostra o hash. `publicacao.test.ts` confere o `eas.json` e o `app.json`. Não troque o `android.package`: ele é o mesmo registrado no Firebase.
 
 ---
 
@@ -69,7 +71,7 @@ src/
 │   │   ├── _layout.tsx
 │   │   ├── completar-perfil.tsx     → /completar-perfil ("Finalize seu cadastro": GET/PUT /usuario/me/perfil, já vem preenchido se salvo antes)
 │   │   ├── perfil.tsx                → /perfil
-│   │   ├── sobre.tsx                 → /sobre ("Sobre o App": versão do app.json e hash do commit injetado no build pelo `app.config.ts`, equipe)
+│   │   ├── sobre.tsx                 → /sobre ("Sobre o App": versão do app.json, número do build do APK, ambiente, hash do commit injetado no build pelo `app.config.ts`, equipe)
 │   │   ├── clinica/
 │   │   │   └── [id].tsx               → /clinica/{id} (foto, favorita, "Agendar consulta", contato, endereço, horário, equipe e avaliações)
 │   │   ├── agendamento/
@@ -181,7 +183,7 @@ src/
 │   ├── clinica.ts               ← formatarDistancia ("850 m"/"3,2 km"), formatarNota, localDaClinica, enderecoCompleto, LABEL_TURNO
 │   ├── calendario.ts            ← celulasDoMes, periodoDoMes, somarMeses, diaInicial, agruparPorData, formatarDataISO (dia local, sem UTC), rotuloDia (Hoje/Amanhã/seg 13/10), resumirAgenda (Home)
 │   ├── assistente.ts            ← PERGUNTAS e `responder` — as respostas do Assistente a partir de vacinas, remédios e consultas do pet (função pura)
-│   ├── versao.ts                ← versaoDoApp — versão e commit (de `Constants.expoConfig.extra`) para a tela Sobre o App; sem hash, devolve null (nunca inventa)
+│   ├── versao.ts                ← versaoDoApp — versão e commit (de `Constants.expoConfig.extra`) para a tela Sobre o App; sem hash, devolve null (nunca inventa); buildDoApp — número do build (fora do Expo Go) e ambiente
 │   └── cuidados.ts              ← proximosCuidados — "Próximos cuidados" do pet (remédios em uso/que vão começar, consultas agendadas e vacinas agendadas)
 ├── __tests__/
 │   ├── cadastro.test.tsx        ← teste de integração da tela de cadastro (HTTP mockado): payload, login automático e ida para a Home, login automático que falha, e-mail em uso
@@ -196,6 +198,7 @@ src/
 │   ├── api.test.ts              ← endereço da API (computador do Expo na 8080, localhost, .env) e tempo limite (90 s no Render/https, 10 s local)
 │   ├── conexao-lenta.test.tsx   ← aviso "Conectando ao servidor…": liga depois de 4 s, desliga na resposta e no erro, várias chamadas ao mesmo tempo
 │   ├── build-api.test.ts        ← o build do EAS exige EXPO_PUBLIC_API_URL com https (app.config.ts)
+│   ├── publicacao.test.ts       ← eas.json (perfil preview: APK, versionCode do EAS, ambiente, API do Render em https) e app.json (nome, pacote Android)
 │   ├── autenticacao.service.test.ts ← login busca quem entrou em GET /usuario/me (senha errada = 401); editar os dados não manda senha; e-mail de outra conta (409) no cadastro e na edição; trocar senha (PUT /usuario/me/senha, senha atual errada)
 │   ├── alterar-senha.test.tsx   ← "Alterar senha" do Perfil: manda a atual e a nova, senha atual errada (mensagem da API), confirmação diferente / nova igual à atual
 │   ├── sessao.test.tsx          ← revalidação da sessão salva no boot (GET /usuario/me) e cache limpo ao trocar de conta
@@ -212,7 +215,7 @@ src/
 │   ├── perfil-cards.test.tsx    ← cards Segurança, Aplicativo e Conta do /perfil: só ações reais (Alterar senha, Sobre o App, Sair da conta)
 │   ├── assistente.test.ts       ← respostas do Assistente: próxima vacina, remédios de hoje, próxima consulta, vacinação em dia (dose renovada não conta como atraso)
 │   ├── assistente-tela.test.tsx ← tela do Assistente (HTTP mockado): resposta com dados da API, trocar de pet, botões para as telas, sem pet, erro ao carregar
-│   ├── sobre.test.tsx           ← Sobre o App: hash do EAS ou do git (`app.config.ts`), aviso de alterações fora do commit, "não informado" sem hash
+│   ├── sobre.test.tsx           ← Sobre o App: hash do EAS ou do git (`app.config.ts`), aviso de alterações fora do commit, "não informado" sem hash, número do build (escondido no Expo Go) e ambiente
 │   ├── agendamento.test.tsx     ← agendar: só pets da conta, dias lotados/fechados, payload, histórico do pet, horário ocupado (409)
 │   ├── calendario.test.tsx      ← contas do mês e a tela (busca do período, cuidados do dia, abrir edição, trocar de mês)
 │   └── consulta.test.tsx        ← registrar (tipo, ISO, hora), hora inválida, editar com erro da API, consultas no histórico e nos próximos cuidados
@@ -558,6 +561,7 @@ A tela `/sobre` (Perfil → "Sobre o App") mostra a versão e o **hash do commit
 - **De onde vem:** no build do EAS (o que vai para o Firebase App Distribution), da variável `EAS_BUILD_GIT_COMMIT_HASH`; no computador (`npx expo start` ou build local), do `git rev-parse HEAD`. Sem git, a tela mostra "não informado".
 - **Depois de um commit novo, reinicie o `npx expo start`** — o Expo só lê o `app.config.ts` quando inicia.
 - **Aviso amarelo "Gerado com alterações..."**: o app foi gerado com mudanças fora de qualquer commit (`git status` não vazio). Antes de publicar: commit, build, e conferir na tela que o hash é o mesmo de `git log -1`.
+- **Número do build e ambiente:** o número é o `versionCode` que o EAS deu ao APK, lido do app instalado com `Application.nativeBuildVersion` (`expo-application`); no Expo Go ele não aparece (seria o número do próprio Expo Go). O ambiente vem de `EXPO_PUBLIC_APP_ENV` (`preview` no `eas.json`); sem ela, "desenvolvimento".
 - Para conferir sem abrir o app: `npx expo config --type public` mostra o `extra` com o hash.
 
 ---
@@ -565,7 +569,7 @@ A tela `/sobre` (Perfil → "Sobre o App") mostra a versão e o **hash do commit
 ## 📌 Notas Importantes
 
 - O projeto usa **Node 22 LTS**.
-- A configuração do Expo é o `app.json` (base) + o `app.config.ts`, que soma o commit em `extra` (ver "Sobre o App e versão") e confere a API do build (ver "API no Render", seção 2).
+- A configuração do Expo é o `app.json` (base) + o `app.config.ts`, que soma o commit em `extra` (ver "Sobre o App e versão") e confere a API do build (ver "API no Render", seção 2). O `eas.json` tem o perfil `preview` do APK publicado no Firebase.
 - O `app/` fica dentro de `src/` — `tsconfig.json` tem `paths: { "@/*": ["./src/*"] }`.
 - O alias `@/` aponta para `src/`.
 - O `QueryClient` é importado diretamente apenas no `_layout.tsx` raiz, para o `QueryClientProvider`.

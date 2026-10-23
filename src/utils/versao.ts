@@ -13,6 +13,23 @@ export type VersaoDoApp = {
   comAlteracoes: boolean;
 };
 
+/** Build instalado: o número que o EAS deu ao APK e o ambiente do build. */
+export type BuildDoApp = {
+  /** versionCode do APK (o EAS aumenta a cada build do perfil preview). */
+  numero: string | null;
+  /** "preview" no APK do Firebase; "desenvolvimento" rodando com npx expo start. */
+  ambiente: string;
+};
+
+type OrigemDoBuild = {
+  /** Application.nativeBuildVersion (expo-application). */
+  numeroNativo: string | null | undefined;
+  /** No Expo Go o número nativo é o do próprio Expo Go, não o do Afetto. */
+  noExpoGo: boolean;
+  /** EXPO_PUBLIC_APP_ENV, definido por perfil no eas.json. */
+  ambiente: string | undefined;
+};
+
 type ConfigDoApp = { version?: string; extra?: Record<string, unknown> } | null | undefined;
 
 const HASH_VALIDO = /^[0-9a-f]{7,40}$/i;
@@ -38,5 +55,18 @@ export function versaoDoApp(config: ConfigDoApp): VersaoDoApp {
     commitCompleto: hash,
     dataCommit: data,
     comAlteracoes: extra.commitComAlteracoes === true,
+  };
+}
+
+/**
+ * Número do build e ambiente, como no codelab da aula de distribuição: o
+ * número vem do APK instalado (nunca escrito à mão) e só aparece fora do Expo
+ * Go; sem EXPO_PUBLIC_APP_ENV (npx expo start), o ambiente é "desenvolvimento".
+ */
+export function buildDoApp({ numeroNativo, noExpoGo, ambiente }: OrigemDoBuild): BuildDoApp {
+  const numero = numeroNativo?.trim();
+  return {
+    numero: !noExpoGo && numero ? numero : null,
+    ambiente: ambiente?.trim() || "desenvolvimento",
   };
 }

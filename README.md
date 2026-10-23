@@ -68,7 +68,7 @@ Aplicativo mobile (React Native + Expo) do **Challenge FIAP 2026**, em parceria 
 ### Perfil
 - Dados pessoais, moradia e endereço (com busca de CEP), alterar senha (confere a senha atual) e sair.
 - **Tema claro, escuro ou do sistema**.
-- **Sobre o App**: versão e **hash do commit** da versão instalada.
+- **Sobre o App**: versão, número do build, ambiente e **hash do commit** da versão instalada.
 
 ---
 
@@ -96,6 +96,7 @@ Feita com `expo-notifications`, agendada no próprio aparelho (não depende de s
 | Formulários | React Hook Form + Zod |
 | Notificações | expo-notifications (locais) |
 | Armazenamento local | AsyncStorage (dados da sessão e tema) |
+| Versão instalada | expo-application (número do build do APK) e expo-constants |
 | Testes | Jest (jest-expo) + React Native Testing Library |
 
 ---
@@ -167,7 +168,7 @@ Escaneie o QR code com o Expo Go ou tecle `a` para abrir no emulador Android. O 
 ## 🧪 Testes
 
 ```bash
-npx jest          # 32 suítes, 189 testes (HTTP mockado; services, hooks e telas rodam de verdade)
+npx jest          # 33 suítes, 198 testes (HTTP mockado; services, hooks e telas rodam de verdade)
 npx tsc --noEmit  # checagem de tipos, incluindo as rotas
 ```
 
@@ -177,9 +178,19 @@ As rotas tipadas são geradas pelo Expo em `.expo/types`: num clone novo, rode `
 
 ## 📦 Publicação e versão
 
-- O app instalável é publicado no **Firebase App Distribution**, com o e-mail institucional do professor cadastrado como tester.
-- O build do celular é gerado no **EAS** com `EXPO_PUBLIC_API_URL=https://java-afetto.onrender.com`. Sem essa variável (ou sem `https`), o build para com um aviso, para não gerar um app que não acha a API.
-- A tela **Perfil → Sobre o App** mostra o **hash do commit** de onde a versão instalada foi gerada (lido no build, nunca escrito à mão), para conferir que o app publicado é o mesmo código deste repositório.
+O app instalável (APK Android, pacote `br.fiap.mad.afetto`) é gerado pelo **EAS Build** e distribuído pelo **Firebase App Distribution**, com o e-mail institucional do professor cadastrado como tester. Só para o App Distribution, o app não precisa do SDK do Firebase.
+
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest whoami                                       # confere a conta Expo usada
+npx eas-cli@latest build:configure                              # 1ª vez: vincula o projeto ao EAS (o eas.json já existe)
+npx eas-cli@latest build --platform android --profile preview   # gera o APK a partir do último commit
+```
+
+- **Perfil `preview`** (`eas.json`): APK de distribuição interna, que roda sem o Metro. Já leva `EXPO_PUBLIC_API_URL=https://java-afetto.onrender.com` e `EXPO_PUBLIC_APP_ENV=preview`. Sem a URL da API em `https`, o build para com um aviso (`app.config.ts`), para não gerar um app que não acha a API.
+- **Número do build:** o EAS controla o `versionCode` (`appVersionSource: "remote"`) e aumenta a cada build do `preview` (`autoIncrement`). A versão visível é o `version` do `app.json`.
+- **No Firebase:** app Android com o mesmo pacote `br.fiap.mad.afetto` → **App Distribution** → envio do APK, notas da versão (o que testar e o hash do commit) e o professor em **Testers & Groups**. O tester aceita o convite com a conta Google e instala pelo Firebase App Tester.
+- **Perfil → Sobre o App** mostra a versão, o **número do build** (lido do APK com `expo-application`), o **ambiente** (`preview`) e o **hash do commit** de onde o APK foi gerado (lido no build, nunca escrito à mão). O hash deve ser igual ao último commit deste repositório (`git log -1`): é assim que se confere que o app publicado é o mesmo código.
 
 ---
 

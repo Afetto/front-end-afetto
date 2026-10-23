@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "challenge-afetto",
+    "name": "Afetto",
     "slug": "challenge-afetto",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,6 +17,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "br.fiap.mad.afetto",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#1F3B30"

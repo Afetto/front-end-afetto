@@ -1,6 +1,7 @@
-import { versaoDoApp } from "@/utils/versao";
+import { buildDoApp, versaoDoApp } from "@/utils/versao";
 import { Ionicons } from "@expo/vector-icons";
-import Constants from "expo-constants";
+import * as Application from "expo-application";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { router } from "expo-router";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
@@ -41,12 +42,18 @@ function Linha({ rotulo, valor, destaque, ultima }: { rotulo: string; valor: str
 }
 
 /**
- * "Sobre o App": versão do app.json e o commit da versão instalada. O hash não
- * é escrito à mão — o app.config.ts lê do git (ou do EAS) na hora do build e
- * ele chega aqui em `Constants.expoConfig.extra`.
+ * "Sobre o App": versão do app.json, número do build, ambiente e o commit da
+ * versão instalada. O hash não é escrito à mão — o app.config.ts lê do git (ou
+ * do EAS) na hora do build e ele chega aqui em `Constants.expoConfig.extra`. O
+ * número do build é lido do APK (expo-application).
  */
 export default function TelaSobre() {
   const versao = versaoDoApp(Constants.expoConfig);
+  const build = buildDoApp({
+    numeroNativo: Application.nativeBuildVersion,
+    noExpoGo: Constants.executionEnvironment === ExecutionEnvironment.StoreClient,
+    ambiente: process.env.EXPO_PUBLIC_APP_ENV,
+  });
 
   return (
     <View className="flex-1 bg-surface dark:bg-gray-900">
@@ -81,6 +88,8 @@ export default function TelaSobre() {
           <View className="gap-2">
             <Secao titulo="Versão">
               <Linha rotulo="Versão do app" valor={versao.versao} />
+              {build.numero && <Linha rotulo="Build" valor={build.numero} />}
+              <Linha rotulo="Ambiente" valor={build.ambiente} />
               <Linha
                 rotulo="Commit"
                 valor={versao.commitCurto ?? "não informado"}
