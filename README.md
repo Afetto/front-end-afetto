@@ -168,7 +168,7 @@ Escaneie o QR code com o Expo Go ou tecle `a` para abrir no emulador Android. O 
 ## 🧪 Testes
 
 ```bash
-npx jest          # 33 suítes, 198 testes (HTTP mockado; services, hooks e telas rodam de verdade)
+npx jest          # 34 suítes, 200 testes (HTTP mockado; services, hooks e telas rodam de verdade)
 npx tsc --noEmit  # checagem de tipos, incluindo as rotas
 ```
 

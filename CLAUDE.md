@@ -183,6 +183,7 @@ src/
 │   ├── clinica.ts               ← formatarDistancia ("850 m"/"3,2 km"), formatarNota, localDaClinica, enderecoCompleto, LABEL_TURNO
 │   ├── calendario.ts            ← celulasDoMes, periodoDoMes, somarMeses, diaInicial, agruparPorData, formatarDataISO (dia local, sem UTC), rotuloDia (Hoje/Amanhã/seg 13/10), resumirAgenda (Home)
 │   ├── assistente.ts            ← PERGUNTAS e `responder` — as respostas do Assistente a partir de vacinas, remédios e consultas do pet (função pura)
+│   ├── cabecalho.ts             ← opcoesCabecalhoNativo — cores do cabeçalho nativo do Stack ((auth) e (app)) nos temas claro e escuro
 │   ├── versao.ts                ← versaoDoApp — versão e commit (de `Constants.expoConfig.extra`) para a tela Sobre o App; sem hash, devolve null (nunca inventa); buildDoApp — número do build (fora do Expo Go) e ambiente
 │   └── cuidados.ts              ← proximosCuidados — "Próximos cuidados" do pet (remédios em uso/que vão começar, consultas agendadas e vacinas agendadas)
 ├── __tests__/
@@ -215,6 +216,7 @@ src/
 │   ├── perfil-cards.test.tsx    ← cards Segurança, Aplicativo e Conta do /perfil: só ações reais (Alterar senha, Sobre o App, Sair da conta)
 │   ├── assistente.test.ts       ← respostas do Assistente: próxima vacina, remédios de hoje, próxima consulta, vacinação em dia (dose renovada não conta como atraso)
 │   ├── assistente-tela.test.tsx ← tela do Assistente (HTTP mockado): resposta com dados da API, trocar de pet, botões para as telas, sem pet, erro ao carregar
+│   ├── cabecalho.test.ts        ← cabeçalho nativo do Stack com a cor do fundo da tela no claro (bg-surface) e no escuro (gray-900)
 │   ├── sobre.test.tsx           ← Sobre o App: hash do EAS ou do git (`app.config.ts`), aviso de alterações fora do commit, "não informado" sem hash, número do build (escondido no Expo Go) e ambiente
 │   ├── agendamento.test.tsx     ← agendar: só pets da conta, dias lotados/fechados, payload, histórico do pet, horário ocupado (409)
 │   ├── calendario.test.tsx      ← contas do mês e a tela (busca do período, cuidados do dia, abrir edição, trocar de mês)
@@ -245,6 +247,7 @@ src/
 | `bg-golden-light` | `#E8B96A` | Variante clara do golden |
 | `bg-golden-pale` | `#F2D9A0` | Fundo de badges (ex. "opcional") |
 | `text-amber` / `bg-amber` | `#E8A838` | Âmbar — destaques, barra de progresso, CTAs secundários |
+| `text-amber-dark` | `#B07A0A` | Âmbar escuro — texto âmbar sobre fundo claro (o `text-amber` ali fica com contraste baixo); no escuro use `dark:text-amber` |
 | `bg-green-medium` | `#A8C5A0` | Verde médio — itens concluídos, sucesso (⚠️ não escreva `greenMedium`) |
 
 Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** para tons neutros e de erro (`text-gray-900`, `text-gray-700`, `text-gray-600`, `border-gray-200`, `text-red-500`, `bg-black/60`, `bg-white/20` etc.) — isso é aceitável e não conta como "cor hardcoded", desde que seja uma classe Tailwind válida (custom ou padrão), nunca um valor `#hex` inline.
@@ -259,6 +262,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 - `context/TemaContext.tsx` é a fonte de verdade da preferência de tema (`PreferenciaTema = "light" | "dark" | "system"`): guarda o valor escolhido em `useState`, persiste em `AsyncStorage` na chave **`@afetto:tema`** e aplica via `colorScheme.set(valor)` (API do `nativewind`, não é `useState` de CSS). No bootstrap (`TemaProvider`, montado em `app/_layout.tsx` envolvendo o `SessaoProvider`), lê o valor salvo do AsyncStorage e aplica antes da tela renderizar; se nunca foi definido, o padrão é `"system"`. Use o hook `useTema()` para ler/alterar — nunca chame `colorScheme.set` fora desse context.
 - Para o valor **resolvido** (light/dark, já considerando a escolha do usuário) em componentes que não usam `className`, use `useColorScheme()` importado de **`"nativewind"`** (não de `"react-native"` — esse reflete só o SO e ignora a escolha manual). É o que `app/_layout.tsx` (StatusBar) e `(tabs)/_layout.tsx` (tab bar) fazem.
 - Cobertura de `className`: fundos de tela (`bg-surface` → `dark:bg-gray-900`), cards (`bg-white` → `dark:bg-gray-800`), texto (`text-gray-900`/`text-primary` → `dark:text-white`, `text-muted`/`text-gray-700`/`text-gray-600` → `dark:text-gray-400`/`dark:text-gray-300`) e bordas (`border-border`/`border-gray-200` → `dark:border-gray-700`) têm variante `dark:` em todos os componentes reutilizáveis e telas.
+- **Cabeçalho nativo do Stack** (a barra com a seta de voltar do login, cadastro, esqueci a senha e "Finalize seu cadastro"): o `className` não chega nele, então `(auth)/_layout.tsx` e `(app)/_layout.tsx` passam `opcoesCabecalhoNativo(escuro)` (`utils/cabecalho.ts`) no `screenOptions`, com `useColorScheme()` do `nativewind` — mesma cor do fundo da tela, sem sombra. Sem isso, no escuro a barra ficava branca e os ícones da status bar sumiam.
 - `bg-primary` (headers verdes) e `text-amber`/`bg-amber` (cor de marca) **não** ganham variante `dark:` — são identidade visual e continuam iguais nos dois temas, igual à tela de onboarding (`app/index.tsx`), que é toda `bg-primary` e não precisa de ajuste.
 - Badges com fundo próprio e estático (ex. `bg-golden-pale`/`bg-green-medium` nos cartões de vacina, `bg-blue-100` na linha do tempo) não recebem `dark:` — o texto dentro deles (`text-golden`, `text-primary-dark`, `text-blue-700`) só precisa ter contraste com o fundo do próprio badge, que não muda com o tema.
 - ⚠️ Limitação conhecida: `className` do NativeWind não alcança a prop `color` de `Ionicons` nem `placeholderTextColor` de `TextInput` — são props nativas, não estilo via `style`/`className`. Ícones e placeholders continuam com a cor de modo claro (ex. `color="#1E3A2F"`) mesmo no dark mode; o contraste é aceitável na maioria dos casos (tons de cinza médio como `#9E9589`), mas alguns ícones verde-escuro sobre fundo escuro ficam com contraste baixo. Resolver isso exige ler `useColorScheme()` de `"nativewind"` em cada tela/componente e escolher a cor via JS (mesmo padrão de `AparenciaCard.tsx`, `(tabs)/_layout.tsx` e `app/_layout.tsx`) — não foi feito em todos os ícones por enquanto.

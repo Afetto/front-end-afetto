@@ -1,10 +1,15 @@
 import { RotaProtegida } from "@/components/RotaProtegida";
+import { opcoesCabecalhoNativo } from "@/utils/cabecalho";
 import { Stack } from "expo-router";
+import { useColorScheme } from "nativewind";
 
 export default function LayoutApp() {
+  // Só "Finalize seu cadastro" mostra o cabeçalho nativo; ele acompanha o tema do app
+  const { colorScheme } = useColorScheme();
+
   return (
     <RotaProtegida>
-      <Stack>
+      <Stack screenOptions={opcoesCabecalhoNativo(colorScheme === "dark")}>
         <Stack.Screen name="completar-perfil" options={{ title: "" }} />
         <Stack.Screen name="perfil" options={{ headerShown: false }} />
         <Stack.Screen name="pet/cadastrar" options={{ headerShown: false }} />
