@@ -28,7 +28,7 @@ export function FormDadosPessoais({ control, cpf }: Props) {
         <CampoTexto
           name="email"
           control={control}
-          label="Email"
+          label="E-mail"
           keyboardType="email-address"
           autoCapitalize="none"
         />

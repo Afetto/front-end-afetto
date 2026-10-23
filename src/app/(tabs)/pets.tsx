@@ -45,9 +45,10 @@ export default function TelaPets() {
         <TouchableOpacity
           onPress={() => router.push("/pet/cadastrar")}
           activeOpacity={0.85}
-          className="w-10 h-10 rounded-full bg-amber items-center justify-center"
+          accessibilityLabel="Adicionar pet"
+          className="w-11 h-11 rounded-full bg-amber items-center justify-center"
         >
-          <Ionicons name="add" size={22} color="#FFFFFF" />
+          <Ionicons name="add" size={24} color="#152B22" />
         </TouchableOpacity>
       </View>
 

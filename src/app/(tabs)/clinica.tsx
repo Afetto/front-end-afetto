@@ -84,7 +84,7 @@ export default function TelaClinica() {
                 ativo ? "bg-amber border-amber" : "bg-white dark:bg-gray-800 border-border dark:border-gray-700"
               }`}
             >
-              <Text className={`text-xs font-semibold ${ativo ? "text-white" : "text-muted dark:text-gray-400"}`}>
+              <Text className={`text-xs font-semibold ${ativo ? "text-primary-dark" : "text-muted dark:text-gray-400"}`}>
                 {item.label}
               </Text>
             </TouchableOpacity>

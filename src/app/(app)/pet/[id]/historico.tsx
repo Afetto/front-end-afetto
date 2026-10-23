@@ -10,6 +10,7 @@ import { converterDataParaBR } from "@/utils/data";
 import { EventoHistorico, montarHistorico, SituacaoEvento } from "@/utils/historico";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
+import { useColorScheme } from "nativewind";
 import { useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
@@ -57,6 +58,9 @@ export default function TelaHistorico() {
   const { mutate: deletarConsulta } = useDeletarConsulta(id);
   const { mutate: cancelarConsulta } = useCancelarConsulta(id);
   const [filtro, setFiltro] = useState<ChaveFiltro>("todos");
+  // A cor do ícone é prop nativa (className não alcança): no escuro, âmbar como o texto "Editar"
+  const { colorScheme } = useColorScheme();
+  const escuro = colorScheme === "dark";
 
   const carregando = vacinas.isLoading || remedios.isLoading || consultas.isLoading;
   const comErro = vacinas.isError || remedios.isError || consultas.isError;
@@ -120,7 +124,7 @@ export default function TelaHistorico() {
 
   return (
     <View className="flex-1 bg-surface dark:bg-gray-900">
-      <CabecalhoOla mostrarVoltar />
+      <CabecalhoOla mostrarVoltar comCardSobreposto />
 
       <View className="px-6 -mt-8">{pet && <CardPetResumo pet={pet} />}</View>
 
@@ -142,7 +146,7 @@ export default function TelaHistorico() {
               }`}
             >
               <Text
-                className={`text-xs font-semibold ${ativo ? "text-white" : "text-muted dark:text-gray-400"}`}
+                className={`text-xs font-semibold ${ativo ? "text-primary-dark" : "text-muted dark:text-gray-400"}`}
               >
                 {item.label}
               </Text>
@@ -166,17 +170,17 @@ export default function TelaHistorico() {
           <View className="flex-row gap-3 mt-4">
             <View className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-3 items-center shadow-sm">
               <Text className="text-xl font-bold text-gray-900 dark:text-white">{eventos.length}</Text>
-              <Text className="text-[10px] text-muted dark:text-gray-400 text-center mt-0.5">
+              <Text className="text-xs text-muted dark:text-gray-400 text-center mt-0.5">
                 eventos registrados
               </Text>
             </View>
             <View className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-3 items-center shadow-sm">
               <Text className="text-xl font-bold text-gray-900 dark:text-white">{totalConcluidos}</Text>
-              <Text className="text-[10px] text-muted dark:text-gray-400 text-center mt-0.5">concluídos</Text>
+              <Text className="text-xs text-muted dark:text-gray-400 text-center mt-0.5">concluídos</Text>
             </View>
             <View className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-3 items-center shadow-sm">
               <Text className="text-xl font-bold text-gray-900 dark:text-white">{totalAtivos}</Text>
-              <Text className="text-[10px] text-muted dark:text-gray-400 text-center mt-0.5">
+              <Text className="text-xs text-muted dark:text-gray-400 text-center mt-0.5">
                 em uso ou próximos
               </Text>
             </View>
@@ -232,7 +236,7 @@ export default function TelaHistorico() {
                             className="flex-row items-center gap-1"
                             hitSlop={8}
                           >
-                            <Ionicons name="pencil-outline" size={14} color="#1E3A2F" />
+                            <Ionicons name="pencil-outline" size={14} color={escuro ? "#E8A838" : "#1E3A2F"} />
                             <Text className="text-xs font-medium text-primary dark:text-amber">Editar</Text>
                           </TouchableOpacity>
                         )}
@@ -265,8 +269,9 @@ export default function TelaHistorico() {
       )}
 
       <TouchableOpacity
-        onPress={() => router.push(`/pet/${id}/cuidados`)}
+        onPress={() => router.push({ pathname: "/pet/[id]/cuidados", params: { id } })}
         activeOpacity={0.85}
+        accessibilityLabel="Adicionar cuidado"
         className="absolute bottom-8 right-6 w-14 h-14 rounded-full bg-primary items-center justify-center shadow-lg"
       >
         <Ionicons name="add" size={28} color="#FFFFFF" />

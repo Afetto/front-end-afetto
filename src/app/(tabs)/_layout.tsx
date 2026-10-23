@@ -5,8 +5,20 @@ import { useColorScheme } from "nativewind";
 
 type NomeIcone = React.ComponentProps<typeof Ionicons>["name"];
 
-function IconeAba({ name, color }: { name: NomeIcone; color: string }) {
-  return <Ionicons name={name} size={24} color={color} />;
+// Aba ativa com o ícone cheio, as outras com o contorno: a aba atual se
+// destaca pela forma, não só pela cor
+function IconeAba({
+  cheio,
+  contorno,
+  focado,
+  color,
+}: {
+  cheio: NomeIcone;
+  contorno: NomeIcone;
+  focado: boolean;
+  color: string;
+}) {
+  return <Ionicons name={focado ? cheio : contorno} size={24} color={color} />;
 }
 
 export default function LayoutAbas() {
@@ -25,29 +37,38 @@ export default function LayoutAbas() {
             borderTopColor: escuro ? "#2A2A2A" : "#D8D1C7",
             borderTopWidth: 1,
           },
-          tabBarLabelStyle: { fontSize: 11, fontWeight: "500" },
+          tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
         }}
       >
         <Tabs.Screen
           name="index"
           options={{
             title: "Início",
-            tabBarIcon: ({ color }) => <IconeAba name="home" color={color} />,
+            tabBarIcon: ({ color, focused }) => (
+              <IconeAba cheio="home" contorno="home-outline" focado={focused} color={color} />
+            ),
           }}
         />
         <Tabs.Screen
           name="pets"
           options={{
             title: "Pets",
-            tabBarIcon: ({ color }) => <IconeAba name="paw" color={color} />,
+            tabBarIcon: ({ color, focused }) => (
+              <IconeAba cheio="paw" contorno="paw-outline" focado={focused} color={color} />
+            ),
           }}
         />
         <Tabs.Screen
           name="assistente"
           options={{
             title: "Assistente",
-            tabBarIcon: ({ color }) => (
-              <IconeAba name="chatbubble-ellipses" color={color} />
+            tabBarIcon: ({ color, focused }) => (
+              <IconeAba
+                cheio="chatbubble-ellipses"
+                contorno="chatbubble-ellipses-outline"
+                focado={focused}
+                color={color}
+              />
             ),
           }}
         />
@@ -55,8 +76,9 @@ export default function LayoutAbas() {
           name="clinica"
           options={{
             title: "Clínica",
-            tabBarIcon: ({ color }) => (
-              <IconeAba name="add-circle" color={color} />
+            // Prédio, o mesmo ícone das clínicas sem foto (o "+" parecia "adicionar")
+            tabBarIcon: ({ color, focused }) => (
+              <IconeAba cheio="business" contorno="business-outline" focado={focused} color={color} />
             ),
           }}
         />

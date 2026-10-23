@@ -113,9 +113,9 @@ export default function TelaInicio() {
           </TouchableOpacity>
         </View>
 
-        {/* Subtítulo */}
+        {/* Subtítulo — sem sublinhado: não é tocável, e sublinhado parece link */}
         {carregouProgresso && (
-          <Text className="text-base text-amber underline mt-2">
+          <Text className="text-base text-amber font-medium mt-2">
             {obrigatoriosConcluidos
               ? "Tudo certo! Seu pet está protegido."
               : "Vamos começar o perfil do seu pet!"}
@@ -149,8 +149,8 @@ export default function TelaInicio() {
             <Text className="text-sm text-muted dark:text-gray-400 text-center">
               {mensagemErro}
             </Text>
-            <TouchableOpacity onPress={recarregarProgresso}>
-              <Text className="text-amber font-semibold">Tentar novamente</Text>
+            <TouchableOpacity onPress={recarregarProgresso} hitSlop={8}>
+              <Text className="text-amber-dark dark:text-amber font-semibold">Tentar novamente</Text>
             </TouchableOpacity>
           </View>
         )}

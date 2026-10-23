@@ -7,19 +7,22 @@ type Props = {
   /** Mostra uma seta de voltar antes da saudação — usado em telas empilhadas
    * (ex.: tela principal do pet), diferente das abas raiz. */
   mostrarVoltar?: boolean;
+  /** Mais espaço embaixo para um card que sobe sobre o header (`-mt-8`, ex.:
+   * CardPetResumo) — sem ele, o card cobria a parte de baixo do botão de perfil. */
+  comCardSobreposto?: boolean;
 };
 
 /** Header verde "Olá, {nome}!" + botão de perfil — usado em telas fora da Home
  * que precisam do mesmo cabeçalho simples (Meus Pets, tela principal do pet). */
-export function CabecalhoOla({ mostrarVoltar }: Props) {
+export function CabecalhoOla({ mostrarVoltar, comCardSobreposto }: Props) {
   const { sessao } = useSessao();
 
   return (
-    <View className="bg-primary px-6 pt-14 pb-6">
+    <View className={`bg-primary px-6 pt-14 ${comCardSobreposto ? "pb-12" : "pb-6"}`}>
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-2 flex-1">
           {mostrarVoltar && (
-            <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
+            <TouchableOpacity onPress={() => router.back()} hitSlop={12} accessibilityLabel="Voltar">
               <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
             </TouchableOpacity>
           )}
@@ -30,6 +33,7 @@ export function CabecalhoOla({ mostrarVoltar }: Props) {
         <TouchableOpacity
           onPress={() => router.push("/perfil")}
           activeOpacity={0.7}
+          accessibilityLabel="Abrir perfil"
           className="w-11 h-11 rounded-full bg-white/20 items-center justify-center"
         >
           <Ionicons name="person" size={20} color="#fff" />

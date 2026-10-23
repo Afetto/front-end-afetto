@@ -48,8 +48,8 @@ export function MoradiaEnderecoCard({ perfil, carregando, onEditar }: Props) {
         </Text>
         {perfil?.perfilCompleto && (
           <TouchableOpacity onPress={onEditar} hitSlop={8} className="flex-row items-center gap-1">
-            <Ionicons name="pencil-outline" size={14} color="#E8A838" />
-            <Text className="text-xs font-semibold text-amber">Editar</Text>
+            <Ionicons name="pencil-outline" size={14} color="#B07A0A" />
+            <Text className="text-xs font-semibold text-amber-dark dark:text-amber">Editar</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -69,7 +69,7 @@ export function MoradiaEnderecoCard({ perfil, carregando, onEditar }: Props) {
               activeOpacity={0.85}
               className="items-center rounded-xl border-[1.5px] border-amber py-3"
             >
-              <Text className="text-sm font-semibold text-amber">Preencher agora</Text>
+              <Text className="text-sm font-semibold text-amber-dark dark:text-amber">Preencher agora</Text>
             </TouchableOpacity>
           </View>
         ) : (

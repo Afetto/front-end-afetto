@@ -240,8 +240,8 @@ export default function TelaAssistente() {
                 <Text className="text-sm text-muted dark:text-gray-400 text-center">
                   Não foi possível carregar os cuidados de {pet.nome}.
                 </Text>
-                <TouchableOpacity onPress={recarregarCuidados}>
-                  <Text className="text-amber font-semibold">
+                <TouchableOpacity onPress={recarregarCuidados} hitSlop={8}>
+                  <Text className="text-amber-dark dark:text-amber font-semibold">
                     Tentar novamente
                   </Text>
                 </TouchableOpacity>

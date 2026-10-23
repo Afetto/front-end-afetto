@@ -10,6 +10,8 @@ export const LIMITE_DIAS_URGENTE = 25;
 
 export type ProximoCuidado = {
   chave: string;
+  /** Escolhe o ícone na tela (o mesmo do SeletorTipoCuidado). */
+  tipo: "vacina" | "remedio" | "consulta";
   titulo: string;
   subtitulo: string;
   /** Dias até o cuidado; 0 para remédio em uso ou consulta hoje. */
@@ -49,6 +51,7 @@ export function proximosCuidados(
       const urgente = dias <= LIMITE_DIAS_URGENTE;
       return {
         chave: `vacina-${vacina.id}`,
+        tipo: "vacina" as const,
         titulo: vacina.nomeVacina,
         subtitulo: `Daqui ${textoDias(dias)}.`,
         dias,
@@ -65,6 +68,7 @@ export function proximosCuidados(
       return [
         {
           chave: `remedio-${remedio.id}`,
+          tipo: "remedio",
           titulo: remedio.nomeRemedio,
           subtitulo: remedio.dataFim
             ? `Em uso até ${converterDataParaBR(remedio.dataFim)}.`
@@ -80,6 +84,7 @@ export function proximosCuidados(
     return [
       {
         chave: `remedio-${remedio.id}`,
+        tipo: "remedio",
         titulo: remedio.nomeRemedio,
         subtitulo: `Começa daqui ${textoDias(dias)}.`,
         dias,
@@ -97,6 +102,7 @@ export function proximosCuidados(
       const hora = consulta.hora ? ` às ${consulta.hora}` : "";
       return {
         chave: `consulta-${consulta.id}`,
+        tipo: "consulta" as const,
         titulo: consulta.descricao || LABEL_TIPO_CONSULTA[consulta.tipoEvento],
         subtitulo: dias === 0 ? `Hoje${hora}.` : `Daqui ${textoDias(dias)}${hora ? `,${hora}` : ""}.`,
         dias,

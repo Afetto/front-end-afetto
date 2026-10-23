@@ -25,9 +25,13 @@ export default function CampoTexto<T extends FieldValues>({
   campoSenha = false,
   iconeDireita,
   transformarTexto,
+  onFocus,
+  onBlur: aoSairDoCampo,
   ...rest
 }: CampoTextoProps<T>) {
   const [oculto, setOculto] = useState(campoSenha);
+  // Borda verde no campo em uso (no escuro, âmbar); o erro continua vencendo
+  const [focado, setFocado] = useState(false);
 
   return (
     <Controller
@@ -41,12 +45,24 @@ export default function CampoTexto<T extends FieldValues>({
 
           <View
             className={`flex-row items-center border rounded-xl px-4 bg-white dark:bg-gray-800 ${
-              error ? "border-red-400" : "border-border dark:border-gray-700"
+              error
+                ? "border-red-400"
+                : focado
+                  ? "border-primary dark:border-amber"
+                  : "border-border dark:border-gray-700"
             }`}
           >
             <TextInput
               className="flex-1 py-4 text-base text-gray-900 dark:text-white"
-              onBlur={onBlur}
+              onFocus={(evento) => {
+                setFocado(true);
+                onFocus?.(evento);
+              }}
+              onBlur={(evento) => {
+                setFocado(false);
+                onBlur();
+                aoSairDoCampo?.(evento);
+              }}
               onChangeText={(text) =>
                 onChange(transformarTexto ? transformarTexto(text) : text)
               }
@@ -62,11 +78,12 @@ export default function CampoTexto<T extends FieldValues>({
             {campoSenha && (
               <TouchableOpacity
                 onPress={() => setOculto((anterior) => !anterior)}
-                hitSlop={8}
+                hitSlop={12}
+                accessibilityLabel={oculto ? "Mostrar senha" : "Ocultar senha"}
               >
                 <Ionicons
-                  name={oculto ? "chevron-down" : "chevron-up"}
-                  size={18}
+                  name={oculto ? "eye-outline" : "eye-off-outline"}
+                  size={20}
                   color="#9E9589"
                 />
               </TouchableOpacity>

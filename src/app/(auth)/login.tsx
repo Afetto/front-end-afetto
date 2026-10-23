@@ -81,7 +81,7 @@ export default function TelaLogin() {
             <CampoTexto
               name="email"
               control={control}
-              label="Email"
+              label="E-mail"
               placeholder="exemplo@email.com"
               keyboardType="email-address"
               autoComplete="email"
@@ -92,7 +92,7 @@ export default function TelaLogin() {
               <CampoTexto
                 name="password"
                 control={control}
-                label="Senha:"
+                label="Senha"
                 placeholder="••••••••"
                 campoSenha
                 autoComplete="password"
@@ -124,7 +124,7 @@ export default function TelaLogin() {
           >
             <Text className="text-sm text-gray-700 dark:text-gray-300">
               Ainda não tem conta?{" "}
-              <Text className="text-amber font-semibold">Criar conta</Text>
+              <Text className="text-amber-dark dark:text-amber font-semibold">Criar conta</Text>
             </Text>
           </TouchableOpacity>
 

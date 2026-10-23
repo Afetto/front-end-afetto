@@ -112,7 +112,7 @@ export default function TelaCadastro() {
             <CampoTexto
               name="email"
               control={control}
-              label="Email"
+              label="E-mail"
               placeholder="exemplo@email.com"
               keyboardType="email-address"
               autoComplete="email"
@@ -158,7 +158,7 @@ export default function TelaCadastro() {
             <CampoTexto
               name="password"
               control={control}
-              label="Senha:"
+              label="Senha"
               placeholder="••••••••"
               campoSenha
               autoComplete="password-new"

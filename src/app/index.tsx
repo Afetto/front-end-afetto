@@ -42,7 +42,8 @@ export default function TelaOnboarding() {
             activeOpacity={0.85}
             className="bg-golden items-center justify-center py-4 rounded-2xl"
           >
-            <Text className="text-white text-lg font-semibold">
+            {/* Verde-escuro sobre o dourado: o branco ficava com contraste de 2,7:1 */}
+            <Text className="text-primary-dark text-lg font-bold">
               Criar Conta
             </Text>
           </TouchableOpacity>

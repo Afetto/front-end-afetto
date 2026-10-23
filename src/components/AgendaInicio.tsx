@@ -25,8 +25,9 @@ function Atalho({ icone, texto, onPress }: { icone: NomeIcone; texto: string; on
       activeOpacity={0.85}
       className="flex-1 items-center justify-center gap-2 bg-amber rounded-2xl py-4"
     >
-      <Ionicons name={icone} size={22} color="#FFFFFF" />
-      <Text className="text-white text-xs font-semibold text-center">{texto}</Text>
+      {/* Verde-escuro sobre o âmbar: branco ali ficava com contraste de 2:1 */}
+      <Ionicons name={icone} size={22} color="#152B22" />
+      <Text className="text-primary-dark text-xs font-semibold text-center">{texto}</Text>
     </TouchableOpacity>
   );
 }
@@ -83,7 +84,7 @@ export function AgendaInicio({ idUsuario, idPetUnico }: Props) {
         ) : isError ? (
           <TouchableOpacity onPress={() => refetch()} className="items-center py-2">
             <Text className="text-sm text-muted dark:text-gray-400">Não foi possível carregar a agenda.</Text>
-            <Text className="text-amber font-semibold mt-1">Tentar novamente</Text>
+            <Text className="text-amber-dark dark:text-amber font-semibold mt-1">Tentar novamente</Text>
           </TouchableOpacity>
         ) : proximos.length === 0 ? (
           <View className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm gap-1">

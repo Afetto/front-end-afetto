@@ -36,7 +36,7 @@ export function DadosPessoaisCard({ email, telefone, dataNascimento, cpf }: Prop
       </Text>
 
       <View className="rounded-2xl bg-white dark:bg-gray-800 px-4 shadow-sm">
-        <LinhaInfo icone="mail-outline" label="Email" valor={email} />
+        <LinhaInfo icone="mail-outline" label="E-mail" valor={email} />
         <LinhaInfo icone="call-outline" label="Telefone" valor={telefone || "Não informado"} />
         <LinhaInfo
           icone="calendar-outline"

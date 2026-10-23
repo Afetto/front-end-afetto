@@ -110,7 +110,7 @@ export default function TelaSobre() {
             </Secao>
 
             {versao.comAlteracoes && (
-              <Text className="px-1 text-xs text-amber">
+              <Text className="px-1 text-xs text-amber-dark dark:text-amber">
                 Gerado com alterações que ainda não estão em nenhum commit. Faça o commit antes de publicar.
               </Text>
             )}

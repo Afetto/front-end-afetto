@@ -28,8 +28,13 @@ export function CardPetResumo({ pet, onEditar }: Props) {
         </Text>
       </View>
       {onEditar && (
-        <TouchableOpacity onPress={onEditar} hitSlop={8}>
-          <Ionicons name="pencil" size={18} color="#9E9589" />
+        <TouchableOpacity
+          onPress={onEditar}
+          hitSlop={8}
+          accessibilityLabel={`Editar ${pet.nome}`}
+          className="w-10 h-10 rounded-full items-center justify-center border border-border dark:border-gray-700"
+        >
+          <Ionicons name="pencil" size={16} color="#9E9589" />
         </TouchableOpacity>
       )}
     </View>

@@ -3,6 +3,7 @@ import { SeletorTipoCuidado, TipoCuidado } from "@/components/SeletorTipoCuidado
 import { BotaoEnviar } from "@/components/ui/BotaoEnviar";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useColorScheme } from "nativewind";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -54,6 +55,10 @@ export function FormularioCuidado({
   aviso,
   children,
 }: Props) {
+  // A seta de voltar é verde-escura: no tema escuro sumia no fundo, então vira branca
+  const { colorScheme } = useColorScheme();
+  const corVoltar = colorScheme === "dark" ? "#FFFFFF" : "#1E3A2F";
+
   if (editando && carregando) {
     return (
       <View className="flex-1 items-center justify-center bg-surface dark:bg-gray-900">
@@ -79,8 +84,8 @@ export function FormularioCuidado({
       >
         <View className="flex-1 px-6 pt-14 pb-32 gap-6">
           <View className="flex-row items-center gap-3">
-            <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
-              <Ionicons name="chevron-back" size={24} color="#1E3A2F" />
+            <TouchableOpacity onPress={() => router.back()} hitSlop={12} accessibilityLabel="Voltar">
+              <Ionicons name="chevron-back" size={24} color={corVoltar} />
             </TouchableOpacity>
             <Text className="text-2xl font-bold text-gray-900 dark:text-white">
               {editando ? tituloEdicao : "Adicionar cuidado"}

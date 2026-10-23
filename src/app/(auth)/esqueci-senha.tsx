@@ -79,7 +79,7 @@ export default function TelaEsqueciSenha() {
             <CampoTexto
               name="email"
               control={control}
-              label="Email"
+              label="E-mail"
               placeholder="exemplo@email.com"
               keyboardType="email-address"
               autoComplete="email"
