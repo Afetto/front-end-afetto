@@ -9,6 +9,8 @@ describe("Publicação (EAS → Firebase App Distribution)", () => {
   it("o app Android tem nome e pacote no padrão da aula (o mesmo registrado no Firebase)", () => {
     expect(appJson.expo.name).toBe("Afetto");
     expect(appJson.expo.android.package).toBe("br.fiap.mad.afetto");
+    // Vínculo com o projeto do EAS (o app.config.ts preserva o `extra` do app.json)
+    expect(appJson.expo.extra.eas.projectId).toBe("e79105da-07ef-446f-973a-6c86e8a21287");
   });
 
   it("o perfil preview gera APK para distribuição interna, com o número do build controlado pelo EAS", () => {
