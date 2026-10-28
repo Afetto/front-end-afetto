@@ -212,17 +212,15 @@ export async function redefinirSenha(dados: EsqueciSenhaInput): Promise<Resultad
 }
 
 /**
- * Encerra a sessão do usuário no servidor.
- * A sessão é por cookie — não há token no cliente para remover, só o cookie
- * (que o navegador/WebView já descarta ao expirar). Tentamos invalidar no
- * backend via POST /logout; se o endpoint não existir ou falhar, o
- * SessaoContext garante a limpeza local mesmo assim.
+ * Encerra a sessão do usuário no servidor (POST /logout, que invalida o cookie
+ * JSESSIONID). Se falhar (sem internet, sessão já expirada), o SessaoContext
+ * limpa a sessão local mesmo assim.
  */
 export async function sair(): Promise<void> {
   try {
     await api.post("/logout");
   } catch {
-    // Backend pode não ter /logout implementado ainda, ou a sessão já
-    // estava inválida — a limpeza local acontece de qualquer forma.
+    // A sessão no servidor já pode ter acabado (ex.: a API reiniciou) — a
+    // limpeza local acontece de qualquer forma.
   }
 }

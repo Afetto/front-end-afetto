@@ -1,4 +1,4 @@
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFonts } from "expo-font";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -32,10 +32,9 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 export default function LayoutRaiz() {
-  const [fontesCarregadas, erroFontes] = useFonts({
-    SpaceMono: require("../../assets/fonts/SpaceMono-Regular.ttf"),
-    ...FontAwesome.font,
-  });
+  // Ionicons é a fonte de ícones do app inteiro: carregada antes da primeira
+  // tela para os ícones não aparecerem depois do texto
+  const [fontesCarregadas, erroFontes] = useFonts(Ionicons.font);
 
   // AppState — refetch quando app volta ao foco
   useEffect(() => {

@@ -143,3 +143,9 @@ export function montarHistorico(
     return a.situacao === "futuro" ? diferenca : -diferenca;
   });
 }
+
+/** Contadores do topo do histórico: concluídos (passados) e em uso ou próximos. */
+export function resumirHistorico(eventos: EventoHistorico[]): { concluidos: number; ativos: number } {
+  const concluidos = eventos.filter((evento) => evento.situacao === "passado").length;
+  return { concluidos, ativos: eventos.length - concluidos };
+}

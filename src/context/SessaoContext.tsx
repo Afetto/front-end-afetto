@@ -1,5 +1,6 @@
 import { definirTratadorSessaoExpirada } from "@/api/api";
-import { buscarUsuarioLogado, sair as sairService } from "@/services/autenticacao.service";
+import { CHAVE_USUARIO_LOGADO, useEncerrarSessao } from "@/hooks/useAutenticacao";
+import { buscarUsuarioLogado } from "@/services/autenticacao.service";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -33,6 +34,7 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
   // logada e ficam "frescos" por 5 min (queryClient.ts). Sem limpar ao trocar de
   // conta, a conta nova via os pets e o comentário da anterior como se fossem dela.
   const queryClient = useQueryClient();
+  const { mutateAsync: encerrarSessaoNaApi } = useEncerrarSessao();
 
   useEffect(() => {
     AsyncStorage.getItem(CHAVE_SESSAO)
@@ -63,7 +65,13 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
         // responde se o cookie ainda vale e diz de quem é a sessão. Se não
         // responder, ou se for de outra conta, a sessão salva é descartada —
         // sem isso, um `id` salvo de uma sessão anterior ficava "fantasma".
-        const usuario = await buscarUsuarioLogado();
+        // A chamada passa pelo TanStack Query (fetchQuery), como todas as do app.
+        const usuario = await queryClient.fetchQuery({
+          queryKey: CHAVE_USUARIO_LOGADO,
+          queryFn: buscarUsuarioLogado,
+          staleTime: 0,
+          retry: false,
+        });
         if (!usuario || usuario.id !== salva.id) {
           await AsyncStorage.removeItem(CHAVE_SESSAO);
           return;
@@ -79,6 +87,7 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
         setSessao(atualizada);
       })
       .finally(() => setCarregando(false));
+    // Só na abertura do app (o queryClient é o mesmo durante toda a vida do app)
   }, []);
 
   // Quando qualquer chamada à API responder 401, a sessão local deixa de ser
@@ -112,10 +121,10 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
 
   async function sair() {
     try {
-      await sairService();
+      await encerrarSessaoNaApi();
     } catch {
-      // Mesmo se o backend falhar (ou não tiver /logout ainda), garantimos
-      // que a sessão local seja limpa.
+      // Mesmo se a API falhar (sem internet, sessão já expirada), a sessão
+      // local é limpa.
     }
     await AsyncStorage.removeItem(CHAVE_SESSAO);
     queryClient.clear();

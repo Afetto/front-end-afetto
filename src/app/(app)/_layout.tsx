@@ -4,25 +4,26 @@ import { Stack } from "expo-router";
 import { useColorScheme } from "nativewind";
 
 export default function LayoutApp() {
-  // Só "Finalize seu cadastro" mostra o cabeçalho nativo; ele acompanha o tema do app
+  // O cabeçalho nativo acompanha o tema escolhido no app (Claro/Escuro/Sistema)
   const { colorScheme } = useColorScheme();
 
   return (
     <RotaProtegida>
-      <Stack screenOptions={opcoesCabecalhoNativo(colorScheme === "dark")}>
-        <Stack.Screen name="completar-perfil" options={{ title: "" }} />
-        <Stack.Screen name="perfil" options={{ headerShown: false }} />
-        <Stack.Screen name="pet/cadastrar" options={{ headerShown: false }} />
-        <Stack.Screen name="pet/[id]/index" options={{ headerShown: false }} />
-        <Stack.Screen name="pet/[id]/editar" options={{ headerShown: false }} />
-        <Stack.Screen name="pet/[id]/historico" options={{ headerShown: false }} />
-        <Stack.Screen name="pet/[id]/cuidados" options={{ headerShown: false }} />
-        <Stack.Screen name="pet/[id]/remedio" options={{ headerShown: false }} />
-        <Stack.Screen name="pet/[id]/consulta" options={{ headerShown: false }} />
-        <Stack.Screen name="pet/[id]/calendario" options={{ headerShown: false }} />
-        <Stack.Screen name="clinica/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="agendamento/[idClinica]" options={{ headerShown: false }} />
-        <Stack.Screen name="sobre" options={{ headerShown: false }} />
+      {/* As telas têm cabeçalho próprio; só "Finalize seu cadastro" usa o nativo */}
+      <Stack screenOptions={{ ...opcoesCabecalhoNativo(colorScheme === "dark"), headerShown: false }}>
+        <Stack.Screen name="completar-perfil" options={{ headerShown: true, title: "" }} />
+        <Stack.Screen name="perfil" />
+        <Stack.Screen name="pet/cadastrar" />
+        <Stack.Screen name="pet/[id]/index" />
+        <Stack.Screen name="pet/[id]/editar" />
+        <Stack.Screen name="pet/[id]/historico" />
+        <Stack.Screen name="pet/[id]/cuidados" />
+        <Stack.Screen name="pet/[id]/remedio" />
+        <Stack.Screen name="pet/[id]/consulta" />
+        <Stack.Screen name="pet/[id]/calendario" />
+        <Stack.Screen name="clinica/[id]" />
+        <Stack.Screen name="agendamento/[idClinica]" />
+        <Stack.Screen name="sobre" />
       </Stack>
     </RotaProtegida>
   );

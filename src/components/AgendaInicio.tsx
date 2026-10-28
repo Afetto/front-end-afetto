@@ -1,7 +1,7 @@
 import { COR_TIPO_CALENDARIO } from "@/components/CalendarioMes";
 import { useAgendaDoTutor } from "@/hooks/useCalendario";
 import { EventoCalendario } from "@/services/calendario.service";
-import { formatarDataISO, resumirAgenda, rotuloDia } from "@/utils/calendario";
+import { periodoDosProximosDias, resumirAgenda, rotuloDia } from "@/utils/calendario";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
@@ -49,9 +49,7 @@ type Props = {
  * todos os pets (14 dias) e os remédios em tratamento hoje.
  */
 export function AgendaInicio({ idUsuario, idPetUnico }: Props) {
-  const hoje = new Date();
-  const inicio = formatarDataISO(hoje);
-  const fim = formatarDataISO(new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + DIAS_AGENDA_INICIO));
+  const { inicio, fim } = periodoDosProximosDias(DIAS_AGENDA_INICIO);
 
   const { data: eventos, isLoading, isError, refetch } = useAgendaDoTutor(idUsuario, inicio, fim);
   const { proximos, emTratamento } = resumirAgenda(eventos ?? [], inicio);

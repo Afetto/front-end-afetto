@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { criarClienteDeTeste } from "@/testes/clienteDeTeste";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
@@ -25,9 +26,7 @@ const mockGet = api.get as jest.Mock;
 const mockPut = api.put as jest.Mock;
 
 function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
+  const queryClient = criarClienteDeTeste();
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
@@ -114,11 +113,18 @@ describe("TelaClinica — lista (HTTP mockado)", () => {
     render(<TelaClinica />, { wrapper });
     await screen.findByText("Clínica Veterinária Bigode e Rabo");
 
-    fireEvent.changeText(screen.getByPlaceholderText("Buscar clínica pelo nome"), "  bigode ");
-    // A busca espera 400 ms sem digitação; o act cobre a atualização que o timer dispara
-    await act(async () => {
-      await new Promise((resolver) => setTimeout(resolver, 450));
-    });
+    // A busca espera 400 ms sem digitação. Com o relógio do Jest, o timer roda
+    // dentro do act (com o relógio real, numa máquina lenta ele disparava depois
+    // e o React avisava "not wrapped in act")
+    jest.useFakeTimers();
+    try {
+      fireEvent.changeText(screen.getByPlaceholderText("Buscar clínica pelo nome"), "  bigode ");
+      act(() => {
+        jest.advanceTimersByTime(400);
+      });
+    } finally {
+      jest.useRealTimers();
+    }
     await waitFor(() =>
       expect(mockGet).toHaveBeenCalledWith("/clinica", { params: { page: 0, size: 50, nome: "bigode" } })
     );

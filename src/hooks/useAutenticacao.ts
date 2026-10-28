@@ -5,14 +5,15 @@ import {
   autenticar,
   cadastrar,
   redefinirSenha,
+  sair,
 } from "@/services/autenticacao.service";
 import { ResultadoCadastroComEntrada } from "@/types/autenticacao.types";
 import { useMutation } from "@tanstack/react-query";
 
 // O "Finalize seu cadastro" fica em usePerfilCompleto.ts.
-// O logout não tem hook dedicado: chama `sair()` do SessaoContext direto em
-// perfil.tsx — é uma chamada única, sem payload nem necessidade de isPending
-// próprio (o botão já usa Alert.alert + await).
+
+/** Cache de GET /usuario/me: quem é o dono do cookie de sessão (revalidação no boot). */
+export const CHAVE_USUARIO_LOGADO = ["usuario", "me"] as const;
 
 // ─── CADASTRO ────────────────────────────────────────────────────────────────
 
@@ -23,29 +24,42 @@ import { useMutation } from "@tanstack/react-query";
  * `usuario` volta `null` e a tela manda para o login normal.
  */
 export function useCadastrar() {
-    return useMutation({
-        mutationFn: async (data: CadastroInput): Promise<ResultadoCadastroComEntrada> => {
-            const cadastro = await cadastrar(data);
-            if (!cadastro.ok) return cadastro;
+  return useMutation({
+    mutationFn: async (data: CadastroInput): Promise<ResultadoCadastroComEntrada> => {
+      const cadastro = await cadastrar(data);
+      if (!cadastro.ok) return cadastro;
 
-            const entrada = await autenticar(data.email, data.password);
-            return { ok: true, usuario: entrada.ok ? entrada.usuario : null };
-        },
-    });
+      const entrada = await autenticar(data.email, data.password);
+      return { ok: true, usuario: entrada.ok ? entrada.usuario : null };
+    },
+  });
 }
 
 // ─── LOGIN ───────────────────────────────────────────────────────────────────
 
 export function useEntrar() {
-    return useMutation({
-        mutationFn: ({ email, password }: LoginInput) => autenticar(email, password),
-    });
+  return useMutation({
+    mutationFn: ({ email, password }: LoginInput) => autenticar(email, password),
+  });
 }
 
 // ─── ESQUECI A SENHA ─────────────────────────────────────────────────────────
 
 export function useRedefinirSenha() {
-    return useMutation({
-        mutationFn: (data: EsqueciSenhaInput) => redefinirSenha(data),
-    });
+  return useMutation({
+    mutationFn: (data: EsqueciSenhaInput) => redefinirSenha(data),
+  });
 }
+
+// ─── LOGOUT ──────────────────────────────────────────────────────────────────
+
+/**
+ * Encerra a sessão na API (POST /logout). Usado pelo SessaoContext, que em
+ * seguida limpa a sessão local e o cache — a tela chama só `sair()` do contexto.
+ */
+export function useEncerrarSessao() {
+  return useMutation({
+  mutationFn: () => sair(),
+  });
+}
+

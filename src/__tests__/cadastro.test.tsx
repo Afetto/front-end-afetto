@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { criarClienteDeTeste } from "@/testes/clienteDeTeste";
 import {
   fireEvent,
   render,
@@ -37,12 +38,7 @@ const USUARIO_DA_API = {
 };
 
 function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
+  const queryClient = criarClienteDeTeste();
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );

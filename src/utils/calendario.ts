@@ -35,6 +35,14 @@ export function periodoDoMes({ ano, mes }: MesCalendario): { inicio: string; fim
   };
 }
 
+/** Período de hoje até daqui a `dias` dias (ex.: a agenda dos próximos 14 dias da Home). */
+export function periodoDosProximosDias(dias: number, hoje: Date = new Date()): { inicio: string; fim: string } {
+  return {
+    inicio: formatarDataISO(hoje),
+    fim: formatarDataISO(new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + dias)),
+  };
+}
+
 /**
  * Células da grade do mês, semana a semana: `null` nos dias antes do dia 1
  * (para ele cair na coluna certa) e "YYYY-MM-DD" em cada dia do mês.

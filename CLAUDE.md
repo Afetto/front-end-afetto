@@ -30,7 +30,7 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 | Data fetching | `@tanstack/react-query` `^5` (+ `@dev-plugins/react-query` para devtools) |
 | HTTP client | `axios` `^1` |
 | Sessão/Storage | `@react-native-async-storage/async-storage` |
-| Ícones | `@expo/vector-icons` — **padrão real: `Ionicons`** (usado em todas as telas e componentes; `FontAwesome` só existe no boilerplate do `_layout.tsx` para os ícones de navegação padrão do template, sem uso funcional hoje) |
+| Ícones | `@expo/vector-icons` — **só `Ionicons`** (todas as telas e componentes; a fonte dele é pré-carregada no `_layout.tsx` raiz) |
 | Animações | `react-native-reanimated` `~4` |
 | Versão instalada | `expo-application` `~7` — só `nativeBuildVersion` (número do build do APK) na tela Sobre o App |
 | Notificações | `expo-notifications` `~0.32` — só notificações **locais** (lembrete de vacina, ver seção "Notificações Locais"); não há push remoto |
@@ -97,6 +97,7 @@ src/
 │   │   ├── CampoTexto.tsx           ← input padrão com react-hook-form (Controller)
 │   │   ├── CampoSelecao.tsx         ← seletor de opções em botões (`tresPorLinha` para muitas opções)
 │   │   ├── BotaoEnviar.tsx          ← botão fixo no rodapé com estado de envio (isPending)
+│   │   ├── TelaFormulario.tsx       ← estrutura das telas de formulário (login, cadastro, esqueci a senha, Finalize seu cadastro): teclado, rolagem, título, erro geral e botão no rodapé
 │   │   └── ToastSucesso.tsx         ← toast animado de sucesso ("Salvo com sucesso!" no /perfil)
 │   ├── FormPet.tsx                ← campos + botão de submit do formulário de pet — usado em pet/cadastrar.tsx e pet/[id]/editar.tsx
 │   ├── SeletorEspecie.tsx         ← grid de cards (emoji + nome) para escolher a espécie do pet — usado dentro de FormPet
@@ -140,7 +141,7 @@ src/
 │   ├── useCalendario.ts       ← useCalendarioPet, useAgendaDoTutor (+ `CHAVE_CALENDARIO`, invalidada ao salvar/excluir vacina, remédio ou consulta)
 │   ├── useClinicas.ts         ← useClinicas, useClinica, useAvaliacoesClinica, useAlternarFavorita, useAvaliarClinica, useApagarAvaliacao, useHorariosClinica, useAgendarConsulta (+ `CHAVE_CLINICAS`; agendar invalida as consultas do pet, o calendário e os horários)
 │   ├── useConsultas.ts        ← useConsultasPet, useConsulta, useCriarConsulta, useAtualizarConsulta, useCancelarConsulta, useDeletarConsulta (+ `CHAVE_CONSULTAS`)
-│   ├── useAutenticacao.ts     ← useCadastrar (cria a conta e já faz o login), useEntrar, useRedefinirSenha (logout fica inline — ver seção 8)
+│   ├── useAutenticacao.ts     ← useCadastrar (cria a conta e já faz o login), useEntrar, useRedefinirSenha, useEncerrarSessao (POST /logout, usado pelo SessaoContext) + `CHAVE_USUARIO_LOGADO`
 │   ├── usePerfilCompleto.ts   ← usePerfilCompleto, useSalvarPerfilCompleto (+ `CHAVE_PERFIL_COMPLETO`; a chave leva o id do usuário)
 │   ├── useBuscarCep.ts        ← useQuery reativo, chama `cepService.buscarPorCep`
 │   ├── useNotificacoes.ts     ← liga as notificações locais ao app (configuração + toque); chamado só no `_layout.tsx` raiz
@@ -179,9 +180,9 @@ src/
 │   ├── lembrete.ts              ← calcularLembreteVacina, proximaDataDoCuidado — regra pura de quando lembrar de uma vacina
 │   ├── validacao.ts             ← cpfValido, dataValida, dataExiste — usadas pelos schemas
 │   ├── remedio.ts               ← situacaoRemedio (futuro / em uso / terminado), descreverPeriodo, descreverDose
-│   ├── historico.ts             ← montarHistorico — vacinas, remédios e consultas numa linha do tempo só (em andamento → próximos → passados)
+│   ├── historico.ts             ← montarHistorico — vacinas, remédios e consultas numa linha do tempo só (em andamento → próximos → passados); resumirHistorico (contadores do topo)
 │   ├── clinica.ts               ← formatarDistancia ("850 m"/"3,2 km"), formatarNota, localDaClinica, enderecoCompleto, LABEL_TURNO
-│   ├── calendario.ts            ← celulasDoMes, periodoDoMes, somarMeses, diaInicial, agruparPorData, formatarDataISO (dia local, sem UTC), rotuloDia (Hoje/Amanhã/seg 13/10), resumirAgenda (Home)
+│   ├── calendario.ts            ← celulasDoMes, periodoDoMes, somarMeses, diaInicial, agruparPorData, formatarDataISO (dia local, sem UTC), rotuloDia (Hoje/Amanhã/seg 13/10), resumirAgenda e periodoDosProximosDias (Home)
 │   ├── assistente.ts            ← PERGUNTAS e `responder` — as respostas do Assistente a partir de vacinas, remédios e consultas do pet (função pura)
 │   ├── cabecalho.ts             ← opcoesCabecalhoNativo — cores do cabeçalho nativo do Stack ((auth) e (app)) nos temas claro e escuro
 │   ├── versao.ts                ← versaoDoApp — versão e commit (de `Constants.expoConfig.extra`) para a tela Sobre o App; sem hash, devolve null (nunca inventa); buildDoApp — número do build (fora do Expo Go) e ambiente
@@ -221,6 +222,8 @@ src/
 │   ├── agendamento.test.tsx     ← agendar: só pets da conta, dias lotados/fechados, payload, histórico do pet, horário ocupado (409)
 │   ├── calendario.test.tsx      ← contas do mês e a tela (busca do período, cuidados do dia, abrir edição, trocar de mês)
 │   └── consulta.test.tsx        ← registrar (tipo, ISO, hora), hora inválida, editar com erro da API, consultas no histórico e nos próximos cuidados
+├── testes/
+│   └── clienteDeTeste.ts        ← `criarClienteDeTeste()`: QueryClient dos testes (sem retry e sem o timer de limpeza do cache, que deixava o Jest preso)
 └── global.css                   ← @tailwind base/components/utilities
 ```
 
@@ -254,7 +257,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 
 **Tipografia — estado real (⚠️ diferente do que a documentação antiga descrevia):**
 - O `tailwind.config.js` **não define nenhum `fontFamily`** customizado.
-- O `_layout.tsx` raiz carrega via `useFonts` apenas `SpaceMono` (não usada em nenhuma tela) e os ícones do `FontAwesome`. **Fraunces e DM Sans não estão configuradas nem carregadas no projeto** — hoje o app renderiza com a fonte padrão do sistema.
+- O `_layout.tsx` raiz carrega via `useFonts` só a fonte dos ícones (`Ionicons.font`). **Fraunces e DM Sans não estão configuradas nem carregadas no projeto** — hoje o app renderiza com a fonte padrão do sistema.
 - Se/quando Fraunces (títulos) e DM Sans (interface) forem adicionadas ao design, isso exige: baixar os `.ttf`, registrar em `useFonts` no `_layout.tsx`, e estender `theme.fontFamily` no `tailwind.config.js` — só então usar `className="font-fraunces"` / `font-dmsans`. Não escreva `style={{ fontFamily: ... }}` solto em telas.
 
 **Dark mode:**
@@ -288,6 +291,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 | `CampoTexto` | Todo campo de texto controlado por `react-hook-form` |
 | `CampoSelecao` | Todo campo de seleção em botões (opções mutuamente exclusivas) |
 | `BotaoEnviar` | Todo botão de submit fixo no rodapé de um formulário (`isPending` + textos customizáveis) |
+| `TelaFormulario` | Toda tela de formulário com título grande e botão no rodapé (login, cadastro, esqueci a senha, Finalize seu cadastro) |
 | `FormPet` | Campos + botão de qualquer formulário de pet (criar/editar) |
 | `SeletorEspecie` | Seleção de espécie do pet (grid de cards com emoji) |
 | `EstadoVazio` / `EstadoErro` | Estado vazio / erro genérico em telas com dados remotos |
@@ -317,7 +321,7 @@ Além desses tokens, o projeto usa livremente a **paleta padrão do Tailwind** p
 - Duas categorias reais no projeto, ambas válidas — documente qual está sendo usada em cada novo hook:
   1. **Hooks de dados** (`usePets.ts`, `useVacinas.ts`, `useAutenticacao.ts`): só `useQuery`/`useMutation` chamando o service, sem estado local próprio. Retornam o objeto do TanStack Query como está (`data`, `isLoading`, `isError`, `refetch`, `mutate`, `isPending`).
   2. **Hooks de tela** (`hooks/perfil/useAlterarSenha.ts`, `hooks/useFormularioCuidado.ts`): concentram estado local (`useState`), validação manual e a `useMutation` de um fluxo de UI específico (ex.: o modal de troca de senha), expondo um objeto próprio (`{ senhaAtual, setSenhaAtual, salvandoSenha, alterarSenha, ... }`) em vez do formato padrão do React Query. `hooks/perfil/usePerfil.ts` **não é mais desse tipo** — desde que `/perfil` ganhou modo visualização/edição, ele voltou a ser um hook de dados: expõe `usuario`/`carregando`/`temErro`/`refazer` do `useQuery` e `salvarPerfil`/`salvando` de um `useMutation` padrão (a tela usa `react-hook-form` para o estado dos campos em edição).
-- Login, cadastro e esqueci a senha usam hooks dedicados em `useAutenticacao.ts` (`useEntrar`, `useCadastrar`, `useRedefinirSenha`); completar-perfil usa `usePerfilCompleto.ts` (`usePerfilCompleto`, `useSalvarPerfilCompleto`) — a tela só monta o `useForm`, passa `onSuccess`/`onError` pro `mutate()` e trata o resultado (`setError`, `entrar()` do `SessaoContext`, navegação). Logout **não** tem hook dedicado: chama `sair()` do `SessaoContext` direto em `perfil.tsx` (ação única, sem payload) — isso é intencional, documentado em `useAutenticacao.ts`.
+- Login, cadastro e esqueci a senha usam hooks dedicados em `useAutenticacao.ts` (`useEntrar`, `useCadastrar`, `useRedefinirSenha`); completar-perfil usa `usePerfilCompleto.ts` (`usePerfilCompleto`, `useSalvarPerfilCompleto`) — a tela só monta o `useForm`, passa `onSuccess`/`onError` pro `mutate()` e trata o resultado (`setError`, `entrar()` do `SessaoContext`, navegação). Logout: a tela chama `sair()` do `SessaoContext`, que usa `useEncerrarSessao` (POST /logout) e limpa a sessão local.
 - Invalidação de cache sempre via `useQueryClient()` dentro do hook — nunca `import { queryClient } from "@/api/queryClient"`.
 - Não contêm JSX e não navegam (sem `router.push` dentro de um hook — isso fica na tela, no `onSuccess` do `useMutation`).
 
@@ -351,13 +355,7 @@ Documentando os padrões que **de fato** existem hoje, incluindo onde eles diver
 ```
 `pets.tsx` e `PetsVazio.tsx` usam esse padrão via o componente `CabecalhoOla`; `clinica.tsx` e `assistente.tsx` escrevem o header inline (`className="px-5 pt-14 pb-5 bg-primary"`) porque não usam o resto do layout de `CabecalhoOla` (sem avatar/voltar; a de clínica tem a busca dentro do header). Ambas as formas são `className`, sem `style` hardcoded — o bug antigo de `style={{ backgroundColor: "#1F3B30" }}` (ver seção 4) já foi corrigido nessas três telas.
 
-**Header de tela de formulário:**
-```tsx
-<Text className="text-4xl font-bold text-gray-900 leading-tight">
-  Título{"\n"}da tela
-</Text>
-```
-Usado em `login.tsx`, `cadastro.tsx`, `completar-perfil.tsx`.
+**Tela de formulário (título grande + campos + botão no rodapé):** use `TelaFormulario` (`components/ui`), que já traz o teclado sem cobrir os campos, a rolagem, o título (com `\n` para quebrar), o subtítulo, o erro geral e o espaço do `BotaoEnviar`. Usado em `login.tsx`, `cadastro.tsx`, `esqueci-senha.tsx` e `completar-perfil.tsx` — a tela só passa os campos.
 
 **Estado de loading:**
 ```tsx
@@ -418,13 +416,13 @@ Extraído em `CardPet` (listagem) e `CardPetResumo` (detalhe do pet, sobrepõe o
   - **409:** e-mail que já tem conta, no cadastro (`POST /usuario`) e na edição (`PUT /usuario/{id}`) — o `cadastrar`/`atualizarUsuario` devolvem `email_taken`.
 - **Senha:** trocar logado é `PUT /usuario/me/senha` com a senha atual (a API confere; errada → 400). A edição de dados (`PUT /usuario/{id}`) **não mexe mais na senha** — antes ela gravava como senha o que viesse no corpo, e a tela de editar perfil pedia a "senha atual" para isso (podia desfazer uma troca de senha). Esqueci a senha continua em `POST /senha/redefinir`.
 - **Cadastro já entra:** `useCadastrar` faz `POST /usuario` e, em seguida, o mesmo `autenticar` do login (`POST /login` + `GET /usuario/me`); a tela chama `entrar()` e vai para `/(tabs)`. Se esse login automático falhar, a conta continua criada e a tela vai para `/cadastro-sucesso`, que leva ao `/login`.
-- O `POST /login` não devolve os dados do usuário: logo depois dele, `autenticar` busca quem entrou em `GET /usuario/me` (o backend identifica pelo cookie). Se essa chamada falhar, o login não segue — entrar sem `id` deixaria a sessão quebrada. No boot do app, o `SessaoProvider` revalida a sessão salva com o mesmo `GET /usuario/me` (`buscarUsuarioLogado`): se não responder ou for de outra conta, a sessão local é descartada; se responder, nome e e-mail são atualizados. O resto da app continua usando `buscarUsuarioPorId(id)` onde precisa do detalhe.
+- O `POST /login` não devolve os dados do usuário: logo depois dele, `autenticar` busca quem entrou em `GET /usuario/me` (o backend identifica pelo cookie). Se essa chamada falhar, o login não segue — entrar sem `id` deixaria a sessão quebrada. No boot do app, o `SessaoProvider` revalida a sessão salva com o mesmo `GET /usuario/me` (`buscarUsuarioLogado`), pelo TanStack Query (`queryClient.fetchQuery` com `CHAVE_USUARIO_LOGADO`): se não responder ou for de outra conta, a sessão local é descartada; se responder, nome e e-mail são atualizados. O resto da app continua usando `buscarUsuarioPorId(id)` onde precisa do detalhe.
 - Um `401` de qualquer chamada dispara o tratador registrado por `SessaoContext` via `definirTratadorSessaoExpirada` (em `api.ts`), que limpa o AsyncStorage e zera a sessão — o `<RotaProtegida>` reage sozinho e redireciona para `/login`.
 - Um `403` **não** é tratado como sessão inválida (é "sem permissão") — cada tela trata seu próprio `isError`/`onError`. Não adicione um interceptor global de 403.
 - **Trocar o próprio e-mail** (`PUT /usuario/{id}`) mantém a sessão: a API passa a sessão para o e-mail novo. Antes, as chamadas seguintes procuravam o e-mail antigo e respondiam "Usuário não encontrado" até um novo login.
 - Páginas protegidas usam `<RotaProtegida>` — envolve tanto `(tabs)/_layout.tsx` quanto `(app)/_layout.tsx` (todas as rotas de `/perfil`, `/completar-perfil` e `/pet/*` passam pelo guard e redirecionam pra `/login` sem sessão).
 - **Trocar de conta limpa o cache do React Query** (`queryClient.clear()` em `entrar`, `sair` e na sessão expirada). Como o `staleTime` é de 5 min (`api/queryClient.ts`), sem isso a conta nova via dados da anterior (pets, "Sua avaliação" da clínica...). Por isso as chaves de cache não precisam levar o id do usuário.
-- Logout chama `sair()` do `SessaoContext`, que tenta `POST /logout` (pode não existir no backend ainda) e sempre limpa o AsyncStorage local, independente do resultado.
+- Logout chama `sair()` do `SessaoContext`, que faz `POST /logout` pelo `useEncerrarSessao` (TanStack Query) e sempre limpa o AsyncStorage local e o cache, mesmo se a API falhar. Nenhuma chamada HTTP do app fica fora do TanStack Query.
 
 ---
 

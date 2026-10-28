@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { criarClienteDeTeste } from "@/testes/clienteDeTeste";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
@@ -10,6 +11,7 @@ import {
   diaInicial,
   mesDe,
   periodoDoMes,
+  periodoDosProximosDias,
   somarMeses,
 } from "@/utils/calendario";
 import { router } from "expo-router";
@@ -26,11 +28,18 @@ jest.mock("expo-router", () => ({
 const mockGet = api.get as jest.Mock;
 
 function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const queryClient = criarClienteDeTeste();
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
 describe("contas do calendário", () => {
+  it("agenda da Home: de hoje até daqui a 14 dias, virando o mês", () => {
+    expect(periodoDosProximosDias(14, new Date(2026, 9, 25, 15, 0))).toEqual({
+      inicio: "2026-10-25",
+      fim: "2026-11-08",
+    });
+  });
+
   it("outubro de 2026 começa numa quinta: 4 espaços antes do dia 1", () => {
     const celulas = celulasDoMes({ ano: 2026, mes: 9 });
     expect(celulas.slice(0, 5)).toEqual([null, null, null, null, "2026-10-01"]);

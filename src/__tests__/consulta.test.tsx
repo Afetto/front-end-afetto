@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { criarClienteDeTeste } from "@/testes/clienteDeTeste";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
@@ -32,9 +33,7 @@ function consulta(dados: Partial<Consulta> & { id: string; data: string }): Cons
 }
 
 function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
+  const queryClient = criarClienteDeTeste();
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 

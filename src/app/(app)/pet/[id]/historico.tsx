@@ -7,7 +7,7 @@ import { usePet } from "@/hooks/usePets";
 import { useDeletarRemedio, useRemediosPet } from "@/hooks/useRemedios";
 import { useDeletarVacina, useVacinasPet } from "@/hooks/useVacinas";
 import { converterDataParaBR } from "@/utils/data";
-import { EventoHistorico, montarHistorico, SituacaoEvento } from "@/utils/historico";
+import { EventoHistorico, montarHistorico, resumirHistorico, SituacaoEvento } from "@/utils/historico";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useColorScheme } from "nativewind";
@@ -112,8 +112,7 @@ export default function TelaHistorico() {
   const eventos = montarHistorico(vacinas.data ?? [], remedios.data ?? [], consultas.data ?? []).filter(
     (evento) => passaNoFiltro(evento, filtro)
   );
-  const totalConcluidos = eventos.filter((evento) => evento.situacao === "passado").length;
-  const totalAtivos = eventos.length - totalConcluidos;
+  const { concluidos: totalConcluidos, ativos: totalAtivos } = resumirHistorico(eventos);
 
   const textoVazio = {
     todos: "Nenhum cuidado cadastrado.",

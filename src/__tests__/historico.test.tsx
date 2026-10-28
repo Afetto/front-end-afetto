@@ -1,9 +1,11 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { criarClienteDeTeste } from "@/testes/clienteDeTeste";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
 import { api } from "@/api/api";
 import TelaHistorico from "@/app/(app)/pet/[id]/historico";
+import { EventoHistorico, resumirHistorico } from "@/utils/historico";
 
 jest.mock("@/api/api", () => ({
   api: { get: jest.fn(), delete: jest.fn(), patch: jest.fn() },
@@ -21,9 +23,7 @@ jest.mock("@/context/SessaoContext", () => ({
 const mockGet = api.get as jest.Mock;
 
 function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+  const queryClient = criarClienteDeTeste();
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
@@ -106,5 +106,17 @@ describe("TelaHistorico — vacinas, remédios e consultas na mesma linha do tem
     expect(screen.getAllByText("Editar")).toHaveLength(1);
     expect(screen.getAllByText("Cancelar")).toHaveLength(1);
     expect(screen.getAllByText("Excluir")).toHaveLength(2);
+  });
+});
+
+describe("resumirHistorico — contadores do topo", () => {
+  it("separa os concluídos (passados) dos em uso ou próximos", () => {
+    const evento = (situacao: EventoHistorico["situacao"]) => ({ situacao }) as EventoHistorico;
+
+    expect(resumirHistorico([evento("passado"), evento("atual"), evento("futuro"), evento("passado")])).toEqual({
+      concluidos: 2,
+      ativos: 2,
+    });
+    expect(resumirHistorico([])).toEqual({ concluidos: 0, ativos: 0 });
   });
 });

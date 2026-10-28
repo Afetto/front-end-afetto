@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { criarClienteDeTeste } from "@/testes/clienteDeTeste";
 import { renderHook, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
@@ -38,9 +39,7 @@ const DADOS = {
 };
 
 function criarWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
+  const queryClient = criarClienteDeTeste();
   // O pet já foi carregado pela tela anterior: o nome vem do cache.
   queryClient.setQueryData(["pets", "pet-1"], {
     id: "pet-1",
