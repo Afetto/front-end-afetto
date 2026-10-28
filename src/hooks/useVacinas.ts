@@ -1,26 +1,11 @@
 import { CHAVE_CALENDARIO } from "@/hooks/useCalendario";
-import { CHAVE_CONSULTA_PETS } from "@/hooks/usePets";
-import { Pet } from "@/schemas/pet.schema";
+import { nomeDoPetEmCache } from "@/hooks/usePets";
 import { DadosVacina } from "@/schemas/vacina.schema";
 import { notificacaoService } from "@/services/notificacao.service";
 import { vacinaService } from "@/services/vacina.service";
-import {
-  QueryClient,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const QUERY_KEY = ["vacinas"];
-
-/** Nome do pet a partir do que já está em cache (detalhe ou lista) — sem requisição nova. */
-function nomeDoPetEmCache(queryClient: QueryClient, idPet: string): string | undefined {
-  const detalhe = queryClient.getQueryData<Pet>([...CHAVE_CONSULTA_PETS, idPet]);
-  if (detalhe?.nome) return detalhe.nome;
-
-  const lista = queryClient.getQueryData<Pet[]>(CHAVE_CONSULTA_PETS);
-  return lista?.find((pet) => pet.id === idPet)?.nome;
-}
 
 // Sobre os lembretes abaixo (`notificacaoService`): a notificação local é um
 // efeito secundário de salvar/excluir a vacina. Ela roda sem bloquear o
@@ -81,6 +66,9 @@ export function useAtualizarVacina(idPet: string) {
       vacinaService.atualizar(id, dados),
     onSuccess: (_vacina, { id, dados }) => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, idPet] });
+      // A tela de edição lê a vacina pelo detalhe: sem isso, ao abrir "Editar"
+      // de novo ela mostrava os dados antigos (cache de 5 min)
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, "detalhe", id] });
       queryClient.invalidateQueries({ queryKey: [CHAVE_CALENDARIO] });
 
       // Reagenda com as datas novas (ou só cancela, se não sobrou data futura).

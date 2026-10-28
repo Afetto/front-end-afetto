@@ -32,7 +32,7 @@ Aplicativo mobile (React Native + Expo) do **Challenge FIAP 2026**, em parceria 
 **A solução.** O Afetto reúne em um só lugar a vida de saúde do pet e transforma isso em cuidado contínuo e preventivo:
 
 - **Histórico completo** de vacinas, remédios e consultas de cada pet, com calendário mês a mês.
-- **Lembrete de vacina** no próprio celular, na véspera da aplicação ou da próxima dose.
+- **Lembretes** no próprio celular de vacinas, remédios e consultas, na véspera de cada cuidado.
 - **Clínicas parceiras** perto do tutor, com avaliações, favoritas e **agendamento** em horários livres de verdade.
 - **Assistente** que responde, com os dados reais do pet, perguntas como "quando é a próxima vacina?" ou "tem remédio para dar hoje?".
 
@@ -72,14 +72,15 @@ Aplicativo mobile (React Native + Expo) do **Challenge FIAP 2026**, em parceria 
 
 ---
 
-## 🔔 Notificação local: lembrete de vacina
+## 🔔 Notificações locais: lembretes de cuidados
 
 | | |
 |---|---|
-| **Evento que dispara** | Salvar uma vacina (aplicação agendada ou com próxima dose). Editar reagenda; excluir a vacina ou o pet cancela. |
-| **Quando aparece** | Na véspera do cuidado, às 9h. Se a véspera já passou, no dia, às 9h; se já passou das 9h do dia, na hora. Quando o lembrete fica para depois, o app confirma na hora com "Lembrete agendado". |
+| **Evento que dispara** | Salvar um cuidado com data futura: **vacina** (aplicação agendada ou próxima dose), **remédio** (dia em que o tratamento começa) ou **consulta** (registrada no pet ou agendada numa clínica parceira). Editar reagenda; excluir o cuidado, cancelar a consulta ou excluir o pet cancela. |
+| **Quando aparece** | Na hora, a confirmação **"Lembrete agendado"** com o dia do aviso. Depois, o lembrete na véspera do cuidado, às 9h. Se a véspera já passou, no dia, às 9h; se já passou das 9h do dia, na hora. |
 | **Ao tocar** | Abre o **histórico do pet** (com o app aberto, em segundo plano ou fechado). |
-| **Permissão** | Pedida na primeira vez que há um lembrete para agendar. Se negada, a vacina é salva normalmente. |
+| **Permissão** | Pedida na primeira vez que há um lembrete para agendar. Se negada, o cuidado é salvo normalmente. |
+| **Sem lembrete** | Cuidado sem data futura é só registro: vacina aplicada hoje ou antes sem próxima dose, remédio que já começou, consulta que já passou ou foi cancelada. |
 
 Feita com `expo-notifications`, agendada no próprio aparelho (não depende de servidor de push).
 
@@ -168,7 +169,7 @@ Escaneie o QR code com o Expo Go ou tecle `a` para abrir no emulador Android. O 
 ## 🧪 Testes
 
 ```bash
-npx jest          # 34 suítes, 202 testes (HTTP mockado; services, hooks e telas rodam de verdade)
+npx jest          # 35 suítes, 217 testes (HTTP mockado; services, hooks e telas rodam de verdade)
 npx tsc --noEmit  # checagem de tipos, incluindo as rotas
 ```
 

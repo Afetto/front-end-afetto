@@ -1,6 +1,6 @@
 import { normalizarData } from "@/utils/data";
 
-/** Hora do dia (no fuso do aparelho) em que os lembretes de vacina são entregues. */
+/** Hora do dia (no fuso do aparelho) em que os lembretes de cuidados são entregues. */
 export const HORA_LEMBRETE = 9;
 
 type DatasVacina = {
@@ -8,8 +8,8 @@ type DatasVacina = {
   proximaDose?: string; // YYYY-MM-DD
 };
 
-export type LembreteVacina = {
-  /** Dia do cuidado: aplicação agendada ou próxima dose. */
+export type Lembrete = {
+  /** Dia do cuidado: vacina (aplicação agendada ou próxima dose), início do remédio ou consulta. */
   dataCuidado: Date;
   /** Quando a notificação deve aparecer. `null` = imediatamente. */
   momento: Date | null;
@@ -51,19 +51,12 @@ function noHorarioDoLembrete(dia: Date, deslocamentoEmDias: number): Date {
 }
 
 /**
- * Decide se e quando lembrar o tutor de uma vacina. Um lembrete por vacina:
+ * Decide quando lembrar o tutor de um cuidado no dia `dataCuidado`. Um lembrete por cuidado:
  * 1. na véspera do cuidado, às 9h;
  * 2. se a véspera às 9h já passou, no dia do cuidado, às 9h;
  * 3. se o cuidado é hoje e as 9h já passaram, imediatamente.
- * Sem data futura, não há lembrete (`null`).
  */
-export function calcularLembreteVacina(
-  vacina: DatasVacina,
-  agora: Date
-): LembreteVacina | null {
-  const dataCuidado = proximaDataDoCuidado(vacina, agora);
-  if (!dataCuidado) return null;
-
+export function calcularLembrete(dataCuidado: Date, agora: Date): Lembrete {
   const naVespera = noHorarioDoLembrete(dataCuidado, -1);
   if (naVespera.getTime() > agora.getTime()) {
     return { dataCuidado, momento: naVespera, quando: "amanha" };
@@ -75,4 +68,42 @@ export function calcularLembreteVacina(
   }
 
   return { dataCuidado, momento: null, quando: "hoje" };
+}
+
+/** Lembrete de vacina: a data mais próxima entre a aplicação agendada e a próxima dose. Sem data futura, `null`. */
+export function calcularLembreteVacina(vacina: DatasVacina, agora: Date): Lembrete | null {
+  const dataCuidado = proximaDataDoCuidado(vacina, agora);
+  return dataCuidado ? calcularLembrete(dataCuidado, agora) : null;
+}
+
+/**
+ * Lembrete de remédio: o dia em que o tratamento começa. Tratamento que já
+ * começou não tem o que lembrar (`null`).
+ */
+export function calcularLembreteRemedio(remedio: { dataInicio: string }, agora: Date): Lembrete | null {
+  const inicio = normalizarData(remedio.dataInicio);
+  if (Number.isNaN(inicio.getTime()) || inicio.getTime() < normalizarData(agora).getTime()) return null;
+  return calcularLembrete(inicio, agora);
+}
+
+/**
+ * Lembrete de consulta: o dia dela. Consulta cancelada, de um dia que já
+ * passou ou de hoje num horário que já passou é só registro (`null`).
+ */
+export function calcularLembreteConsulta(
+  consulta: { data: string; hora?: string; cancelada?: boolean },
+  agora: Date
+): Lembrete | null {
+  if (consulta.cancelada) return null;
+  const dia = normalizarData(consulta.data);
+  if (Number.isNaN(dia.getTime()) || dia.getTime() < normalizarData(agora).getTime()) return null;
+
+  const horario = /^(\d{2}):(\d{2})/.exec(consulta.hora ?? "");
+  if (horario) {
+    const momentoDaConsulta = new Date(dia);
+    momentoDaConsulta.setHours(Number(horario[1]), Number(horario[2]), 0, 0);
+    if (momentoDaConsulta.getTime() <= agora.getTime()) return null;
+  }
+
+  return calcularLembrete(dia, agora);
 }

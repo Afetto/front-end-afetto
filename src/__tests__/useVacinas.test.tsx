@@ -38,8 +38,10 @@ const DADOS = {
   idPet: "pet-1",
 };
 
+let queryClient: ReturnType<typeof criarClienteDeTeste>;
+
 function criarWrapper() {
-  const queryClient = criarClienteDeTeste();
+  queryClient = criarClienteDeTeste();
   // O pet já foi carregado pela tela anterior: o nome vem do cache.
   queryClient.setQueryData(["pets", "pet-1"], {
     id: "pet-1",
@@ -88,6 +90,19 @@ describe("hooks de vacina — lembretes", () => {
     expect(mockAgendar).toHaveBeenCalledWith(
       expect.objectContaining({ idVacina: "vac-1", proximaDose: "2026-11-20" })
     );
+  });
+
+  it("editar uma vacina descarta o detalhe em cache (a tela de edição não reabre com o nome antigo)", async () => {
+    mockPut.mockResolvedValueOnce({ data: { id: "vac-1", ...DADOS, nomeVacina: "V10 atualizada" } });
+
+    const { result } = renderHook(() => useAtualizarVacina("pet-1"), {
+      wrapper: criarWrapper(),
+    });
+    queryClient.setQueryData(["vacinas", "detalhe", "vac-1"], { id: "vac-1", ...DADOS });
+    result.current.mutate({ id: "vac-1", dados: { ...DADOS, nomeVacina: "V10 atualizada" } });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(queryClient.getQueryState(["vacinas", "detalhe", "vac-1"])?.isInvalidated).toBe(true);
   });
 
   it("excluir uma vacina cancela o lembrete dela", async () => {

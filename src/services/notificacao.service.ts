@@ -1,7 +1,9 @@
 import {
+  calcularLembreteConsulta,
+  calcularLembreteRemedio,
   calcularLembreteVacina,
   HORA_LEMBRETE,
-  LembreteVacina,
+  Lembrete,
 } from "@/utils/lembrete";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
@@ -10,26 +12,55 @@ import { Platform } from "react-native";
 // Este é o único arquivo que fala com `expo-notifications` para agendar,
 // cancelar e pedir permissão — telas e hooks de dados usam só as funções daqui.
 
+// O id do canal continua o da primeira versão (só de vacina): trocar criaria
+// um canal novo nos aparelhos que já têm o app.
 const CANAL_LEMBRETES = "lembretes-vacina";
-const TIPO_LEMBRETE_VACINA = "lembrete-vacina";
+
+type TipoCuidado = "vacina" | "remedio" | "consulta";
+
+/** `data.tipo` das notificações: "lembrete-vacina", "lembrete-remedio" ou "lembrete-consulta". */
+function tipoDoLembrete(cuidado: TipoCuidado): string {
+  return `lembrete-${cuidado}`;
+}
+
+function ehLembrete(tipo: unknown): boolean {
+  return typeof tipo === "string" && tipo.startsWith("lembrete-");
+}
 
 // `expo-notifications` não agenda notificações locais no navegador: na web
 // todas as funções abaixo viram no-op em vez de lançar erro.
 const DISPONIVEL = Platform.OS !== "web";
 
-export type DadosLembreteVacina = {
-  /** Id da vacina na API — vira o identificador do lembrete, para reagendar/cancelar depois. */
-  idVacina?: string;
+type DadosComuns = {
   idPet: string;
-  nomeVacina: string;
   /** Opcional: sem ele o texto sai sem o nome do pet. */
   nomePet?: string;
+};
+
+export type DadosLembreteVacina = DadosComuns & {
+  /** Id da vacina na API — vira o identificador do lembrete, para reagendar/cancelar depois. */
+  idVacina?: string;
+  nomeVacina: string;
   dataAplicacao: string; // YYYY-MM-DD
   proximaDose?: string; // YYYY-MM-DD
 };
 
-function identificadorDoLembrete(idVacina: string): string {
-  return `vacina-${idVacina}`;
+export type DadosLembreteRemedio = DadosComuns & {
+  idRemedio?: string;
+  nomeRemedio: string;
+  dataInicio: string; // YYYY-MM-DD
+};
+
+export type DadosLembreteConsulta = DadosComuns & {
+  idConsulta?: string;
+  /** Motivo da consulta (ex.: "Check-up anual"). */
+  descricao: string;
+  data: string; // YYYY-MM-DD
+  hora?: string; // HH:MM
+};
+
+function identificadorDoLembrete(cuidado: TipoCuidado, id: string): string {
+  return `${cuidado}-${id}`;
 }
 
 function doisDigitos(valor: number): string {
@@ -52,7 +83,7 @@ function gatilhoImediato(): Notifications.NotificationTriggerInput {
 async function criarCanal(): Promise<void> {
   if (Platform.OS !== "android") return;
   await Notifications.setNotificationChannelAsync(CANAL_LEMBRETES, {
-    name: "Lembretes de vacina",
+    name: "Lembretes de cuidados",
     importance: Notifications.AndroidImportance.HIGH,
   });
 }
@@ -67,6 +98,76 @@ async function garantirPermissao(): Promise<boolean> {
 
   const resposta = await Notifications.requestPermissionsAsync();
   return resposta.granted;
+}
+
+type LembreteDoCuidado = DadosComuns & {
+  cuidado: TipoCuidado;
+  id?: string;
+  /** Nome que aparece no aviso (vacina, remédio ou motivo da consulta). */
+  nome: string;
+  /** Texto do aviso a partir de "amanhã"/"hoje" (ex.: "V10 é amanhã"). */
+  titulo: (quando: string) => string;
+  lembrete: Lembrete | null;
+};
+
+/**
+ * Agenda (ou reagenda) o lembrete de um cuidado. Sempre começa cancelando o
+ * anterior do mesmo cuidado: se a data foi editada para o passado, ele
+ * precisa sumir mesmo sem um novo. Quando o lembrete fica para depois,
+ * dispara também uma confirmação imediata dizendo o dia do aviso.
+ */
+async function agendar(dados: LembreteDoCuidado): Promise<Lembrete | null> {
+  if (!DISPONIVEL) return null;
+
+  if (dados.id) {
+    await Notifications.cancelScheduledNotificationAsync(identificadorDoLembrete(dados.cuidado, dados.id));
+  }
+
+  const { lembrete } = dados;
+  if (!lembrete) return null;
+
+  if (!(await garantirPermissao())) return null;
+
+  // `data` viaja com a notificação: é o que diz qual pet abrir no toque.
+  const data = { tipo: tipoDoLembrete(dados.cuidado), idPet: dados.idPet };
+  const quando = lembrete.quando === "amanha" ? "amanhã" : "hoje";
+
+  await Notifications.scheduleNotificationAsync({
+    identifier: dados.id ? identificadorDoLembrete(dados.cuidado, dados.id) : undefined,
+    content: {
+      title: comNomeDoPet(dados.nomePet, dados.titulo(quando)),
+      body: "Toque para ver o histórico de cuidados.",
+      data,
+    },
+    trigger: lembrete.momento
+      ? {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: lembrete.momento,
+          channelId: CANAL_LEMBRETES,
+        }
+      : gatilhoImediato(),
+  });
+
+  if (lembrete.momento) {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Lembrete agendado",
+        body: comNomeDoPet(
+          dados.nomePet,
+          `${dados.nome} — aviso em ${formatarDiaMes(lembrete.momento)} às ${HORA_LEMBRETE}h.`
+        ),
+        data,
+      },
+      trigger: gatilhoImediato(),
+    });
+  }
+
+  return lembrete;
+}
+
+async function cancelar(cuidado: TipoCuidado, id: string): Promise<void> {
+  if (!DISPONIVEL) return;
+  await Notifications.cancelScheduledNotificationAsync(identificadorDoLembrete(cuidado, id));
 }
 
 export const notificacaoService = {
@@ -87,87 +188,57 @@ export const notificacaoService = {
     await criarCanal();
   },
 
-  /**
-   * Agenda (ou reagenda) o lembrete de uma vacina. Regra de quando lembrar em
-   * `utils/lembrete.ts`. Devolve o lembrete criado, ou `null` se não havia o
-   * que lembrar ou se o usuário negou a permissão.
-   *
-   * Quando o lembrete fica para depois, dispara também uma confirmação
-   * imediata dizendo o dia do aviso.
-   */
-  agendarLembreteVacina: async (
-    dados: DadosLembreteVacina,
-    agora: Date = new Date()
-  ): Promise<LembreteVacina | null> => {
-    if (!DISPONIVEL) return null;
+  // Agendar devolve o lembrete criado, ou `null` se não havia o que lembrar
+  // ou se o usuário negou a permissão.
+  /** Vacina: lembra da aplicação agendada ou da próxima dose (regra em `utils/lembrete.ts`). */
+  agendarLembreteVacina: (dados: DadosLembreteVacina, agora: Date = new Date()): Promise<Lembrete | null> =>
+    agendar({
+      ...dados,
+      cuidado: "vacina",
+      id: dados.idVacina,
+      nome: dados.nomeVacina,
+      titulo: (quando) => `${dados.nomeVacina} é ${quando}`,
+      lembrete: calcularLembreteVacina(dados, agora),
+    }),
 
-    // Sempre começa limpando o lembrete anterior da mesma vacina: se a data
-    // foi editada para o passado, ele precisa sumir mesmo sem um novo.
-    if (dados.idVacina) {
-      await Notifications.cancelScheduledNotificationAsync(
-        identificadorDoLembrete(dados.idVacina)
-      );
-    }
+  /** Remédio: lembra do dia em que o tratamento começa. */
+  agendarLembreteRemedio: (dados: DadosLembreteRemedio, agora: Date = new Date()): Promise<Lembrete | null> =>
+    agendar({
+      ...dados,
+      cuidado: "remedio",
+      id: dados.idRemedio,
+      nome: dados.nomeRemedio,
+      titulo: (quando) => `${dados.nomeRemedio} começa ${quando}`,
+      lembrete: calcularLembreteRemedio(dados, agora),
+    }),
 
-    const lembrete = calcularLembreteVacina(dados, agora);
-    if (!lembrete) return null;
-
-    if (!(await garantirPermissao())) return null;
-
-    // `data` viaja com a notificação: é o que diz qual pet abrir no toque.
-    const data = { tipo: TIPO_LEMBRETE_VACINA, idPet: dados.idPet };
-    const quando = lembrete.quando === "amanha" ? "amanhã" : "hoje";
-
-    await Notifications.scheduleNotificationAsync({
-      identifier: dados.idVacina ? identificadorDoLembrete(dados.idVacina) : undefined,
-      content: {
-        title: comNomeDoPet(dados.nomePet, `${dados.nomeVacina} é ${quando}`),
-        body: "Toque para ver o histórico de cuidados.",
-        data,
-      },
-      trigger: lembrete.momento
-        ? {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: lembrete.momento,
-            channelId: CANAL_LEMBRETES,
-          }
-        : gatilhoImediato(),
-    });
-
-    if (lembrete.momento) {
-      const dia = formatarDiaMes(lembrete.momento);
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Lembrete agendado",
-          body: comNomeDoPet(
-            dados.nomePet,
-            `${dados.nomeVacina} — aviso em ${dia} às ${HORA_LEMBRETE}h.`
-          ),
-          data,
-        },
-        trigger: gatilhoImediato(),
-      });
-    }
-
-    return lembrete;
-  },
+  /** Consulta: lembra na véspera (ou no dia) da consulta agendada. */
+  agendarLembreteConsulta: (dados: DadosLembreteConsulta, agora: Date = new Date()): Promise<Lembrete | null> =>
+    agendar({
+      ...dados,
+      cuidado: "consulta",
+      id: dados.idConsulta,
+      nome: dados.descricao,
+      titulo: (quando) => `${dados.descricao} é ${quando}${dados.hora ? ` às ${dados.hora}` : ""}`,
+      lembrete: calcularLembreteConsulta(dados, agora),
+    }),
 
   /** Cancela o lembrete de uma vacina excluída. */
-  cancelarLembreteVacina: async (idVacina: string): Promise<void> => {
-    if (!DISPONIVEL) return;
-    await Notifications.cancelScheduledNotificationAsync(identificadorDoLembrete(idVacina));
-  },
+  cancelarLembreteVacina: (idVacina: string): Promise<void> => cancelar("vacina", idVacina),
 
-  /** Cancela os lembretes de todas as vacinas de um pet excluído. */
+  /** Cancela o lembrete de um remédio excluído. */
+  cancelarLembreteRemedio: (idRemedio: string): Promise<void> => cancelar("remedio", idRemedio),
+
+  /** Cancela o lembrete de uma consulta cancelada ou excluída. */
+  cancelarLembreteConsulta: (idConsulta: string): Promise<void> => cancelar("consulta", idConsulta),
+
+  /** Cancela os lembretes de todos os cuidados de um pet excluído. */
   cancelarLembretesDoPet: async (idPet: string): Promise<void> => {
     if (!DISPONIVEL) return;
 
     const agendadas = await Notifications.getAllScheduledNotificationsAsync();
     const doPet = agendadas.filter(
-      (item) =>
-        item.content.data?.tipo === TIPO_LEMBRETE_VACINA &&
-        item.content.data?.idPet === idPet
+      (item) => ehLembrete(item.content.data?.tipo) && item.content.data?.idPet === idPet
     );
 
     await Promise.all(
@@ -178,7 +249,7 @@ export const notificacaoService = {
   /** Lê, de um toque em notificação, o pet cujo histórico deve abrir (ou `null`). */
   idPetDoToque: (resposta: Notifications.NotificationResponse): string | null => {
     const data = resposta.notification.request.content.data;
-    if (data?.tipo !== TIPO_LEMBRETE_VACINA) return null;
+    if (!ehLembrete(data?.tipo)) return null;
     return typeof data.idPet === "string" ? data.idPet : null;
   },
 

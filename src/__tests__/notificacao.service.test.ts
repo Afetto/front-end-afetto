@@ -138,6 +138,44 @@ describe("notificacaoService.agendarLembreteVacina", () => {
   });
 });
 
+describe("notificacaoService — remédio e consulta", () => {
+  it("remédio: lembra do início do tratamento, com confirmação na hora", async () => {
+    await notificacaoService.agendarLembreteRemedio(
+      { idRemedio: "rem-1", idPet: "pet-1", nomePet: "Jordan", nomeRemedio: "Amoxicilina", dataInicio: "2026-10-10" },
+      AGORA
+    );
+
+    expect(mockCancelar).toHaveBeenCalledWith("remedio-rem-1");
+    const [lembrete] = mockAgendar.mock.calls[0];
+    expect(lembrete.identifier).toBe("remedio-rem-1");
+    expect(lembrete.content.title).toBe("Jordan: Amoxicilina começa amanhã");
+    expect(lembrete.content.data).toEqual({ tipo: "lembrete-remedio", idPet: "pet-1" });
+    expect(lembrete.trigger.date).toEqual(new Date(2026, 9, 9, 9, 0));
+    expect(mockAgendar.mock.calls[1][0].content.body).toBe("Jordan: Amoxicilina — aviso em 09/10 às 9h.");
+  });
+
+  it("consulta: lembra na véspera, com o horário no texto", async () => {
+    await notificacaoService.agendarLembreteConsulta(
+      { idConsulta: "con-1", idPet: "pet-1", nomePet: "Jordan", descricao: "Check-up", data: "2026-10-12", hora: "15:00" },
+      AGORA
+    );
+
+    const [lembrete] = mockAgendar.mock.calls[0];
+    expect(lembrete.identifier).toBe("consulta-con-1");
+    expect(lembrete.content.title).toBe("Jordan: Check-up é amanhã às 15:00");
+    expect(lembrete.content.data).toEqual({ tipo: "lembrete-consulta", idPet: "pet-1" });
+    expect(lembrete.trigger.date).toEqual(new Date(2026, 9, 11, 9, 0));
+  });
+
+  it("cancela o lembrete de um remédio excluído e de uma consulta cancelada", async () => {
+    await notificacaoService.cancelarLembreteRemedio("rem-9");
+    await notificacaoService.cancelarLembreteConsulta("con-9");
+
+    expect(mockCancelar).toHaveBeenCalledWith("remedio-rem-9");
+    expect(mockCancelar).toHaveBeenCalledWith("consulta-con-9");
+  });
+});
+
 describe("notificacaoService — cancelamento e toque", () => {
   it("cancela o lembrete de uma vacina excluída", async () => {
     await notificacaoService.cancelarLembreteVacina("vac-9");
@@ -145,17 +183,19 @@ describe("notificacaoService — cancelamento e toque", () => {
     expect(mockCancelar).toHaveBeenCalledWith("vacina-vac-9");
   });
 
-  it("cancela só os lembretes do pet excluído", async () => {
+  it("cancela só os lembretes (vacina, remédio e consulta) do pet excluído", async () => {
     mockListarAgendadas.mockResolvedValue([
       { identifier: "vacina-a", content: { data: { tipo: "lembrete-vacina", idPet: "pet-1" } } },
       { identifier: "vacina-b", content: { data: { tipo: "lembrete-vacina", idPet: "pet-2" } } },
+      { identifier: "remedio-c", content: { data: { tipo: "lembrete-remedio", idPet: "pet-1" } } },
       { identifier: "outra", content: { data: null } },
     ]);
 
     await notificacaoService.cancelarLembretesDoPet("pet-1");
 
-    expect(mockCancelar).toHaveBeenCalledTimes(1);
+    expect(mockCancelar).toHaveBeenCalledTimes(2);
     expect(mockCancelar).toHaveBeenCalledWith("vacina-a");
+    expect(mockCancelar).toHaveBeenCalledWith("remedio-c");
   });
 
   it("lê do toque qual pet abrir, e ignora notificações de outro tipo", () => {
@@ -165,6 +205,9 @@ describe("notificacaoService — cancelamento e toque", () => {
     expect(
       notificacaoService.idPetDoToque(toque({ tipo: "lembrete-vacina", idPet: "pet-1" }))
     ).toBe("pet-1");
+    expect(
+      notificacaoService.idPetDoToque(toque({ tipo: "lembrete-consulta", idPet: "pet-2" }))
+    ).toBe("pet-2");
     expect(notificacaoService.idPetDoToque(toque({ tipo: "outro", idPet: "pet-1" }))).toBeNull();
     expect(notificacaoService.idPetDoToque(toque(null))).toBeNull();
   });

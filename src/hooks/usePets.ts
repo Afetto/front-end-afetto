@@ -1,12 +1,24 @@
-import { DadosCadastroPet } from "@/schemas/pet.schema";
+import { DadosCadastroPet, Pet } from "@/schemas/pet.schema";
 import { notificacaoService } from "@/services/notificacao.service";
 import { petService } from "@/services/pet.service";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const QUERY_KEY = ["pets"];
 
 /** Chave do cache de pets, para outros hooks lerem o que já foi carregado (ex.: nome do pet). */
 export const CHAVE_CONSULTA_PETS = QUERY_KEY;
+
+/**
+ * Nome do pet a partir do que já está em cache (detalhe ou lista), sem
+ * requisição nova. Usado nos textos dos lembretes de vacina, remédio e consulta.
+ */
+export function nomeDoPetEmCache(queryClient: QueryClient, idPet: string): string | undefined {
+  const detalhe = queryClient.getQueryData<Pet>([...QUERY_KEY, idPet]);
+  if (detalhe?.nome) return detalhe.nome;
+
+  const lista = queryClient.getQueryData<Pet[]>(QUERY_KEY);
+  return lista?.find((pet) => pet.id === idPet)?.nome;
+}
 
 // ─── LEITURA ─────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,9 @@
 import { CHAVE_CALENDARIO } from "@/hooks/useCalendario";
 import { CHAVE_CONSULTAS } from "@/hooks/useConsultas";
+import { nomeDoPetEmCache } from "@/hooks/usePets";
 import { FormAgendamento, FormAvaliacao } from "@/schemas/clinica.schema";
 import { clinicaService } from "@/services/clinica.service";
+import { notificacaoService } from "@/services/notificacao.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Hooks de dados das clínicas parceiras, favoritas e avaliações
@@ -90,10 +92,22 @@ export function useAgendarConsulta(idClinica: string) {
 
   return useMutation({
     mutationFn: (dados: FormAgendamento) => clinicaService.agendar(idClinica, dados),
-    onSuccess: (_consulta, dados) => {
+    onSuccess: (consulta, dados) => {
       queryClient.invalidateQueries({ queryKey: [CHAVE_CONSULTAS, dados.idPet] });
       queryClient.invalidateQueries({ queryKey: [CHAVE_CALENDARIO] });
       queryClient.invalidateQueries({ queryKey: [CHAVE_HORARIOS, idClinica] });
+
+      // Lembrete da consulta agendada (efeito secundário: falha não vira erro)
+      notificacaoService
+        .agendarLembreteConsulta({
+          idConsulta: consulta?.id || undefined,
+          idPet: dados.idPet,
+          nomePet: nomeDoPetEmCache(queryClient, dados.idPet),
+          descricao: dados.descricao?.trim() || "Consulta",
+          data: dados.data,
+          hora: dados.hora,
+        })
+        .catch(() => {});
     },
     // Horário ocupado por outra pessoa: a lista de livres precisa ser buscada de novo
     onError: () => queryClient.invalidateQueries({ queryKey: [CHAVE_HORARIOS, idClinica] }),

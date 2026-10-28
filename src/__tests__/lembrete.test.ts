@@ -1,4 +1,9 @@
-import { calcularLembreteVacina, proximaDataDoCuidado } from "@/utils/lembrete";
+import {
+  calcularLembreteConsulta,
+  calcularLembreteRemedio,
+  calcularLembreteVacina,
+  proximaDataDoCuidado,
+} from "@/utils/lembrete";
 
 // "Agora" fixo: quarta, 07/10/2026, 20h.
 const AGORA_NOITE = new Date(2026, 9, 7, 20, 0);
@@ -102,5 +107,45 @@ describe("calcularLembreteVacina", () => {
     expect(
       calcularLembreteVacina({ dataAplicacao: "sem data", proximaDose: "??" }, AGORA_NOITE)
     ).toBeNull();
+  });
+});
+
+describe("calcularLembreteRemedio — início do tratamento", () => {
+  it("lembra na véspera às 9h quando o tratamento começa daqui a alguns dias", () => {
+    const lembrete = calcularLembreteRemedio({ dataInicio: "2026-10-10" }, AGORA_NOITE);
+
+    expect(lembrete?.quando).toBe("amanha");
+    expect(diaEHora(lembrete?.momento)).toEqual({ dia: 9, mes: 10, hora: 9, minuto: 0 });
+  });
+
+  it("avisa na hora quando o tratamento começa hoje e as 9h já passaram", () => {
+    const lembrete = calcularLembreteRemedio({ dataInicio: "2026-10-07" }, AGORA_NOITE);
+
+    expect(lembrete).toMatchObject({ momento: null, quando: "hoje" });
+  });
+
+  it("não lembra de tratamento que já começou", () => {
+    expect(calcularLembreteRemedio({ dataInicio: "2026-10-01" }, AGORA_NOITE)).toBeNull();
+  });
+});
+
+describe("calcularLembreteConsulta — dia da consulta", () => {
+  it("lembra na véspera às 9h de uma consulta agendada", () => {
+    const lembrete = calcularLembreteConsulta({ data: "2026-10-12", hora: "15:00" }, AGORA_NOITE);
+
+    expect(lembrete?.quando).toBe("amanha");
+    expect(diaEHora(lembrete?.momento)).toEqual({ dia: 11, mes: 10, hora: 9, minuto: 0 });
+  });
+
+  it("avisa na hora uma consulta de hoje que ainda vai acontecer", () => {
+    const lembrete = calcularLembreteConsulta({ data: "2026-10-07", hora: "21:30" }, AGORA_NOITE);
+
+    expect(lembrete).toMatchObject({ momento: null, quando: "hoje" });
+  });
+
+  it("não lembra de consulta cancelada, que já passou ou de hoje num horário que já passou", () => {
+    expect(calcularLembreteConsulta({ data: "2026-10-12", cancelada: true }, AGORA_NOITE)).toBeNull();
+    expect(calcularLembreteConsulta({ data: "2026-10-01" }, AGORA_NOITE)).toBeNull();
+    expect(calcularLembreteConsulta({ data: "2026-10-07", hora: "08:00" }, AGORA_NOITE)).toBeNull();
   });
 });

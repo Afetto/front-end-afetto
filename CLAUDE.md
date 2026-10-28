@@ -33,7 +33,7 @@ Idioma do código: **português** (nomes de variáveis, funções, tipos, textos
 | Ícones | `@expo/vector-icons` — **só `Ionicons`** (todas as telas e componentes; a fonte dele é pré-carregada no `_layout.tsx` raiz) |
 | Animações | `react-native-reanimated` `~4` |
 | Versão instalada | `expo-application` `~7` — só `nativeBuildVersion` (número do build do APK) na tela Sobre o App |
-| Notificações | `expo-notifications` `~0.32` — só notificações **locais** (lembrete de vacina, ver seção "Notificações Locais"); não há push remoto |
+| Notificações | `expo-notifications` `~0.32` — só notificações **locais** (lembretes de vacina, remédio e consulta, ver seção "Notificações Locais"); não há push remoto |
 | Testes | `jest` + `jest-expo` + `@testing-library/react-native` (instalados; `npm test` funciona) |
 
 **Endereço da API:** no desenvolvimento, o app usa a **API Java local, na porta 8080**. Sem `.env`, `definirUrlDaApi()` em `src/api/api.ts` pega o endereço do computador que roda o Expo (`Constants.expoConfig.hostUri`) e monta `http://<esse computador>:8080` — assim funciona no celular (Expo Go na mesma rede), no emulador e no navegador; sem esse dado, usa `http://localhost:8080`. Para apontar para outro lugar (ex.: a API no Render, `https://<servico>.onrender.com`), defina `EXPO_PUBLIC_API_URL` no `.env` (modelo em `.env.example`). O Expo fica na porta padrão dele (8081), sem conflito com a API. No navegador, o back end libera CORS para `localhost` em qualquer porta (no navegador, use a API local: o cookie de sessão não vai de `localhost` para outro site).
@@ -134,13 +134,13 @@ src/
 │   ├── SessaoContext.tsx          ← ÚNICA fonte de verdade de sessão (ver seção 9)
 │   └── TemaContext.tsx            ← ÚNICA fonte de verdade da preferência de tema (Claro/Escuro/Sistema, ver seção 4)
 ├── hooks/
-│   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet (+ `CHAVE_CONSULTA_PETS`, a chave do cache)
+│   ├── usePets.ts             ← usePets, usePet, useCriarPet, useAtualizarPet, useRemoverPet (+ `CHAVE_CONSULTA_PETS`, a chave do cache, e `nomeDoPetEmCache`, usado nos textos dos lembretes)
 │   ├── useVacinas.ts          ← useVacinasPet, useVacina, useCriarVacina, useAtualizarVacina, useDeletarVacina — as três mutations agendam/reagendam/cancelam o lembrete
 │   ├── useFormularioCuidado.ts ← hook de tela das telas de vacina, remédio e consulta: preencher na edição, criar ou atualizar, erro da API (ver seção 8)
-│   ├── useRemedios.ts         ← useRemediosPet, useRemedio, useCriarRemedio, useAtualizarRemedio, useDeletarRemedio (+ `CHAVE_REMEDIOS`)
+│   ├── useRemedios.ts         ← useRemediosPet, useRemedio, useCriarRemedio, useAtualizarRemedio, useDeletarRemedio (+ `CHAVE_REMEDIOS`) — as mutations agendam/reagendam/cancelam o lembrete do início do tratamento
 │   ├── useCalendario.ts       ← useCalendarioPet, useAgendaDoTutor (+ `CHAVE_CALENDARIO`, invalidada ao salvar/excluir vacina, remédio ou consulta)
-│   ├── useClinicas.ts         ← useClinicas, useClinica, useAvaliacoesClinica, useAlternarFavorita, useAvaliarClinica, useApagarAvaliacao, useHorariosClinica, useAgendarConsulta (+ `CHAVE_CLINICAS`; agendar invalida as consultas do pet, o calendário e os horários)
-│   ├── useConsultas.ts        ← useConsultasPet, useConsulta, useCriarConsulta, useAtualizarConsulta, useCancelarConsulta, useDeletarConsulta (+ `CHAVE_CONSULTAS`)
+│   ├── useClinicas.ts         ← useClinicas, useClinica, useAvaliacoesClinica, useAlternarFavorita, useAvaliarClinica, useApagarAvaliacao, useHorariosClinica, useAgendarConsulta (+ `CHAVE_CLINICAS`; agendar invalida as consultas do pet, o calendário e os horários e agenda o lembrete da consulta)
+│   ├── useConsultas.ts        ← useConsultasPet, useConsulta, useCriarConsulta, useAtualizarConsulta, useCancelarConsulta, useDeletarConsulta (+ `CHAVE_CONSULTAS`) — as mutations agendam/reagendam/cancelam o lembrete da consulta
 │   ├── useAutenticacao.ts     ← useCadastrar (cria a conta e já faz o login), useEntrar, useRedefinirSenha, useEncerrarSessao (POST /logout, usado pelo SessaoContext) + `CHAVE_USUARIO_LOGADO`
 │   ├── usePerfilCompleto.ts   ← usePerfilCompleto, useSalvarPerfilCompleto (+ `CHAVE_PERFIL_COMPLETO`; a chave leva o id do usuário)
 │   ├── useBuscarCep.ts        ← useQuery reativo, chama `cepService.buscarPorCep`
@@ -169,7 +169,7 @@ src/
 │   ├── calendario.service.ts    ← calendarioService.buscar({inicio, fim, idPet}) — GET /calendario (eventos VACINA, PROXIMA_DOSE, REMEDIO, CONSULTA)
 │   ├── clinica.service.ts       ← clinicaService.{listar,buscarPorId,favoritar,desfavoritar,listarAvaliacoes,avaliar,apagarAvaliacao,horariosLivres,agendar} (objeto) — não manda GPS: "perto" vem do endereço do Finalize seu cadastro
 │   ├── consulta.service.ts      ← consultaService.{listarPorPet,buscarPorId,criar,atualizar,cancelar,remover,paraFormulario,doFormulario} (objeto) — PATCH /consulta/{id}/cancelar; hora da API vira HH:MM
-│   └── notificacao.service.ts   ← notificacaoService.{configurar,agendarLembreteVacina,cancelarLembreteVacina,cancelarLembretesDoPet,...} — único arquivo que agenda/cancela via `expo-notifications`
+│   └── notificacao.service.ts   ← notificacaoService.{configurar,agendarLembreteVacina/Remedio/Consulta,cancelarLembreteVacina/Remedio/Consulta,cancelarLembretesDoPet,...} — único arquivo que agenda/cancela via `expo-notifications`
 ├── types/
 │   └── autenticacao.types.ts   ← tipos globais de autenticação/usuário
 ├── utils/
@@ -177,7 +177,7 @@ src/
 │   ├── data.ts                  ← converterDataParaISO, converterDataParaBR, normalizarData, calcularIdade
 │   ├── pet.ts                   ← LABEL_ESPECIE, ICONE_ESPECIE (rótulo e emoji por espécie), petEhDoUsuario (filtro de segurança pelo `linkUsuario`; GET /pet já devolve só os pets da conta)
 │   ├── onboarding.ts            ← calcularProgressoOnboarding — checklist e progresso da Home (ver "Fluxo de Onboarding")
-│   ├── lembrete.ts              ← calcularLembreteVacina, proximaDataDoCuidado — regra pura de quando lembrar de uma vacina
+│   ├── lembrete.ts              ← calcularLembrete (véspera/no dia/na hora), calcularLembreteVacina/Remedio/Consulta, proximaDataDoCuidado — regra pura de quando lembrar de cada cuidado
 │   ├── validacao.ts             ← cpfValido, dataValida, dataExiste — usadas pelos schemas
 │   ├── remedio.ts               ← situacaoRemedio (futuro / em uso / terminado), descreverPeriodo, descreverDose
 │   ├── historico.ts             ← montarHistorico — vacinas, remédios e consultas numa linha do tempo só (em andamento → próximos → passados); resumirHistorico (contadores do topo)
@@ -194,9 +194,10 @@ src/
 │   ├── perfil-completo.service.test.ts ← conversão API ↔ formulário e mensagem de erro por campo
 │   ├── onboarding.test.ts       ← teste unitário de calcularProgressoOnboarding
 │   ├── data.test.ts             ← normalizarData no fuso do aparelho
-│   ├── lembrete.test.ts         ← regra de quando lembrar (véspera, no dia, na hora)
+│   ├── lembrete.test.ts         ← regra de quando lembrar (véspera, no dia, na hora) de vacina, remédio e consulta
 │   ├── notificacao.service.test.ts ← o que o service pede ao expo-notifications (mockado)
-│   ├── useVacinas.test.tsx      ← salvar/editar/excluir vacina agenda/reagenda/cancela o lembrete
+│   ├── useVacinas.test.tsx      ← salvar/editar/excluir vacina agenda/reagenda/cancela o lembrete; editar descarta o detalhe em cache
+│   ├── lembretes-cuidados.test.tsx ← salvar/editar/excluir remédio e registrar/cancelar/agendar consulta agendam ou cancelam o lembrete
 │   ├── api.test.ts              ← endereço da API (computador do Expo na 8080, localhost, .env) e tempo limite (90 s no Render/https, 10 s local)
 │   ├── conexao-lenta.test.tsx   ← aviso "Conectando ao servidor…": liga depois de 4 s, desliga na resposta e no erro, várias chamadas ao mesmo tempo
 │   ├── build-api.test.ts        ← o build do EAS exige EXPO_PUBLIC_API_URL com https (app.config.ts)
@@ -529,14 +530,14 @@ De onde vem cada etapa (`utils/onboarding.ts`, tipo `EtapasOnboarding`):
 
 ## 🔔 Notificações Locais
 
-Lembrete de vacina com `expo-notifications`, agendado no próprio aparelho (sem servidor de push).
+Lembretes de vacina, remédio e consulta com `expo-notifications`, agendados no próprio aparelho (sem servidor de push).
 
-- **Evento que dispara:** salvar uma vacina em `/pet/{id}/cuidados`. O `onSuccess` de `useCriarVacina`/`useAtualizarVacina` chama `notificacaoService.agendarLembreteVacina`; `useDeletarVacina` chama `cancelarLembreteVacina`; `useRemoverPet` chama `cancelarLembretesDoPet`. Nenhuma tela dispara notificação — não crie botão de "testar notificação".
-- **Quando lembrar** (`utils/lembrete.ts`, função pura e testada): na véspera do cuidado às 9h; se a véspera já passou, no dia às 9h; se a próxima dose é hoje e já passou das 9h, na hora. "Cuidado" é a data mais próxima entre `dataAplicacao` futura (vacina agendada) e `proximaDose` de hoje em diante. Sem data futura, não há lembrete.
+- **Evento que dispara:** salvar o cuidado. O `onSuccess` das mutations de criar/editar (`useCriarVacina`/`useAtualizarVacina`, `useCriarRemedio`/`useAtualizarRemedio`, `useCriarConsulta`/`useAtualizarConsulta` e `useAgendarConsulta`, da clínica) chama `notificacaoService.agendarLembrete*`; excluir (`useDeletar*`) e cancelar consulta chamam `cancelarLembrete*`; `useRemoverPet` chama `cancelarLembretesDoPet`. Nenhuma tela dispara notificação — não crie botão de "testar notificação".
+- **Quando lembrar** (`utils/lembrete.ts`, funções puras e testadas): `calcularLembrete(dia)` — na véspera às 9h; se a véspera já passou, no dia às 9h; se o dia é hoje e já passou das 9h, na hora. O dia do cuidado: **vacina** = a data mais próxima entre `dataAplicacao` futura e `proximaDose` de hoje em diante; **remédio** = `dataInicio` (tratamento que já começou não lembra); **consulta** = `data` (cancelada, passada ou de hoje num horário que já passou não lembra). Sem dia futuro, não há lembrete — o cuidado é só registro.
 - **Confirmação:** quando o lembrete fica para depois, o service dispara na hora uma notificação "Lembrete agendado" com o dia do aviso.
-- **Toque:** toda notificação leva `data: { tipo: "lembrete-vacina", idPet }`. `useNotificacoes` (chamado só em `app/_layout.tsx`) lê o toque — app aberto, em segundo plano ou fechado — e o layout navega para `/pet/{id}/historico`. Sem sessão, o `<RotaProtegida>` manda para o login.
-- **Identificador:** `vacina-{id}`, o que permite reagendar na edição e cancelar na exclusão.
-- **Permissão:** pedida na primeira vez que há um lembrete para agendar, não na abertura do app. Se o usuário negar, a vacina é salva normalmente e só o lembrete não é criado.
+- **Toque:** toda notificação leva `data: { tipo: "lembrete-vacina" | "lembrete-remedio" | "lembrete-consulta", idPet }`. `useNotificacoes` (chamado só em `app/_layout.tsx`) lê o toque — app aberto, em segundo plano ou fechado — e o layout navega para `/pet/{id}/historico`. Sem sessão, o `<RotaProtegida>` manda para o login.
+- **Identificador:** `vacina-{id}`, `remedio-{id}` ou `consulta-{id}`, o que permite reagendar na edição e cancelar na exclusão. O canal do Android continua com o id `lembretes-vacina` (o da primeira versão), agora com o nome "Lembretes de cuidados".
+- **Permissão:** pedida na primeira vez que há um lembrete para agendar, não na abertura do app. Se o usuário negar, o cuidado é salvo normalmente e só o lembrete não é criado.
 - **Camadas:** `expo-notifications` só é importado em `services/notificacao.service.ts` (agendar, cancelar, permissão, canal) e em `hooks/useNotificacoes.ts` (o hook de toque da biblioteca). A chamada ao service dentro dos hooks de dados não bloqueia e ignora falha de propósito: notificação nunca pode transformar um salvamento que deu certo em erro.
 - **Limites conhecidos:** os lembretes vivem no aparelho — reinstalar o app ou entrar por outro aparelho não os recria. Na web tudo vira no-op. No Expo Go para Android a biblioteca escreve no console um aviso sobre push remoto; é esperado e não afeta as notificações locais — o `app/_layout.tsx` esconde esse aviso do LogBox (`LogBox.ignoreLogs`), então ele só aparece no terminal.
 
