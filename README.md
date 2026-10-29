@@ -6,10 +6,10 @@ Aplicativo mobile (React Native + Expo) do **Challenge FIAP 2026**, em parceria 
 
 | | |
 |---|---|
-| 📱 App publicado | Firebase App Distribution (o professor recebe o convite de tester por e-mail) |
+| 📱 App publicado | Firebase App Distribution — versão **1.0.1 (build 3)**, commit `b2c7b8c` (o professor recebe o convite de tester por e-mail) |
 | 🌐 API em produção | [https://java-afetto.onrender.com](https://java-afetto.onrender.com) · [Swagger](https://java-afetto.onrender.com/swagger-ui/index.html) |
 | ☕ Repositório da API | [github.com/iagoliziero/java-afetto](https://github.com/iagoliziero/java-afetto) |
-| 🎥 Vídeo da Sprint 4 | _(link do YouTube — adicionar antes da entrega)_ |
+| 🎥 Vídeo da Sprint 4 | [YouTube](https://www.youtube.com/watch?v=T76KFAtqssY) |
 | 🎥 Vídeo da Sprint 3 | [YouTube](https://youtu.be/KR2jA5o1Qxk?is=KUvByIYq8Iwi6upV) |
 
 ---
@@ -191,7 +191,8 @@ npx eas-cli@latest build --platform android --profile preview   # gera o APK a p
 - **Perfil `preview`** (`eas.json`): APK de distribuição interna, que roda sem o Metro. Já leva `EXPO_PUBLIC_API_URL=https://java-afetto.onrender.com` e `EXPO_PUBLIC_APP_ENV=preview`. Sem a URL da API em `https`, o build para com um aviso (`app.config.ts`), para não gerar um app que não acha a API.
 - **Número do build:** o EAS controla o `versionCode` (`appVersionSource: "remote"`) e aumenta a cada build do `preview` (`autoIncrement`). A versão visível é o `version` do `app.json`.
 - **No Firebase:** app Android com o mesmo pacote `br.fiap.mad.afetto` → **App Distribution** → envio do APK, notas da versão (o que testar e o hash do commit) e o professor em **Testers & Groups**. O tester aceita o convite com a conta Google e instala pelo Firebase App Tester.
-- **Perfil → Sobre o App** mostra a versão, o **número do build** (lido do APK com `expo-application`), o **ambiente** (`preview`) e o **hash do commit** de onde o APK foi gerado (lido no build, nunca escrito à mão). O hash deve ser igual ao último commit deste repositório (`git log -1`): é assim que se confere que o app publicado é o mesmo código.
+- **Versão publicada:** **1.0.1 (build 3)**, gerada do commit [`b2c7b8c`](https://github.com/Afetto/front-end-afetto/commit/b2c7b8c) — é o hash que aparece no Sobre o App e no vídeo. O commit seguinte só adiciona o link do vídeo a este README, sem mudar nenhuma linha de código (`git diff b2c7b8c HEAD --stat` mostra só o `README.md`).
+- **Perfil → Sobre o App** mostra a versão, o **número do build** (lido do APK com `expo-application`), o **ambiente** (`preview`) e o **hash do commit** de onde o APK foi gerado (lido no build, nunca escrito à mão). É assim que se confere que o app publicado é o mesmo código deste repositório.
 
 ---
 
